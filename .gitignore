@@ -1,0 +1,28 @@
+# Ignore WordPress core files (if not managing with Git)
+wordpress/
+wp-admin/
+wp-includes/
+readme.html
+license.txt
+xmlrpc.php
+wp-config.php
+
+# Ignore default content except custom themes/plugins
+wp-content/*
+!wp-content/themes/
+!wp-content/plugins/
+
+# Ignore all themes except your custom one
+wp-content/themes/*
+!wp-content/themes/valanchuli/
+
+# Ignore all plugins except your custom ones
+wp-content/plugins/*
+
+# Ignore uploads (optional, can be huge and user-generated)
+wp-content/uploads/
+
+# Cache, temp, backup
+*.bak
+*.tmp
+.cache/

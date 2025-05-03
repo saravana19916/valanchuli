@@ -1,0 +1,246 @@
+body {
+    font-family: 'Noto Sans Tamil', 'Latha', sans-serif;
+    font-size: 13px;
+}
+
+body, html {
+    overflow-x: hidden;
+}
+
+.header, .footer, .primary, .bg-primary-color {
+    background-color: #06202B;
+}
+
+.text-primary-color {
+    color: #06202B;
+}
+
+.text-primary-color:hover {
+    color: #06202B;
+}
+
+#navbarNav ul li a {
+    color: white;
+}
+
+.fs-12px {
+    font-size: 12px !important;
+}
+
+.fs-13px {
+    font-size: 13px !important;
+}
+
+.fs-14px {
+    font-size: 14px !important;
+}
+
+.fs-15px {
+    font-size: 15px !important;
+}
+
+.fs-16px {
+    font-size: 16px !important;
+}
+
+.custom-content span {
+    font-size: 16px !important;
+}
+
+@media (max-width: 767px) {
+    .container {
+        max-width: 1800px;
+    }    
+}
+
+@media (min-width: 1700px) {
+    .container {
+        max-width: 1600px;
+    }
+}
+
+/* nav menu active color set start */
+.navbar-nav .current-menu-item a,
+.navbar-nav .active a,
+.footer-nav .current-menu-item a,
+.footer-nav .active a {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+.navbar-nav .current-menu-item a:hover,
+.navbar-nav .active a:hover,
+.footer-nav .current-menu-item a:hover,
+.footer-nav .active a:hover {
+    color: #dc3545 !important;
+}
+
+.nav-item a {
+    text-align: center;
+}
+
+@media (max-width: 1025px) {
+    #menu-header-menu .menu-icon, .custom-menu-icon {
+        position: absolute;
+        left: 5rem;
+    }
+}
+
+@media (max-width: 767px) {
+    #menu-header-menu .menu-icon, .custom-menu-icon {
+        position: absolute;
+        left: 5rem;
+    }
+
+    .custom-menu {
+        position: absolute;
+        margin-top: 10px;
+    }
+
+    .custom-menu-icon {
+        margin-top: 10px;
+    }
+
+    .header-coll {
+        margin-bottom: 15px;;
+    }
+}
+
+@media only screen and (min-width: 991px) and (max-width: 1300px) {
+    .footer-border, footer {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .header-logo-responsive {
+        width: 100%;
+    }
+}
+
+/* nav menu active color set end */
+
+.btn-primary {
+    background-color: #06202B;
+}
+
+.btn-primary:hover {
+    background-color: #ffffff;
+    border-color: #06202B;
+    color: #06202B;
+}
+
+.btn-secondary {
+    background-color: white;
+    border-color: #06202B;
+    color: #06202B;
+}
+
+.btn-secondary:hover {
+    background-color: #06202B;
+}
+
+a {
+    color: #06202B;
+    text-decoration: none;
+}
+
+a:hover, .footer-menu li:hover {
+    text-decoration: underline;
+}
+
+.footer-menu li {
+    text-decoration: none;
+    list-style: none;
+    line-height: 2rem;
+}
+
+.footer-menu li a {
+    color: white;
+    text-decoration: none !important;
+}
+
+.primary:hover {
+    background-color: #06202B;
+}
+
+.footer-border {
+    position: relative;
+    display: inline-block;
+}
+
+.footer-border::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 0.125rem;
+    width: 5rem;
+    background-color: rgb(211, 47, 47);
+    top: 25px;
+}
+
+@media (min-width: 575px) {
+    .footer-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .footer-menu li {
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-menu a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+        gap: 8px;
+    }
+}
+
+.footer-menu .menu-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer-menu .menu-icon i {
+    font-size: 0.9rem;
+}
+
+.footer-menu .menu-text {
+    font-size: 14px;
+    font-weight: bold;
+}
+/* footer menu style end */
+
+/* Post search start */
+.search-container {
+    position: relative;
+}
+
+.search-input {
+    height: 45px;
+    border-radius: 30px;
+    padding-left: 40px;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    color: #888;
+}
+/* Post search end */
