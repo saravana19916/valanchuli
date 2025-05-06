@@ -8,15 +8,15 @@ body, html {
 }
 
 .header, .footer, .primary, .bg-primary-color {
-    background-color: #06202B;
+    background-color: #005d67;
 }
 
 .text-primary-color {
-    color: #06202B;
+    color: #005d67;
 }
 
 .text-primary-color:hover {
-    color: #06202B;
+    color: #005d67;
 }
 
 #navbarNav ul li a {
@@ -121,27 +121,27 @@ body, html {
 /* nav menu active color set end */
 
 .btn-primary {
-    background-color: #06202B;
+    background-color: #005d67;
 }
 
 .btn-primary:hover {
     background-color: #ffffff;
-    border-color: #06202B;
-    color: #06202B;
+    border-color: #005d67;
+    color: #005d67;
 }
 
 .btn-secondary {
     background-color: white;
-    border-color: #06202B;
-    color: #06202B;
+    border-color: #005d67;
+    color: #005d67;
 }
 
 .btn-secondary:hover {
-    background-color: #06202B;
+    background-color: #005d67;
 }
 
 a {
-    color: #06202B;
+    color: #005d67;
     text-decoration: none;
 }
 
@@ -161,7 +161,7 @@ a:hover, .footer-menu li:hover {
 }
 
 .primary:hover {
-    background-color: #06202B;
+    background-color: #005d67;
 }
 
 .footer-border {
@@ -181,8 +181,8 @@ a:hover, .footer-menu li:hover {
     top: 25px;
 }
 
-@media (min-width: 575px) {
-    .footer-menu {
+/* @media (min-width: 575px) { */
+    /* .footer-menu {
         list-style: none;
         padding: 0;
         margin: 0;
@@ -202,7 +202,53 @@ a:hover, .footer-menu li:hover {
         text-decoration: none;
         color: inherit;
         gap: 8px;
+    } */
+
+    .footer-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
     }
+    
+    .footer-menu li {
+        padding: 0px 13px 0px 7px;
+        position: relative;
+        white-space: nowrap;
+    }
+    
+    /* Add divider between menu items */
+    .footer-menu li:not(:last-child)::after {
+        content: "|";
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #888;
+        font-weight: bold;
+        padding-left: 10px;
+    }
+
+    .footer-icon-color {
+        color: #FFEB00;
+    }
+
+    @keyframes shake {
+        0% { transform: translateX(-10px); }
+        25% { transform: translateX(10px); }
+        50% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+        100% { transform: translateX(0px); }
+    }    
+    
+    
+/* } */
+
+.footer-card {
+    box-shadow: 0px 0px 10px -2px #7AE2CF;
+    padding: 25px 10px 25px 10px;
 }
 
 .footer-menu .menu-icon {

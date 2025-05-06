@@ -13,69 +13,62 @@
     flex-direction: column;">
 
 <!-- Navbar using Bootstrap -->
-<nav class="navbar navbar-expand-xl navbar-light header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center flex-wrap header-logo-responsive">
-            <a class="navbar-brand me-sm-5 me-0" href="<?php echo home_url(); ?>">
-                <img src="<?php echo get_theme_mod('custom_logo') ? wp_get_attachment_image_url(get_theme_mod('custom_logo'), 'full') : get_template_directory_uri().'/assets/img/default-logo.png'; ?>" 
-                    alt="<?php bloginfo('name'); ?>" 
-                    height="60">
-            </a>
+<nav class="navbar navbar-expand-xl navbar-light py-2 header">
+    <div class="container d-flex justify-content-between align-items-center">
 
-            <!-- Search Form (Visible next to logo on lg and above) -->
-            <form class="d-none d-sm-flex align-items-center search-form flex-grow-1 mx-3" method="get" action="<?php echo esc_url(home_url('/')); ?>">
-                <div class="position-relative search-container w-100">
-                    <input type="text" name="s" class="form-control search-input" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
-                    <i class="fas fa-search search-icon"></i>
+        <!-- Logo -->
+        <a class="navbar-brand text-white" href="<?php echo home_url(); ?>">
+            <img src="<?php echo get_theme_mod('custom_logo') ? wp_get_attachment_image_url(get_theme_mod('custom_logo'), 'full') : get_template_directory_uri().'/assets/img/default-logo.png'; ?>" height="50" alt="Logo">
+        </a>
+
+        <!-- Right Side: Icons and Hamburger -->
+        <div class="d-flex align-items-center gap-3 order-xl-2" style="margin-left: 10px;">
+
+            <!-- Search Icon -->
+            <div class="position-relative">
+                <button id="searchToggle" class="btn btn-link text-white p-0">
+                    <i class="fas fa-search fa-lg"></i>
+                </button>
+                <div id="searchDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
+                    style="min-width: 250px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                    <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
+                        <input type="text" name="s" class="form-control" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
+                    </form>
                 </div>
-            </form>
+            </div>
 
-            <button class="navbar-toggler bg-white m-3 my-md-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <!-- User Icon -->
+            <div class="position-relative">
+                <button id="userToggle" class="btn btn-link text-white p-0">
+                    <i class="fas fa-user fa-lg"></i>
+                </button>
+                <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
+                    style="min-width: 200px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                    <?php if (is_user_logged_in()) : ?>
+                        <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="dropdown-item text-center">வெளியேறு</a>
+                    <?php else : ?>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" class="dropdown-item text-center">உள்நுழைக</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Hamburger -->
+            <button class="navbar-toggler bg-light border-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
         </div>
 
-        <!-- Second Row: Search Form (Visible below logo on mobile) -->
-        <div class="row mt-2 d-sm-none w-100">
-            <div class="col-12">
-                <form class="d-flex align-items-center search-form" method="get" action="<?php echo esc_url(home_url('/')); ?>">
-                    <div class="position-relative search-container w-100">
-                        <input type="text" name="s" class="form-control search-input" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
-                        <i class="fas fa-search search-icon"></i>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="collapse navbar-collapse header-coll mt-3 mt-md-0" id="navbarNav">
-            <?php wp_nav_menu(array(
+        <!-- Nav Menu -->
+        <div class="collapse navbar-collapse order-xl-1 justify-content-end" id="navbarNav">
+            <?php
+            wp_nav_menu(array(
                 'theme_location' => 'primary',
                 'container' => false,
-                'menu_class' => 'navbar-nav ms-auto',
+                'menu_class' => 'navbar-nav',
                 'depth' => 2,
                 'walker' => new WP_Bootstrap_Navwalker()
-            )); ?>
-            <?php if (is_user_logged_in()) { ?>
-                <ul class="navbar-nav text-center">
-                    <li>
-                        <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="text-white text-decoration-none nav-link" style="padding-left: 0.5rem;padding-right: 0.5rem;">
-                            <span itemprop="name">
-                                <span class="menu-text"> வெளியேறு</span>
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            <?php } else { ?>
-                <ul class="navbar-nav text-center">
-                    <li>
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" class="text-white text-decoration-none nav-link" style="padding-left: 0.5rem;padding-right: 0.5rem;">
-                            <span itemprop="name">
-                                <span class="menu-text text-center">உள்நுழைக</span>
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            <?php } ?>
+            ));
+            ?>
         </div>
     </div>
 </nav>
