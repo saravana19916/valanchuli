@@ -12,13 +12,6 @@ wp-content/*
 !wp-content/themes/
 !wp-content/plugins/
 
-# Ignore all themes except your custom one
-wp-content/themes/*
-!wp-content/themes/valanchuli/
-
-# Ignore all plugins except your custom ones
-wp-content/plugins/*
-
 # Ignore uploads (optional, can be huge and user-generated)
 wp-content/uploads/
 

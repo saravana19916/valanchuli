@@ -42,12 +42,12 @@
                 <button id="userToggle" class="btn btn-link text-white p-0">
                     <i class="fas fa-user fa-lg"></i>
                 </button>
-                <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
+                <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
                     style="min-width: 200px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
                     <?php if (is_user_logged_in()) : ?>
                         <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="dropdown-item text-center">வெளியேறு</a>
                     <?php else : ?>
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" class="dropdown-item text-center">உள்நுழைக</a>
+                        <a href="<?php echo site_url('/login'); ?>" class="dropdown-item text-center">உள்நுழைக</a>
                     <?php endif; ?>
                 </div>
             </div>

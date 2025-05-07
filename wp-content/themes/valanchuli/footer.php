@@ -1,9 +1,9 @@
 </div>
 
 <footer class="text-white footer">
-    <div class="container-fluid">
+    <div class="container">
         <div class="row text-center text-white py-5 w-100  d-flex justify-content-center">
-            <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 footer-card d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="col-12 col-lg-4 col-xl-4 ms-3 ms-lg-4 footer-card d-flex flex-column justify-content-center align-items-center text-center">
                 <i class="fa-solid fa-bars fa-2xl footer-icon-color"></i>
                 <h6 class="fw-bold mt-4 footer-icon-color">Menus</h6>
                 <nav class="footer-nav mt-4 d-flex justify-content-center justify-content-sm-start">
@@ -18,7 +18,7 @@
                 </nav>
             </div>
 
-            <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card d-flex flex-column justify-content-center align-items-center text-center">
+            <!-- <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card d-flex flex-column justify-content-center align-items-center text-center">
                 <i class="fa-solid fa-layer-group fa-2xl footer-icon-color"></i>
                 <h6 class="fw-bold mt-4 footer-icon-color">வகைகள்</h6>
                 <ul class="footer-menu mt-4 d-flex justify-content-center justify-content-sm-start">
@@ -30,9 +30,9 @@
                     <li><a href="#" aria-current="page">சிறுவர் கதைகள்</a></li>
                     <li><a href="#" aria-current="page">அறிவியல் புனைவு</a></li>
                 </ul>
-            </div>
+            </div> -->
 
-            <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 mt-5 mt-xl-0 footer-card">
+            <div class="col-12 col-lg-4 col-xl-4 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card">
                 <i class="fa-solid fa-circle-plus fa-2xl footer-icon-color"></i>
                 <h6 class="fw-bold mt-3 footer-icon-color">புதியவை</h6>
                 <ul class="footer-menu mt-4">
@@ -44,7 +44,7 @@
                 </ul>
             </div>
 
-            <div class="col-12 col-lg-5 col-xl-2 mt-5 mt-xl-0 d-flex align-items-center justify-content-center">
+            <div class="col-12 col-lg-2 col-xl-2 ms-3 ms-lg-4 mt-5 mt-lg-0 d-flex align-items-center justify-content-center">
                 <a class="navbar-brand" href="<?php echo home_url(); ?>">
                     <img src="<?php echo get_theme_mod('custom_logo') ? wp_get_attachment_image_url(get_theme_mod('custom_logo'), 'full') : get_template_directory_uri().'/assets/img/default-logo.png'; ?>" 
                         alt="<?php bloginfo('name'); ?>" 
