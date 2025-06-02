@@ -1,44 +1,39 @@
 <?php
-    get_header();
-?>
+/* Template Name: Series Stories */
+get_header();
 
-<div class="container my-5">
-    <?php
-        $categories = get_categories([
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'exclude' => [get_cat_ID('Uncategorized')],
-        ]);
+$category_id = isset($_GET['category_id']) ? intval($_GET['category_id']) : 0;
+$series_id   = isset($_GET['series_id']) ? intval($_GET['series_id']) : 0;
 
-        foreach ($categories as $category) {
-    ?>
-        <h6 class="px-4 py-2 mb-3 mt-5 text-highlight-color" style="background-color: #005d67"><?php echo esc_html($category->name); ?></h6>
+if ($category_id && $series_id) {
+    $category = get_term($category_id, 'category');
+    $series   = get_term($series_id, 'series');
 
-        <?php
-        $stories = new WP_Query([
-            'post_type' => ['story', 'competition_post'],
-            'posts_per_page' => -1,
-            'orderby' => 'date',
-            'order' => 'DESC',
-            'tax_query' => [
-                [
-                    'taxonomy' => 'category',
-                    'field'    => 'term_id',
-                    'terms'    => [$category->term_id],
-                    'operator' => 'IN',
-                ],
+    $query = new WP_Query([
+        'post_type'      => 'story',
+        'posts_per_page' => -1,
+        'tax_query'      => [
+            'relation' => 'AND',
+            [
+                'taxonomy' => 'category',
+                'field'    => 'term_id',
+                'terms'    => [$category_id],
             ],
-        ]);
+            [
+                'taxonomy' => 'series',
+                'field'    => 'term_id',
+                'terms'    => [$series_id],
+            ],
+        ],
+    ]);
+    ?>
 
-        error_log('Query for category: ' . esc_html($category->name));
-        error_log('Total posts: ' . $stories->found_posts);
+    <div class="container my-5">
+        <h3 class="text-primary-color"><?php echo esc_html($category->name); ?> - <?php echo esc_html($series->name); ?></h3>
 
-        if ($stories->have_posts()) {
-            ?>
-            <div class="row">
-            <?php while ($stories->have_posts()) {
-                $stories->the_post();
-                ?>
+        <?php if ($query->have_posts()) : ?>
+        <div class="row">
+            <?php while ($query->have_posts()) : $query->the_post(); ?>
                 <div class="col-md-3 p-3">
                     <div class="card h-100">
                         <div class="row g-0 align-items-center">
@@ -62,8 +57,6 @@
 
                                     <p class="text-muted mb-2 fs-12px">By <?php the_author(); ?></p>
 
-                                    <p class="card-text"><?php echo wp_trim_words(get_the_excerpt(), 20); ?></p>
-
                                     <?php
                                         $total_views = 105;
                                         $average_rating = 2
@@ -78,18 +71,18 @@
                         </div>
                     </div>
                 </div>
-                <?php
-            } ?>
-            </div>
-        <?php } else {
-            echo 'No stories found for ' . esc_html($category->name);
-        }
-        wp_reset_postdata();
-        ?>
-    <?php
+            <?php endwhile; ?>
+        </div>
+    <?php else : ?>
+        <p>No stories found in this series.</p>
+    <?php endif; ?>
+
+        <?php wp_reset_postdata(); ?>
+    </div>
+
+<?php
+} else {
+    echo "<p>Invalid category or series.</p>";
 }
-?>
 
-</div>
-
-<?php get_footer(); ?>
+get_footer();

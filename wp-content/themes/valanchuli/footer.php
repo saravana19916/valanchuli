@@ -1,7 +1,7 @@
 </div>
 
 <footer class="text-white footer">
-    <div class="container">
+    <!-- <div class="container">
         <div class="row text-center text-white py-5 w-100  d-flex justify-content-center">
             <div class="col-12 col-lg-4 col-xl-4 ms-3 ms-lg-4 footer-card d-flex flex-column justify-content-center align-items-center text-center">
                 <i class="fa-solid fa-bars fa-2xl footer-icon-color"></i>
@@ -18,7 +18,7 @@
                 </nav>
             </div>
 
-            <!-- <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="col-12 col-lg-5 col-xl-3 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card d-flex flex-column justify-content-center align-items-center text-center">
                 <i class="fa-solid fa-layer-group fa-2xl footer-icon-color"></i>
                 <h6 class="fw-bold mt-4 footer-icon-color">வகைகள்</h6>
                 <ul class="footer-menu mt-4 d-flex justify-content-center justify-content-sm-start">
@@ -30,7 +30,7 @@
                     <li><a href="#" aria-current="page">சிறுவர் கதைகள்</a></li>
                     <li><a href="#" aria-current="page">அறிவியல் புனைவு</a></li>
                 </ul>
-            </div> -->
+            </div>
 
             <div class="col-12 col-lg-4 col-xl-4 ms-3 ms-lg-4 mt-5 mt-lg-0 footer-card">
                 <i class="fa-solid fa-circle-plus fa-2xl footer-icon-color"></i>
@@ -53,14 +53,61 @@
             </div>
 
         </div>
-    </div>
+    </div> -->
 
     <!-- Copyright Section -->
-    <div class="footer" style="border-top: solid 1px;">
-        <div class="container text-center">
-            <p class="mb-0 my-3 pb-3">
-                <span class="footer-icon-color">© <?php echo date("Y"); ?></span> Valanchuli. All Rights Reserved.
-            </p>
+    <!-- <div class="footer mt-auto" style="border-top: solid 1px;">
+        <div class="container py-3">
+            <div class="row justify-content-center align-items-center">
+
+                <div class="col-md-4 text-lg-end text-center">
+                    <a class="navbar-brand" href="<?php echo home_url(); ?>">
+                        <img src="<?php echo get_theme_mod('custom_logo') ? wp_get_attachment_image_url(get_theme_mod('custom_logo'), 'full') : get_template_directory_uri().'/assets/img/default-logo.png'; ?>" 
+                            alt="<?php bloginfo('name'); ?>" 
+                            height="60">
+                    </a>
+                </div>
+
+                <div class="col-md-4 mt-2 mt-lg-0 text-lg-start text-center">
+                    <p class="mb-0">
+                        <span class="footer-icon-color">© <?php echo date("Y"); ?></span> Valanchuli. All Rights Reserved.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div> -->
+
+    <div class="footer mt-auto" style="border-top: solid 1px;">
+        <div class="container py-3">
+            <div class="row justify-content-between align-items-center">
+                <div class="col-lg-8 text-center text-lg-start">
+                    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-center justify-content-lg-start gap-3">
+                        <a class="navbar-brand mb-2 mb-sm-0" href="<?php echo home_url(); ?>">
+                            <img src="<?php echo get_theme_mod('custom_logo') ? wp_get_attachment_image_url(get_theme_mod('custom_logo'), 'full') : get_template_directory_uri().'/assets/img/default-logo.png'; ?>" 
+                                alt="<?php bloginfo('name'); ?>" 
+                                height="60">
+                        </a>
+
+                        <nav class="footer-nav">
+                            <?php
+                            wp_nav_menu(array(
+                                'theme_location' => 'footer',
+                                'container' => false,
+                                'menu_class' => 'footer-menu d-flex flex-wrap gap-3 mb-0 ps-0',
+                                'fallback_cb' => false
+                            ));
+                            ?>
+                        </nav>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 text-center text-lg-end mt-3 mt-lg-0">
+                    <p class="mb-0">
+                        <span class="footer-icon-color">© <?php echo date("Y"); ?></span> Valanchuli. All Rights Reserved.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </footer>

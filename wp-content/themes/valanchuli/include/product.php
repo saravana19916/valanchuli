@@ -1,0 +1,175 @@
+<?php
+
+function register_product_post_type() {
+    register_post_type('custom_product', [
+        'labels' => [
+            'name' => __('Products'),
+            'singular_name' => __('Product')
+        ],
+        'public' => true,
+        'has_archive' => true,
+        'menu_icon' => 'dashicons-cart',
+        'supports' => ['title', 'comments'], // We'll use meta boxes for other fields
+        'show_in_rest' => false, // Set to true if using Gutenberg
+        'publicly_queryable' => true,
+        'exclude_from_search' => false,
+    ]);
+}
+add_action('init', 'register_product_post_type');
+
+// Add custom columns
+function set_custom_product_columns($columns) {
+    unset($columns['date']); // Remove 'Date' if not needed
+    $columns['title'] = 'Product Name';
+    $columns['product_price'] = 'Price';
+    $columns['product_category'] = 'Category';
+    return $columns;
+}
+add_filter('manage_custom_product_posts_columns', 'set_custom_product_columns');
+
+// Populate custom column values
+function custom_product_column_content($column, $post_id) {
+    if ($column === 'product_price') {
+        echo esc_html(get_post_meta($post_id, 'product_price', true));
+    }
+
+    if ($column === 'product_category') {
+        $cat_id = get_post_meta($post_id, 'product_category', true);
+        $category = get_category($cat_id);
+        echo esc_html($category ? $category->name : '-');
+    }
+}
+add_action('manage_custom_product_posts_custom_column', 'custom_product_column_content', 10, 2);
+
+
+
+function add_product_meta_boxes() {
+    add_meta_box('product_details', 'Product Details', 'render_product_meta_box', 'custom_product', 'normal', 'high');
+}
+add_action('add_meta_boxes', 'add_product_meta_boxes');
+
+function render_product_meta_box($post) {
+    $price = get_post_meta($post->ID, 'product_price', true);
+    $offer_price = get_post_meta($post->ID, 'product_offer_price', true);
+    $link = get_post_meta($post->ID, 'product_link', true);
+    $selected_category = get_post_meta($post->ID, 'product_category', true);
+    $image_id = get_post_meta($post->ID, 'product_image', true);
+    $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : '';
+    $description = get_post_meta($post->ID, 'product_description', true);
+
+    $categories = get_categories(['hide_empty' => false]);
+    ?>
+    <p>
+        <label>Price:</label><br>
+        <input type="text" name="product_price" value="<?php echo esc_attr($price); ?>" class="regular-text">
+    </p>
+    <p>
+        <label>Offer Price:</label><br>
+        <input type="text" name="product_offer_price" value="<?php echo esc_attr($offer_price); ?>" class="regular-text">
+    </p>
+    <p>
+        <label>Link:</label><br>
+        <input type="url" name="product_link" value="<?php echo esc_attr($link); ?>" class="regular-text">
+    </p>
+    <p>
+        <label>Category:</label><br>
+        <select name="product_category">
+            <?php foreach ($categories as $cat): ?>
+                <option value="<?php echo esc_attr($cat->term_id); ?>" <?php selected($selected_category, $cat->term_id); ?>>
+                    <?php echo esc_html($cat->name); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </p>
+    <p>
+        <label>Product Image:</label>
+        <img id="product_image_preview" src="<?php echo esc_url($image_url); ?>" style="max-width: 150px; display: <?php echo $image_url ? 'block' : 'none'; ?>;"><br>
+        <input type="hidden" name="product_image" id="product_image" value="<?php echo esc_attr($image_id); ?>">
+        <button type="button" class="button" id="upload_product_image">Upload Image</button>
+        <button type="button" class="button" id="remove_product_image" style="display: <?php echo $image_url ? 'inline-block' : 'none'; ?>;">Remove</button>
+    </p>
+
+    <p>
+        <label>Product Description:</label><br>
+        <textarea name="product_description" class="regular-text" rows="5" cols="8"><?php echo esc_textarea($description); ?></textarea>
+    </p>
+
+    <script>
+        jQuery(document).ready(function ($) {
+            var mediaUploader;
+
+            $('#upload_product_image').click(function (e) {
+                e.preventDefault();
+                if (mediaUploader) {
+                    mediaUploader.open();
+                    return;
+                }
+                mediaUploader = wp.media({
+                    title: 'Select Product Image',
+                    button: {
+                        text: 'Use this image'
+                    },
+                    multiple: false
+                });
+
+                mediaUploader.on('select', function () {
+                    var attachment = mediaUploader.state().get('selection').first().toJSON();
+                    $('#product_image').val(attachment.id);
+                    $('#product_image_preview').attr('src', attachment.url).show();
+                    $('#remove_product_image').show();
+                });
+
+                mediaUploader.open();
+            });
+
+            $('#remove_product_image').click(function () {
+                $('#product_image').val('');
+                $('#product_image_preview').hide();
+                $(this).hide();
+            });
+        });
+    </script>
+    <?php
+}
+
+
+function save_product_meta_data($post_id) {
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+
+    if (isset($_POST['product_price'])) {
+        update_post_meta($post_id, 'product_price', sanitize_text_field($_POST['product_price']));
+    }
+    if (isset($_POST['product_offer_price'])) {
+        update_post_meta($post_id, 'product_offer_price', sanitize_text_field($_POST['product_offer_price']));
+    }
+    if (isset($_POST['product_link'])) {
+        update_post_meta($post_id, 'product_link', esc_url_raw($_POST['product_link']));
+    }
+    if (isset($_POST['product_category'])) {
+        update_post_meta($post_id, 'product_category', intval($_POST['product_category']));
+    }
+    if (isset($_POST['product_image'])) {
+        update_post_meta($post_id, 'product_image', intval($_POST['product_image']));
+    }
+    if (isset($_POST['product_description'])) {
+        update_post_meta($post_id, 'product_description', sanitize_text_field($_POST['product_description']));
+    }
+}
+add_action('save_post', 'save_product_meta_data');
+
+function filter_product_title_like($where, $query) {
+    global $wpdb;
+
+    // Check that the post type is your custom one and the query var is set
+    if (!is_admin() && isset($query->query_vars['post_type']) && $query->query_vars['post_type'] === 'custom_product') {
+        if (isset($query->query_vars['post_title_like'])) {
+            $search_term = esc_sql($query->query_vars['post_title_like']);
+            $where .= " AND {$wpdb->posts}.post_title LIKE '%{$search_term}%'";
+        }
+    }
+
+    return $where;
+}
+add_filter('posts_where', 'filter_product_title_like', 10, 2);
+
+

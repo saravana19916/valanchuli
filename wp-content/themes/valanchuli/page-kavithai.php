@@ -2,7 +2,8 @@
     get_header();
 ?>
 
-<div class="container my-5">
+<div class="container my-4">
+    <h4 class="py-2 text-primary-color text-center">கவிதை</h4>
     <?php
         $categories = get_categories([
             'taxonomy' => 'category',
@@ -10,11 +11,16 @@
             'exclude' => [get_cat_ID('Uncategorized')],
         ]);
 
+        $has_stories = false;
+
         foreach ($categories as $category) {
     ?>
-        <h6 class="px-4 py-2 mb-3 mt-5 text-highlight-color" style="background-color: #005d67"><?php echo esc_html($category->name); ?></h6>
 
         <?php
+        if ($category->name !== 'கவிதை') {
+            continue;
+        }
+    
         $stories = new WP_Query([
             'post_type' => ['story', 'competition_post'],
             'posts_per_page' => -1,
@@ -34,12 +40,13 @@
         error_log('Total posts: ' . $stories->found_posts);
 
         if ($stories->have_posts()) {
-            ?>
+            $has_stories = true;
+        ?>
             <div class="row">
             <?php while ($stories->have_posts()) {
                 $stories->the_post();
                 ?>
-                <div class="col-md-3 p-3">
+                <div class="col-md-4 p-3">
                     <div class="card h-100">
                         <div class="row g-0 align-items-center">
                             <div class="col-md-5">
@@ -65,8 +72,8 @@
                                     <p class="card-text"><?php echo wp_trim_words(get_the_excerpt(), 20); ?></p>
 
                                     <?php
-                                        $total_views = 105;
-                                        $average_rating = 2
+                                        $total_views = 412;
+                                        $average_rating = 3
                                     ?>
 
                                     <div class="d-flex align-items-center">
@@ -82,13 +89,17 @@
             } ?>
             </div>
         <?php } else {
-            echo 'No stories found for ' . esc_html($category->name);
+            // echo 'No stories found for ' . esc_html($category->name);
         }
         wp_reset_postdata();
         ?>
-    <?php
-}
-?>
+    <?php } ?>
+
+    <?php if (!$has_stories) { ?>
+        <div class="alert alert-warning text-center" role="alert">
+            No stories found.
+        </div>
+    <?php } ?>
 
 </div>
 
