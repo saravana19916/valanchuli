@@ -5,160 +5,310 @@
 get_header(); ?>
 
 <div class="container mt-5">
-	<form id="write-story-form" enctype="multipart/form-data">
-		<!-- Step 1 -->
-		<div id="step-1">
-			<div class="row d-flex justify-content-center align-items-center p-2 p-lg-5">
-				<div class="col-lg-6 col-12">
-					<div class="d-flex justify-content-center align-items-center">
-						<img src="<?php echo get_template_directory_uri() . '/images/story-write.png'; ?>" alt="Login Image" style="width: 60%;" />
-					</div>
-				</div>
-				<div class="col-lg-6 col-12 mt-3 mt-lg-0 p-3 p-lg-5 bg-white">
-					<!-- Title -->
-					<div class="mb-3">
-						<label class="form-label">தலைப்பு</label>
-						<input type="text" class="form-control tamilwriter" id="story-title" required>
-					</div>
+	<div class="row">
+		<h5 class="text-center text-primary-color fw-bold"> எழுத </h5>
+	</div>
 
-					<!-- Category -->
-					<div class="mb-3">
-						<label class="form-label">வகை</label>
-						<select class="form-select" id="story-category" required>
-							<option value="">Select Category</option>
-							<?php
-							$categories = get_categories([
-								'taxonomy' => 'category',
-								'hide_empty' => false,
-								'exclude' => get_cat_ID('Uncategorized'),
-							]);
-							foreach ($categories as $cat) {
-								echo '<option value="' . esc_attr($cat->term_id) . '">' . esc_html($cat->name) . '</option>';
+	<?php if ( ! is_user_logged_in() ) { ?>
+		<div class="alert alert-warning text-center w-50 mx-auto mt-3" role="alert" id="draftAlert">
+			தயவு செய்து உள்நுழையவும். This page is restricted. Please 
+			<a href="login" class="alert-link">Login / Register</a> to view this page.
+		</div>
+	<?php } else { ?>
+
+		<div id="save-result" class="mt-3"></div>
+
+		<form id="write-story-form" enctype="multipart/form-data">
+			<!-- Step 1 -->
+			<div id="step-1">
+				<div class="row d-flex justify-content-center align-items-center p-2 p-lg-5">
+					<div class="col-lg-7 col-12">
+						<div class="d-flex justify-content-center align-items-center">
+							<img src="<?php echo get_template_directory_uri() . '/images/story-write.png'; ?>" alt="Login Image" style="width: 60%;" />
+						</div>
+					</div>
+					<div class="col-lg-5 col-12 mt-3 mt-lg-0 p-3 p-lg-5 bg-white">
+						<div class="mb-4">
+							<label class="form-label">தலைப்பு <span style="color: red;">*</span></label>
+							<input type="text" class="form-control tamilwriter login-form-group story-title tamil-suggestion-input" id="story-title">
+							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-title" style="display: none;"></p>
+						</div>
+
+						<div class="mb-4">
+							<label class="form-label">வகை <span style="color: red;">*</span></label>
+							<select class="form-select login-form-group story-category" id="story-category">
+								<option value="">-- select --</option>
+								<?php
+								$categories = get_categories([
+									'taxonomy' => 'category',
+									'hide_empty' => false,
+									'exclude' => get_cat_ID('Uncategorized'),
+								]);
+								foreach ($categories as $cat) {
+									echo '<option value="' . esc_attr($cat->term_id) . '">' . esc_html($cat->name) . '</option>';
+								}
+								?>
+							</select>
+							<p class="my-2 fs-12px" style="color: gray;"><i>இந்த படைப்பு எந்த வகையை சேர்ந்தது என்பதை தேர்ந்தெடுக்கவும் (உதாரணம்: காதல், குடும்பம், நகைச்சுவை, தொடர்கதை)</i></p>
+						</div>
+
+						<?php
+							$static_series = ['தொடர்கதை அல்ல'];
+
+							$series_terms = get_terms(['taxonomy' => 'series', 'hide_empty' => false]);
+							$filtered_series = array_filter($series_terms, function ($term) {
+								return $term->name !== 'தொடர்கதை அல்ல';
+							});
+							$dynamic_series = [];
+							foreach ($filtered_series as $term) {
+								$dynamic_series[] = $term->name;
 							}
-							?>
-						</select>
+						?>
+
+						<div class="mb-4 dropdown">
+							<label for="category_dropdown_input" class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
+
+							<input type="text" readonly class="form-control dropdown-toggle form-select login-form-group story-series_input" id="story-series"
+								name="story-series" data-bs-toggle="dropdown" value="தொடர்கதை அல்ல">
+
+							<ul class="dropdown-menu w-100 p-2" id="category_dropdown">
+								<li>
+									<input type="text" class="form-control mb-2 tamil-suggestion-input" id="series_input"
+										placeholder="Type to create or search...">
+								</li>
+								<div id="category_list"></div>
+							</ul>
+
+							<p class="my-2 fs-12px" style="color: gray;"><i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக  இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i></p>
+						</div>
+
+						<div class="mb-4 d-none" id="divisionDropdown">
+							<label class="form-label">பிரிவுகள்</label>
+							<select class="form-select login-form-group" id="story-division" name="sotry-division">
+								<option value="">Select Division</option>
+								<option value="division1">Division 1</option>
+								<option value="division2">Division 2</option>
+								<option value="division3">Division 3</option>
+							</select>
+						</div>
+
+						<input type="text" class="form-control mb-2 d-none" id="seriesFirst">
+						<div class="mb-4 d-none" id="descriptionSection">
+							<label class="form-label">Description</label>
+							<textarea class="form-control text-primary-color login-form-group tamil-suggestion-input" id="story-description" name="story-description" rows="4" placeholder="Short description"></textarea>
+							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-description" style="display:none;"></p>
+						</div>
+
+						<!-- Image Upload -->
+						<div class="mb-4">
+							<label class="form-label">படம்</label>
+							<input type="file" class="form-control login-form-group" id="story-image" accept="image/*">
+						</div>
+
+						<button type="button" class="btn btn-secondary" id="next-step"><i class="fa-solid fa-arrow-right"></i>&nbsp;
+							அடுத்தது</button>
 					</div>
-
-					<?php
-					$static_series = ['தொடர்கதை அல்ல'];
-
-					$series_terms = get_terms(['taxonomy' => 'series', 'hide_empty' => false]);
-					$filtered_series = array_filter($series_terms, function ($term) {
-						return $term->name !== 'தொடர்கதை அல்ல';
-					});
-					$dynamic_series = [];
-					foreach ($filtered_series as $term) {
-						$dynamic_series[] = $term->name;
-					}
-					?>
-
-					<div class="mb-3 dropdown">
-						<label for="category_dropdown_input" class="form-label">தொடர்கதை</label>
-
-						<input type="text" readonly class="form-control dropdown-toggle form-select" id="story-series"
-							name="story-series" data-bs-toggle="dropdown" value="தொடர்கதை அல்ல">
-
-						<ul class="dropdown-menu w-100 p-2" id="category_dropdown">
-							<li>
-								<input type="text" class="form-control mb-2" id="series_input"
-									placeholder="Type to create or search...">
-							</li>
-							<div id="category_list"></div>
-						</ul>
-					</div>
-
-					<div class="mb-3 d-none" id="divisionDropdown">
-						<label class="form-label">பிரிவுகள்</label>
-						<select class="form-select" id="story-division" name="sotry-division">
-							<option value="">Select Division</option>
-							<option value="division1">Division 1</option>
-							<option value="division2">Division 2</option>
-							<option value="division3">Division 3</option>
-						</select>
-					</div>
-
-					<!-- Image Upload -->
-					<div class="mb-3">
-						<label class="form-label">படம்</label>
-						<input type="file" class="form-control" id="story-image" accept="image/*">
-					</div>
-
-					<button type="button" class="btn btn-secondary" id="next-step"><i class="fa-solid fa-arrow-right"></i>&nbsp;
-						அடுத்தது</button>
 				</div>
 			</div>
-		</div>
 
-		<!-- Step 2 -->
-		<div id="step-2" style="display: none;">
-			<div class="mb-3">
-				<label class="form-label">படைப்பை சேர்க்கவும்</label>
-				<textarea id="story-content" class="form-control tamilwriter" rows="6"></textarea>
-				<div id="tamil-suggestions" class="accordion mt-2"></div>
+			<!-- Step 2 -->
+			<div id="step-2" class="mb-3" style="display: none;">
+				<div class="d-flex justify-content-center">
+					<div class="alert alert-warning d-none text-center w-50" role="alert" id="draftAlert">
+						Story saved as draft
+					</div>
+				</div>
+
+				<div class="my-3">
+					<label class="form-label">படைப்பை சேர்க்கவும் <span style="color: red;">*</span></label>
+					<textarea id="story-content" class="form-control tamilwriter story-content" rows="6"></textarea>
+					<ul id="tanglishSuggestions" 
+						style="position:absolute; z-index:9999; background:#fff; border:1px solid #ccc; list-style:none; padding:0; margin:0; display:none; min-width:120px;">
+					</ul>
+					<p class="mt-2 d-block text-primary-color fw-bold">Word Count: <span class="badge bg-primary-color text-highlight-color fw-bold fs-14px p-2" id="word-count">0</span></p>
+				</div>
+
+				<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp;
+					முந்தையது</button>
+				<button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
+					சமர்ப்பிக்க</button>
+				<button type="button" class="btn btn-primary" id="saveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
+					Save Draft</button>
 			</div>
-
-			<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp;
-				முந்தையது</button>
-			<button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
-				சமர்ப்பிக்க</button>
-			<button type="button" class="btn btn-primary" id="saveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
-				Save Draft</button>
-		</div>
-	</form>
-	<div id="save-result" class="mt-3"></div>
-
-
-	<div id="save-result" class="mt-3"></div>
+		</form>
+	<?php } ?>
 </div>
 
 <?php get_footer(); ?>
 
 <script>
+
 	jQuery(document).ready(function ($) {
-		// $("#story-content").trumbowyg({
-		// 	btns: [
-		// 		['formatting'],
-		// 		['fontsize'],
-		// 		["bold", "italic", "underline"],
-		// 		['justifyLeft', 'justifyCenter', 'justifyRight'],
-		// 		['unorderedList', 'orderedList'],
-		// 		["emoji"]
-		// 	],
-		// 	autogrow: true
-		// });
-
 		$('#next-step').on('click', function () {
-			// Validate basic fields before proceeding
-			// if (!$('#story-title').val() || !$('#story-category').val() || !$('#story-series').val()) {
-			// 	alert("தயவு செய்து அனைத்து விவரங்களையும் நிரப்பவும்.");
-			// 	return;
-			// }
 
-			$('#step-1').hide();
-			$('#step-2').show();
+			const title = document.getElementById('story-title').value;
+			const category = document.getElementById('story-category').value;
+			const series = document.getElementById('story-series').value;
 
-			// Initialize Trumbowyg editor
-			if (!$('#story-content').data('trumbowyg')) {
-				$("#story-content").trumbowyg({
-					btns: [
-						['formatting'],
-						['fontsize'],
-						["bold", "italic", "underline"],
-						['justifyLeft', 'justifyCenter', 'justifyRight'],
-						['unorderedList', 'orderedList'],
-						["link"],
-						["insertImage"],
-						["emoji"]
-					],
-					autogrow: true
-				});
+			$('.error-message').remove();
+
+			// Initialize empty array
+			let errors = [];
+
+			// Validation checks
+			if (title === '') {
+			errors.push({ field: 'title', message: 'தலைப்பு is required.' });
 			}
 
-			$('.trumbowyg-editor').css({
-				height: '80rem',
-				overflow: 'auto'
+			if (category === '') {
+			errors.push({ field: 'category', message: 'வகை is required.' });
+			}
+
+			if (series === '') {
+			errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
+			}
+
+			// Show errors
+			$.each(errors, function (index, error) {
+				$('.story-' + error.field).after(
+					'<p class="text-danger error-message mt-2 small">' + error.message + '</p>'
+				);
 			});
+
+			if (errors.length == 0) {
+				$('#step-1').hide();
+				$('#step-2').show();
+
+				if (!$('#story-content').data('trumbowyg')) {
+					$("#story-content").trumbowyg({
+						btns: [
+							['formatting'],
+							['fontsize'],
+							["bold", "italic", "underline"],
+							['justifyLeft', 'justifyCenter', 'justifyRight'],
+							['unorderedList', 'orderedList'],
+							["link"],
+							["insertImage"],
+							["emoji"]
+						],
+						autogrow: true
+					}).on('tbwchange tbwinit', updateWordCount);
+
+					const suggestionBox = $('#tanglishSuggestions');
+					let editor = $('#story-content').next('.trumbowyg-box').find('.trumbowyg-editor')[0];
+
+					if (!editor) {
+						editor = document.querySelector('.trumbowyg-editor');
+					}
+
+					if (!editor) {
+						console.error('Editor not found');
+						return;
+					}
+
+					editor.addEventListener('input', () => {
+						const sel = window.getSelection();
+						if (!sel.rangeCount) {
+						suggestionBox.hide();
+						return;
+						}
+
+						const range = sel.getRangeAt(0);
+						if (range.startContainer.nodeType !== Node.TEXT_NODE) {
+						suggestionBox.hide();
+						return;
+						}
+
+						const text = range.startContainer.textContent;
+						const offset = range.startOffset;
+
+						const textBeforeCursor = text.slice(0, offset);
+						const lastWord = textBeforeCursor.trim().split(/\s+/).pop();
+
+						if (!lastWord) {
+						suggestionBox.hide();
+						return;
+						}
+
+						fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(lastWord)}&itc=ta-t-i0-und&num=5`)
+						.then(res => res.json())
+						.then(data => {
+							if (data[0] === "SUCCESS") {
+							const suggestions = data[1][0][1];
+							showSuggestions(suggestions, range);
+							} else {
+							suggestionBox.hide();
+							}
+						})
+						.catch(() => suggestionBox.hide());
+					});
+
+					function showSuggestions(suggestions, range) {
+						console.log("sugg", suggestions);
+						suggestionBox.empty();
+
+						suggestions.forEach(s => {
+						$('<li>')
+							.text(s)
+							.css({'padding': '6px 10px', 'cursor': 'pointer'})
+							.on('click', () => {
+							replaceLastWord(s);
+							suggestionBox.hide();
+							})
+							.appendTo(suggestionBox);
+						});
+
+						const rect = range.getBoundingClientRect();
+
+						suggestionBox.css({
+						top: rect.bottom + window.scrollY + 'px',
+						left: rect.left + window.scrollX + 'px',
+						display: 'block'
+						});
+					}
+
+					function replaceLastWord(newWord) {
+						const sel = window.getSelection();
+						if (!sel.rangeCount) return;
+
+						const range = sel.getRangeAt(0);
+						const node = range.startContainer;
+						const text = node.textContent;
+						const offset = range.startOffset;
+
+						const textBeforeCursor = text.slice(0, offset);
+						const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
+						const start = lastSpaceIndex + 1;
+
+						const newText = text.slice(0, start) + newWord + ' ' + text.slice(offset);
+						node.textContent = newText;
+
+						const newOffset = start + newWord.length + 1;
+						const newRange = document.createRange();
+						newRange.setStart(node, newOffset);
+						newRange.collapse(true);
+
+						sel.removeAllRanges();
+						sel.addRange(newRange);
+
+						editor.focus();
+					}
+				}
+
+				// Optional: Adjust editor height
+				$('.trumbowyg-editor').css({
+					height: '35rem',
+					overflow: 'auto'
+				});
+			}
 		});
+
+		function updateWordCount() {
+			const content = $('#story-content').trumbowyg('html');
+			const textOnly = $('<div>').html(content).text();
+			const wordCount = textOnly.trim().split(/\s+/).filter(word => word.length > 0).length;
+			$('#word-count').text(wordCount);
+		}
 
 		$('#prev-step').on('click', function () {
 			$('#step-2').hide();
@@ -166,7 +316,6 @@ get_header(); ?>
 		});
 
 		$('#story-content').on('tbwchange', function () {
-			console.log("Trumbowyg content changed");
 			clearTimeout(autoSaveTimeout);
 			autoSaveTimeout = setTimeout(autoSaveDraft, 2000);
 		});
@@ -175,14 +324,11 @@ get_header(); ?>
 			autoSaveDraft();
 		});
 	});
-	document.addEventListener('DOMContentLoaded', function () {
 
+	document.addEventListener('DOMContentLoaded', function () {
 		const categoryInput = document.getElementById('series_input');
 		const selectedInput = document.getElementById('story-series');
 		const categoryList = document.getElementById('category_list');
-
-		// const categoryObj = <?php echo json_encode($series_names, JSON_UNESCAPED_UNICODE); ?>;
-		// const categories = Object.values(categoryObj);
 
 		const staticSeries = <?php echo json_encode($static_series, JSON_UNESCAPED_UNICODE); ?>;
 		const dynamicSeries = <?php echo json_encode($dynamic_series, JSON_UNESCAPED_UNICODE); ?>;
@@ -194,12 +340,13 @@ get_header(); ?>
 
 		const categories = Object.values(staticSeries).concat(Object.values(dynamicSeries));
 
-		// categories = ['Adventure', 'Romance', 'Horror', 'Sci-Fi', 'Comedy'];
-
 		function updateList(filter = '') {
 			categoryList.innerHTML = '';
 			const filtered = categories.filter(cat => cat.toLowerCase().includes(filter.toLowerCase()));
 			if (filtered.length > 0) {
+				document.getElementById("seriesFirst").value = 'false';
+				document.getElementById("descriptionSection").classList.add("d-none");
+
 				filtered.forEach(cat => {
 					const item = document.createElement('li');
 					item.innerHTML = `<a href="#" class="dropdown-item">${cat}</a>`;
@@ -214,13 +361,55 @@ get_header(); ?>
 			} else {
 				const item = document.createElement('li');
 				item.innerHTML = `<a href="#" class="dropdown-item text-primary">Add "${filter}"</a>`;
+
+				const suggestionP = document.createElement('p');
+				suggestionP.className = 'tamil-suggestion-box mt-2';
+				suggestionP.dataset.suggestionFor = 'series_input';
+				suggestionP.style.display = 'none';
+				item.appendChild(suggestionP);
+
 				item.querySelector('a').addEventListener('click', function (e) {
 					e.preventDefault();
 					selectedInput.value = filter;
 					categoryInput.value = '';
 					selectedInput.focus();
 				});
+
 				categoryList.appendChild(item);
+
+				if (filter.length > 1) {
+					fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(filter)}&itc=ta-t-i0-und&num=3`)
+						.then(res => res.json())
+						.then(data => {
+							if (data[0] === 'SUCCESS') {
+								const suggestions = data[1][0][1];
+								suggestionP.innerHTML = '';
+								suggestions.forEach(s => {
+									const span = document.createElement('span');
+									span.textContent = s;
+									span.style.marginRight = '10px';
+									span.style.cursor = 'pointer';
+									span.style.color = '#005d67';
+									span.style.textDecoration = 'underline';
+
+									span.addEventListener('click', () => {
+										selectedInput.value = s;
+										categoryInput.value = '';
+										suggestionP.style.display = 'none';
+										selectedInput.focus();
+									});
+									suggestionP.appendChild(span);
+								});
+								suggestionP.style.display = 'block';
+							}
+						})
+						.catch(() => {
+							suggestionP.style.display = 'none';
+						});
+				}
+
+				document.getElementById("seriesFirst").value = 'true';
+				document.getElementById("descriptionSection").classList.remove("d-none");
 			}
 		}
 
@@ -232,7 +421,6 @@ get_header(); ?>
 			const dropdown = document.getElementById('category_dropdown');
 			dropdown.addEventListener('click', function (e) {
 				const selectedValue = e.target.textContent.trim();
-				// selectedInput.value = selectedValue;
 
 				if (selectedValue !== "தொடர்கதை அல்ல") {
 					var element = document.getElementById("divisionDropdown");
@@ -250,51 +438,18 @@ get_header(); ?>
 		});
 	});
 
-
-	//   tamil typing start
-	//   tamil typing end
-
-
-
-
-
-	// document.getElementById('story-series').addEventListener('change', function () {
-	//     const newSeriesInput = document.getElementById('new-series');
-	//     newSeriesInput.classList.toggle('d-none', this.value !== 'new');
-	// });
-
-	// document.getElementById('story-content').addEventListener('input', function () {
-	//     const input = this.value;
-	//     const lastWord = input.split(" ").pop();
-
-	//     if (lastWord.toLowerCase() === 'vanakkam') {
-	//         document.getElementById('tamil-suggestions').innerHTML =
-	//             'Did you mean: <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="replaceLastWord(\'வணக்கம்\')">வணக்கம்</button>';
-	//     } else {
-	//         document.getElementById('tamil-suggestions').innerHTML = '';
-	//     }
-	// });
-
-	// function replaceLastWord(tamilWord) {
-	//     const textarea = document.getElementById('story-content');
-	//     const words = textarea.value.trim().split(" ");
-	//     words.pop();
-	//     words.push(tamilWord);
-	//     textarea.value = words.join(" ");
-	//     document.getElementById('tamil-suggestions').innerHTML = '';
-	// }
-
 	document.getElementById('write-story-form').addEventListener('submit', function (e) {
 		e.preventDefault();
 
+		const seriesFirst = document.getElementById('seriesFirst').value;
 		const title = document.getElementById('story-title').value;
 		const category = document.getElementById('story-category').value;
 		const series = document.getElementById('story-series').value;
 		const division = (series != "தொடர்கதை அல்ல") ? document.getElementById('story-division').value : '';
+		const description = (series != "தொடர்கதை அல்ல" && seriesFirst == 'true') ? document.getElementById('story-description').value : '';
 		const content = document.getElementById('story-content').value;
 		const imageInput = document.getElementById('story-image');
 
-		// Validate series selection (not the default empty option)
 		if (series === "") {
 			alert('Please select a series option or "Not Series".');
 			return;
@@ -306,6 +461,7 @@ get_header(); ?>
 		formData.append('category', category);
 		formData.append('series', series);
 		formData.append('division', division);
+		formData.append('description', description);
 		formData.append('content', content);
 
 		if (lastDraftId) {
@@ -322,9 +478,28 @@ get_header(); ?>
 		})
 			.then(res => res.json())
 			.then(response => {
-				document.getElementById('save-result').innerHTML = response.success
-					? `<div class="alert alert-success">${response.data}</div>`
-					: `<div class="alert alert-danger">${response.data}</div>`;
+				console.log("res", response);
+				if (typeof response.data === 'object' && response.data.content) {
+					const elements = document.getElementsByClassName('trumbowyg-box');
+					if (elements.length > 0) {
+						const target = elements[0];
+						const error = document.createElement('p');
+						error.className = 'text-danger error-message mt-2 small';
+						error.textContent = response.data.content;
+						target.parentNode.insertBefore(error, target.nextSibling);
+					}
+				}
+
+				if (response.success) {
+					var element = document.getElementById("draftAlert");
+					element.classList.add("d-none");
+
+					document.getElementById('save-result').innerHTML = response.success
+						? `<div class="alert alert-success">${response.data}</div>`
+						: `<div class="alert alert-danger">${response.data}</div>`;
+
+					location.reload();
+				}
 			});
 	});
 
@@ -338,25 +513,25 @@ get_header(); ?>
 		const category = document.getElementById('story-category')?.value || '';
 		const series   = document.getElementById('story-series')?.value || '';
 		const division = document.getElementById('story-division')?.value || '';
+		const description   = document.getElementById('story-description')?.value || '';
 		const imageInput = document.getElementById('story-image');
 
-		// Skip if title and content are empty
 		if (!title && !content) return;
 
 		const formData = new FormData();
-		formData.append('action', 'save_draft'); // Keep same AJAX hook
+		formData.append('action', 'save_draft');
 		formData.append('title', title);
 		formData.append('content', content);
 		formData.append('category', category);
 		formData.append('series', series);
 		formData.append('division', division);
+		formData.append('description', description);
 		formData.append('status', 'draft');
 
 		if (lastDraftId) {
 			formData.append('post_id', lastDraftId);
 		}
 
-		// Optional: only append image if selected and not already uploaded
 		if (imageInput && imageInput.files.length > 0) {
 			formData.append('story_image', imageInput.files[0]);
 		}
@@ -369,14 +544,13 @@ get_header(); ?>
 		.then(response => {
 			if (response.success) {
 				lastDraftId = response.data.post_id;
-				document.getElementById('save-result').innerHTML =
-					`<div class="alert alert-info">Auto-saved at ${new Date().toLocaleTimeString()}</div>`;
+				var element = document.getElementById("draftAlert");
+				element.classList.remove("d-none");
 			}
 		});
 	}
 
-	// let lastDraftId = null;
-	fetch('<?php echo admin_url("admin-ajax.php?action=get_last_draft_story"); ?>')
+	fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>?action=get_last_draft_story')
 		.then(res => res.json())
 		.then(response => {
 			if (response.success && response.data) {
@@ -395,6 +569,12 @@ get_header(); ?>
 					document.getElementById('divisionDropdown').classList.remove('d-none');
 					document.getElementById('story-division').value = data.division || '';
 				}
+
+				if (data.description) {
+					document.getElementById('descriptionSection').classList.remove('d-none');
+					document.getElementById('story-description').value = data.description || '';
+				}
+
 				if (data.image_url) {
 					const imgPreview = document.createElement('img');
 					imgPreview.src = data.image_url;
@@ -402,6 +582,9 @@ get_header(); ?>
 					imgPreview.style.maxWidth = "100px";
 					document.getElementById('story-image').parentElement.appendChild(imgPreview);
 				}
+
+				var element = document.getElementById("draftAlert");
+				element.classList.remove("d-none");
 			}
 		});
 </script>

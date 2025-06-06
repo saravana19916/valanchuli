@@ -36,9 +36,28 @@
         if ($stories->have_posts()) {
             ?>
             <div class="row">
-            <?php while ($stories->have_posts()) {
+            <?php $displayed_series = []; while ($stories->have_posts()) {
                 $stories->the_post();
-                ?>
+
+                $post_id = get_the_ID();
+                $description = get_post_meta($post_id, 'description', true);
+
+                $series_terms = wp_get_post_terms($post_id, 'series');
+
+                if (!empty($series_terms) && !is_wp_error($series_terms)) {
+                    $series_id = $series_terms[0]->term_id;
+
+                    if (isset($displayed_series[$series_id])) {
+                        continue;
+                    }
+
+                    if (empty($description)) {
+                        continue;
+                    }
+
+                    $displayed_series[$series_id] = true;
+                }
+            ?>
                 <div class="col-md-3 p-3">
                     <div class="card h-100">
                         <div class="row g-0 align-items-center">
@@ -62,7 +81,12 @@
 
                                     <p class="text-muted mb-2 fs-12px">By <?php the_author(); ?></p>
 
-                                    <p class="card-text"><?php echo wp_trim_words(get_the_excerpt(), 20); ?></p>
+                                    <p class="card-text">
+                                        <?php 
+                                            $description = get_post_meta(get_the_ID(), 'description', true);
+                                            echo wp_trim_words($description ? $description : get_the_excerpt(), 20);
+                                        ?>
+                                    </p>
 
                                     <?php
                                         $total_views = 105;

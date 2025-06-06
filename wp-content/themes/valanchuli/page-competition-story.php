@@ -81,7 +81,8 @@ get_header();
                         <div class="row mb-4">
                             <label for="title" class="col-12 col-xl-1 col-form-label">Title <span class="text-danger">*</span></label>
                             <div class="col-sm-6 col-xl-4">
-                                <input type="text" class="form-control" id="post-title" placeholder="Title" value="<?php echo $title; ?>">
+                                <input type="text" class="form-control tamil-suggestion-input" id="post-title" placeholder="Title" value="<?php echo $title; ?>">
+                                <p class="tamil-suggestion-box mt-2" data-suggestion-for="post-title" style="display: none;"></p>
                             </div>
                         </div>
 

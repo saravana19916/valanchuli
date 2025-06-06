@@ -37,9 +37,13 @@ function enqueue_comment_scripts() {
 add_action('wp_enqueue_scripts', 'enqueue_comment_scripts');
 
 function enqueue_trumbowyg() {
-    wp_enqueue_style('trumbowyg-style', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/ui/trumbowyg.min.css');
+    // wp_enqueue_style('trumbowyg-style', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/ui/trumbowyg.min.css');
     // wp_enqueue_script('jquery');
-    wp_enqueue_script('trumbowyg-script', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/trumbowyg.min.js', array('jquery'), null, true);
+    // wp_enqueue_script('trumbowyg-script', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/trumbowyg.min.js', array('jquery'), null, true);
+
+    wp_enqueue_style('trumbowyg-style', 'https://cdn.rawgit.com/Alex-D/Trumbowyg/v2.25.1/dist/ui/trumbowyg.min.css');
+    wp_enqueue_script('trumbowyg-script', 'https://cdn.rawgit.com/Alex-D/Trumbowyg/v2.25.1/dist/trumbowyg.min.js', array('jquery'), null, true);
+
     wp_enqueue_script('trumbowyg-emoji', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/plugins/emoji/trumbowyg.emoji.min.js', array('jquery'), null, true);
 }
 add_action('wp_enqueue_scripts', 'enqueue_trumbowyg');
@@ -172,6 +176,13 @@ function enqueue_register_script() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'enqueue_register_script');
+// Register end
+
+// Register start
+function enqueue_tamil_suggestion_script() {
+    wp_enqueue_script('tamil-suggestion', get_template_directory_uri() . '/js/tamil-suggestion.js', [], false, true);
+}
+add_action('wp_enqueue_scripts', 'enqueue_tamil_suggestion_script');
 // Register end
 
 function enable_ada_tamil_writer_frontend() {

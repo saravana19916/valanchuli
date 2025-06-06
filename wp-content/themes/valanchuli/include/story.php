@@ -37,10 +37,29 @@ function save_story_ajax() {
     $series_input = sanitize_text_field($_POST['series']);
     $content = wp_kses_post($_POST['content']);
     $division = sanitize_text_field($_POST['division']);
+    $description = sanitize_text_field($_POST['description']);
     $draft_id = isset($_POST['draft_id']) ? intval($_POST['draft_id']) : 0;
 
-    if (!$title || !$content) {
-        wp_send_json_error('Title and Content are required');
+    $errors = [];
+
+    if (empty($title)) {
+        $errors['title'] = 'தலைப்பு is required.';
+    }
+
+    if (empty($category)) {
+        $errors['category'] = 'வகை is required.';
+    }
+
+    if (empty($series_input)) {
+        $errors['series_input'] = 'தொடர்கதை is required.';
+    }
+
+    if (empty($content)) {
+        $errors['content'] = 'படைப்பு is required.';
+    }
+
+    if (!empty($errors)) {
+        wp_send_json_error($errors);
     }
 
     // $post_id = wp_insert_post([
@@ -88,6 +107,10 @@ function save_story_ajax() {
         update_post_meta($post_id, 'division', $division);
     }
 
+    if ($description) {
+        update_post_meta($post_id, 'description', $description);
+    }
+
     // if ($series_id) {
     //     wp_set_post_terms($post_id, [$series_id], 'series');
     // }
@@ -105,6 +128,7 @@ function handle_save_draft() {
     $series_input = sanitize_text_field($_POST['series']);
     $content      = wp_kses_post($_POST['content']);
     $division     = sanitize_text_field($_POST['division']);
+    $description     = sanitize_text_field($_POST['description']);
     $post_status  = in_array($_POST['status'], ['draft', 'publish']) ? $_POST['status'] : 'draft';
 
     if (!$title || !$content) {
@@ -147,6 +171,10 @@ function handle_save_draft() {
     // Save custom meta
     if ($division) {
         update_post_meta($post_id, 'division', $division);
+    }
+
+    if ($description) {
+        update_post_meta($post_id, 'description', $description);
     }
 
     // Save series taxonomy
@@ -198,6 +226,7 @@ function get_last_draft_story() {
 		'category'  => wp_get_post_categories($post->ID)[0] ?? '',
 		'series'    => $series_name,
 		'division'  => get_post_meta($post->ID, 'division', true),
+        'description'  => get_post_meta($post->ID, 'description', true),
 		'image_url' => get_the_post_thumbnail_url($post->ID),
 	]);
 }

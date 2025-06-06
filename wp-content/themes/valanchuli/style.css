@@ -38,6 +38,10 @@ body, html {
    color: #FFEB00;
 }
 
+.fs-10px {
+    font-size: 10px !important;
+}
+
 .fs-12px {
     font-size: 12px !important;
 }
@@ -353,4 +357,9 @@ a:hover, .footer-menu li:hover {
     height: 2px;
     width: 3rem;
     background-color: rgb(211, 47, 47);
+}
+
+#tanglishSuggestions li:hover {
+    background-color: #005d67;
+    color: white;
 }
