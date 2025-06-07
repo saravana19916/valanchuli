@@ -359,7 +359,76 @@ a:hover, .footer-menu li:hover {
     background-color: rgb(211, 47, 47);
 }
 
+.category-bottom-border {
+    position: relative;
+    display: inline-block;
+}
+
+.category-bottom-border::before {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 30%;
+    transform: translateX(-50%);
+    height: 2px;
+    width: 3rem;
+    background-color: rgb(211, 47, 47);
+}
+
+.post-image-size {
+    height: 350px;
+    object-fit: cover;
+}
+
+.post-image-size-details-page {
+    height: 400px;
+    object-fit: cover;
+}
+
+/* .post-image-size {
+    height: 350px;
+    width: 250px;
+}
+
+@media (min-width: 576px) and (max-width: 1199px) {
+    .post-image-size {
+        height: 300px;
+        width: 200px;
+    }
+} */
+
 #tanglishSuggestions li:hover {
     background-color: #005d67;
     color: white;
 }
+
+
+/* Rating section start */
+.star {
+    font-size: 35px;
+    cursor: pointer;
+    color: transparent;
+    -webkit-text-stroke: 1px gold; /* Border color */
+    transition: 0.3s;
+}
+.star.rated, .star:hover {
+    color: gold;
+}
+
+.sec-comment {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    min-width: 250px;
+}
+
+@media (max-width: 576px) {
+    .responsive-rating { width: 100%; }
+}
+@media (min-width: 577px) and (max-width: 768px) {
+    .responsive-rating { width: 75%; }
+}
+@media (min-width: 769px) {
+    .responsive-rating { width: 50%; }
+}
+/* Rating section end */
