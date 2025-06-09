@@ -68,7 +68,7 @@
 
             $all_stories = array_merge($main_stories, $other_stories);
             ?>
-            <div class="row mt-3">
+            <div class="row mt-3" style="gap: 25px;">
                 <?php foreach ($all_stories as $post) :
                     setup_postdata($post);
                     $post_id = get_the_ID();
@@ -76,17 +76,17 @@
                     $total_views = 105;
                     $average_rating = 2;
                 ?>
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 p-5 p-sm-3 p-xxl-2 d-flex align-items-center justify-content-center text-primary-color">
-                        <div class="h-100 w-100 card">
+                    <div class="col-12 col-sm-4 col-md-3 col-xl-2 col-xxl-2 px-5 px-sm-2 p-md-0 d-flex align-items-center justify-content-center text-primary-color">
+                        <div class="h-100 w-100 border rounded overflow-hidden">
                             <div class="position-relative">
                                 <a href="<?php the_permalink(); ?>">
                                     <?php if (has_post_thumbnail()) : ?>
                                         <?php the_post_thumbnail('medium', [
-                                            'class' => 'img-fluid w-100 d-block rounded post-image-size',
+                                            'class' => 'd-block rounded post-image-size',
                                         ]); ?>
                                     <?php else : ?>
                                         <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                             class="img-fluid w-100 d-block rounded post-image-size"
+                                             class="d-block rounded post-image-size"
                                              alt="Default Image">
                                     <?php endif; ?>
                                 </a>
@@ -99,17 +99,26 @@
                             </div>
 
                             <div class="px-2 py-3">
-                                <h6 class="card-title fw-bold mb-1">
+                                <p class="card-title fw-bold mb-1 fs-13px mb-2">
                                     <a href="<?php the_permalink(); ?>" class="text-decoration-none">
-                                        <?php echo esc_html(mb_strimwidth(get_the_title(), 0, 50, '...')); ?>
+                                        <?php echo esc_html(mb_strimwidth(get_the_title(), 0, 20, '...')); ?>
                                     </a>
-                                </h6>
+                                    </p>
 
-                                <?php if (!empty($description)) : ?>
-                                    <p class="fs-12px mt-2 text-primary-color">
+                                <!-- <?php if (!empty($description)) : ?>
+                                    <p class="fs-12px mb-2 text-primary-color">
                                         <?php echo esc_html(mb_strimwidth($description, 0, 200, '...')); ?>
                                     </p>
-                                <?php endif; ?>
+                                <?php endif; ?> -->
+
+                                <?php
+                                    $author_id = get_post_field('post_author', get_the_ID());
+                                    $author_name = get_the_author_meta('display_name', $author_id);
+                                ?>
+
+                                <p class="fs-12px text-primary-color text-decoration-underline">
+                                    <?php echo $author_name; ?>
+                                </p>
 
                                 <div class="d-flex mt-3">
                                     <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">

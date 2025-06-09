@@ -50,22 +50,40 @@
                                     ]);
                                     ?>
 
-                                    <div class="row mb-4 align-items-center login-shadow rounded">
-                                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xxl-2 mb-3 mb-md-0 p-0">
+                                    <div class="row col-9 p-3 mb-4 login-shadow rounded text-primary-color mx-auto">
+                                        <!-- Image Section -->
+                                        <div class="col-12 text-center mb-3">
                                             <?php if (has_post_thumbnail()) : ?>
                                                 <?php the_post_thumbnail('medium', [
-                                                    'class' => 'img-fluid w-100 d-block rounded post-image-size-details-page',
+                                                    'class' => 'img-fluid d-inline-block rounded post-image-size-details-page',
                                                 ]); ?>
                                             <?php else : ?>
                                                 <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                                    class="img-fluid w-100 d-block rounded post-image-size-details-page"
+                                                    class="img-fluid d-inline-block rounded post-image-size-details-page"
                                                     alt="Default Image">
                                             <?php endif; ?>
                                         </div>
 
-                                        <div class="col-12 col-sm-6 col-md-8 col-lg-9 col-xxl-10 d-flex align-items-center text-primary-color" style="height: 100%;">
-                                            <div>
-                                                <?php the_content(); ?>
+                                        <!-- Description Section -->
+                                        <div class="col-12">
+                                            <div class="text-start">
+                                                <?php
+                                                    $word_limit = 200;
+                                                    $words = explode(' ', wp_strip_all_tags($description)); // strip HTML tags
+                                                    $first_part = implode(' ', array_slice($words, 0, $word_limit));
+                                                    $remaining_part = implode(' ', array_slice($words, $word_limit));
+                                                ?>
+
+                                                <div class="description-content">
+                                                    <p class="text-start">
+                                                        <?php echo esc_html($first_part); ?>
+                                                        <?php if (!empty($remaining_part)) : ?>
+                                                            <span class="dots">... </span>
+                                                            <span class="more-text d-none"><?php echo esc_html($remaining_part); ?></span>
+                                                            <a href="javascript:void(0);" class="read-more-toggle text-decoration-underline ms-2">Read more</a>
+                                                        <?php endif; ?>
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -73,37 +91,42 @@
                                     <h4 class="py-2 mt-5 text-primary-color fw-bold bottom-border">தொடர்கதைகள்</h4>
 
                                     <?php if ($related_stories->have_posts()) { ?>
-                                        <div class="row mt-4">
-                                            <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
-                                                <div class="col-12 col-sm-6 col-md-4 my-3 text-primary-color">
-                                                    <div class="w-100 p-4 login-shadow rounded">
-                                                        <?php $total_views = 98; $average_rating = 3; ?>
-                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                            <!-- Title on the left -->
-                                                            <a href="<?php the_permalink(); ?>" class="fw-bold fs-16px text-decoration-none text-primary-color">
-                                                                <?php echo esc_html(get_the_title()); ?>
+                                        <table class="table table-bordered mt-4">
+                                            <thead>
+                                                <tr>
+                                                    <th width="50%">Title</th>
+                                                    <th>Author</th>
+                                                    <th>Created Date</th>
+                                                    <th>Views</th>
+                                                    <th>Rating</th>
+                                                    <!-- <th>Action</th> -->
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $count = 1;
+                                                $total_views = 98; $average_rating = 3;
+                                                $author_id = get_post_field('post_author', get_the_ID());
+                                                $author_name = get_the_author_meta('display_name', $author_id);
+                                                while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
+                                                    <tr>
+                                                        <td><a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a></td>
+                                                        <td><a href="<?php the_permalink(); ?>"><?php echo esc_html($author_name); ?></a></td>
+                                                        <td><?php echo get_the_date('d M Y'); ?></td>
+                                                        <td><?php echo $total_views; ?></td>
+                                                        <td><?php echo $average_rating; ?></td>
+                                                        <!-- <td>
+                                                            <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="text-primary me-2" title="Edit">
+                                                                <i class="fa-solid fa-pen-to-square"></i>
                                                             </a>
-
-                                                            <!-- Rating on the right -->
-                                                            <div class="bg-primary-color px-2 py-1 rounded">
-                                                                <p class="mb-0 fw-bold" style="color: #FFEB00;">
-                                                                    <?php echo $average_rating; ?>
-                                                                    <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="d-flex mt-4">
-                                                            <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
-                                                                <i class="fa-solid fa-eye me-1"></i>
-                                                                <?php echo format_view_count($total_views); ?>
-                                                            </div>
-                                                            <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php endwhile; ?>
-                                        </div>
+                                                            <a href="javascript:void(0);" class="text-danger" title="Delete" onclick="confirmDelete(<?php echo get_the_ID(); ?>)">
+                                                                <i class="fa-solid fa-trash"></i>
+                                                            </a>
+                                                        </td> -->
+                                                    </tr>
+                                                <?php endwhile; ?>
+                                            </tbody>
+                                        </table>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
                                         <div class="col-12 text-center mt-4">
@@ -152,3 +175,21 @@
 </div>
 
 <?php get_footer(); ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.read-more-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const container = btn.closest('.description-content');
+            const dots = container.querySelector('.dots');
+            const moreText = container.querySelector('.more-text');
+
+            dots.classList.toggle('d-none');
+            moreText.classList.toggle('d-none');
+
+            btn.textContent = moreText.classList.contains('d-none') ? 'Read more' : 'Read less';
+        });
+    });
+});
+</script>
+

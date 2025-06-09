@@ -46,15 +46,11 @@ function save_story_ajax() {
         $errors['title'] = 'தலைப்பு is required.';
     }
 
-    if (empty($category)) {
-        $errors['category'] = 'வகை is required.';
-    }
-
     if (empty($series_input)) {
         $errors['series_input'] = 'தொடர்கதை is required.';
     }
 
-    if (empty($content)) {
+    if (empty($description) && empty($content)) {
         $errors['content'] = 'படைப்பு is required.';
     }
 
