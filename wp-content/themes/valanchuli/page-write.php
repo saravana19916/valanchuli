@@ -64,6 +64,30 @@ get_header(); ?>
 							<p class="my-2 fs-12px" style="color: gray;"><i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக  இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i></p>
 						</div>
 
+						<!-- <div class="mb-4 dropdown">
+    <label for="category_dropdown_input" class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
+
+    <input type="text" readonly class="form-control dropdown-toggle form-select login-form-group story-series_input" id="story-series"
+        name="story-series" data-bs-toggle="dropdown" value="தொடர்கதை அல்ல">
+
+    <ul class="dropdown-menu w-100 p-2" id="category_dropdown" style="display: none;">
+        <li>
+            <input type="text" class="form-control mb-2 tamil-suggestion-input" id="series_input"
+                placeholder="Type to create or search...">
+        </li>
+        <div id="category_list"></div>
+    </ul>
+
+    <div id="tamil_suggestion_popup" class="tamil-suggestion-popup" style="display: none; position: absolute; background: white; border: 1px solid #ccc; padding: 10px; width: 300px; z-index: 1000; border-radius: 5px;">
+        <div id="suggestion_list"></div>
+    </div>
+
+    <p class="my-2 fs-12px" style="color: gray;">
+        <i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i>
+    </p>
+</div> -->
+
+
 						<div class="mb-4" id="categoryDropdown">
 							<label class="form-label">வகை <span style="color: red;">*</span></label>
 							<select class="form-select login-form-group story-category" id="story-category">
@@ -382,6 +406,8 @@ get_header(); ?>
 					selectedInput.value = filter;
 					categoryInput.value = '';
 					selectedInput.focus();
+					const dropdownMenu = document.getElementById('category_dropdown');
+    				dropdownMenu.classList.remove('show');
 				});
 
 				categoryList.appendChild(item);
@@ -401,11 +427,12 @@ get_header(); ?>
 									span.style.color = '#005d67';
 									span.style.textDecoration = 'underline';
 
-									span.addEventListener('click', () => {
-										selectedInput.value = s;
-										categoryInput.value = '';
+									span.addEventListener('click', (e) => {
+										e.stopPropagation();
+										categoryInput.value = s;
 										suggestionP.style.display = 'none';
-										selectedInput.focus();
+										categoryInput.focus();
+										updateList(s);
 									});
 									suggestionP.appendChild(span);
 								});

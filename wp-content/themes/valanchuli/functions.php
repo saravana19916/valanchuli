@@ -8,6 +8,7 @@ require_once get_template_directory() . '/include/story.php';
 require_once get_template_directory() . '/include/competition.php';
 require_once get_template_directory() . '/include/comment.php';
 require_once get_template_directory() . '/include/product.php';
+require_once get_template_directory() . '/include/story-single.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {

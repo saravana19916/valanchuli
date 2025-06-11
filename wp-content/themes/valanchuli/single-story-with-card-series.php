@@ -69,7 +69,7 @@
                                             <div class="text-start">
                                                 <?php
                                                     $word_limit = 200;
-                                                    $words = explode(' ', wp_strip_all_tags($description));
+                                                    $words = explode(' ', wp_strip_all_tags($description)); // strip HTML tags
                                                     $first_part = implode(' ', array_slice($words, 0, $word_limit));
                                                     $remaining_part = implode(' ', array_slice($words, $word_limit));
                                                 ?>
@@ -91,43 +91,37 @@
                                     <h4 class="py-2 mt-5 text-primary-color fw-bold bottom-border">தொடர்கதைகள்</h4>
 
                                     <?php if ($related_stories->have_posts()) { ?>
-                                        <table class="table table-bordered mt-4">
-                                            <thead>
-                                                <tr>
-                                                    <th width="50%">Title</th>
-                                                    <th>Author</th>
-                                                    <th>Created Date</th>
-                                                    <th>Views</th>
-                                                    <th>Rating</th>
-                                                    <!-- <th>Action</th> -->
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
-                                                $count = 1;
-                                                $author_id = get_post_field('post_author', get_the_ID());
-                                                $author_name = get_the_author_meta('display_name', $author_id);
-                                                while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
-                                                    <?php $average_rating = get_custom_average_rating(get_the_ID()); ?>
-                                                    <?php $total_views = get_custom_post_views(get_the_ID()); ?>
-                                                    <tr>
-                                                        <td><a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a></td>
-                                                        <td><a href="<?php the_permalink(); ?>"><?php echo esc_html($author_name); ?></a></td>
-                                                        <td><?php echo get_the_date('d M Y'); ?></td>
-                                                        <td><?php echo $total_views; ?></td>
-                                                        <td><?php echo $average_rating; ?></td>
-                                                        <!-- <td>
-                                                            <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="text-primary me-2" title="Edit">
-                                                                <i class="fa-solid fa-pen-to-square"></i>
+                                        <div class="row mt-4">
+                                            <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
+                                                <div class="col-12 col-sm-6 col-md-4 my-3 text-primary-color">
+                                                    <div class="w-100 p-4 login-shadow rounded">
+                                                        <?php $total_views = 98; $average_rating = 3; ?>
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <!-- Title on the left -->
+                                                            <a href="<?php the_permalink(); ?>" class="fw-bold fs-16px text-decoration-none text-primary-color">
+                                                                <?php echo esc_html(get_the_title()); ?>
                                                             </a>
-                                                            <a href="javascript:void(0);" class="text-danger" title="Delete" onclick="confirmDelete(<?php echo get_the_ID(); ?>)">
-                                                                <i class="fa-solid fa-trash"></i>
-                                                            </a>
-                                                        </td> -->
-                                                    </tr>
-                                                <?php endwhile; ?>
-                                            </tbody>
-                                        </table>
+
+                                                            <!-- Rating on the right -->
+                                                            <div class="bg-primary-color px-2 py-1 rounded">
+                                                                <p class="mb-0 fw-bold" style="color: #FFEB00;">
+                                                                    <?php echo $average_rating; ?>
+                                                                    <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="d-flex mt-4">
+                                                            <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
+                                                                <i class="fa-solid fa-eye me-1"></i>
+                                                                <?php echo format_view_count($total_views); ?>
+                                                            </div>
+                                                            <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php endwhile; ?>
+                                        </div>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
                                         <div class="col-12 text-center mt-4">
@@ -145,32 +139,15 @@
                                     ?>
                                 </div>
 
-                                <?php
-                                    $series = get_the_terms(get_the_ID(), 'series');
-                                    $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
-                                    $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-                                    $is_parent = $series_name == 'தொடர்கதை அல்ல' ? false : true;
-                                ?>
-
-                                <div
-                                    class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
-                                    data-post-id="<?php the_ID(); ?>"
-                                    data-series-id="<?php echo esc_attr($series_id); ?>"
-                                    data-post-parent="<?php echo $is_parent; ?>">
-                                        <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
-                                        <p class="mb-2">Click on a star to rate it!</p>
-                                        <div class="stars">
-                                            <?php
-                                                $user_id = get_current_user_id();
-                                                $post_id = get_the_ID();
-                                                $rating = get_user_rating_for_post($user_id, $post_id);
-                                            ?>
-
-                                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
-                                            <?php endfor; ?>
-                                        </div>
-                                        <p>No votes so far! Be the first to rate this post.</p>
+                                <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow">
+                                    <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
+                                    <p class="mb-2">Click on a star to rate it!</p>
+                                    <div class="stars">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
+                                        <?php endfor; ?>
+                                    </div>
+                                    <p>No votes so far! Be the first to rate this post.</p>
                                 </div>
 
 
