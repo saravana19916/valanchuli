@@ -16,6 +16,13 @@
         <div class="col-lg-6 col-xxl-4 col-12 p-5 bg-white">
             <p class="text-primary-color fs-16px fw-bold">வலஞ்சுழி வலை தளத்திற்கு உங்களை வரவேற்கிறோம் !...</p>
             <p class="mb-4 text-primary-color">Login to continue</p>
+
+            <?php if (isset($_GET['verified']) && $_GET['verified'] == 1) { ?>
+                <div class="alert alert-success">
+                    Your email has been successfully verified. Please login to continue.
+                </div>
+            <?php } ?>
+
             <div id="login-message" class="mt-3"></div>
             <form id="login-form">
                 <div class="mb-3">

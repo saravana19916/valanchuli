@@ -3,7 +3,7 @@
 ?>
 
 <div class="container my-4">
-    <h4 class="py-2 text-primary-color text-center">கட்டுரை</h4>
+    <h4 class="py-3 fw-bold m-0 text-primary-color">🔥 கட்டுரை</h4>
     <?php
         $categories = get_categories([
             'taxonomy' => 'category',
@@ -20,65 +20,85 @@
         if ($category->name !== 'கட்டுரை') {
             continue;
         }
-    
+
         $stories = new WP_Query([
             'post_type' => ['story', 'competition_post'],
             'posts_per_page' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
             'tax_query' => [
+                'relation' => 'AND',
                 [
                     'taxonomy' => 'category',
                     'field'    => 'term_id',
                     'terms'    => [$category->term_id],
                     'operator' => 'IN',
                 ],
+                [
+                    'taxonomy' => 'series',
+                    'field'    => 'name',
+                    'terms'    => ['தொடர்கதை அல்ல'],
+                    'operator' => 'IN',
+                ],
             ],
         ]);
-
-        error_log('Query for category: ' . esc_html($category->name));
-        error_log('Total posts: ' . $stories->found_posts);
 
         if ($stories->have_posts()) {
             $has_stories = true;
         ?>
-            <div class="row">
-            <?php while ($stories->have_posts()) {
-                $stories->the_post();
-                ?>
-                <div class="col-md-4 p-3">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h6 class="card-title text-center fw-bold">
-                                <a href="<?php the_permalink(); ?>" class="text-decoration-none fs-14px" style="color: #061148">
-                                    <?php the_title(); ?>
-                                </a>
-                            </h6>
-                            <?php if (has_post_thumbnail()) : ?>
+            <div class="trending-desktop-container d-lg-flex overflow-auto mt-3" style="gap: 2rem;">
+                <?php while ($stories->have_posts()) {
+                    $stories->the_post();
+                    $post_id = get_the_ID();
+                    $total_views = get_custom_post_views($post_id);
+                    $average_rating = get_custom_average_rating($post_id);
+                    ?>
+                        <div style="width: 180px;">
+                            <div class="position-relative">
                                 <a href="<?php the_permalink(); ?>">
-                                    <?php the_post_thumbnail('medium', ['class' => 'img-fluid mx-auto d-block my-3']); ?>
+                                    <?php if (has_post_thumbnail()) : ?>
+                                        <?php the_post_thumbnail('medium', [
+                                            'class' => 'd-block rounded post-image-size',
+                                        ]); ?>
+                                    <?php else : ?>
+                                        <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                                                class="d-block rounded post-image-size"
+                                                alt="Default Image">
+                                    <?php endif; ?>
                                 </a>
-                            <?php else : ?>
-                                <a href="<?php the_permalink(); ?>">
-                                    <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg" class="img-fluid mx-auto d-block my-3" alt="Default Image" style="height: 300px;">
-                                </a>
-                            <?php endif; ?>
-                            <p class="card-text"><?php echo wp_trim_words(get_the_excerpt(), 20); ?></p>
+                                <div class="position-absolute top-0 end-0 bg-primary-color px-2 py-1 me-2 mt-3 rounded">
+                                    <p class="mb-0 fw-bold" style="color: #FFEB00;">
+                                        <?php echo $average_rating; ?>
+                                        <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <p class="card-title fw-bold mb-1 fs-16px text-truncate">
+                                    <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                        <?php echo esc_html(get_the_title()); ?>
+                                    </a>
+                                </p>
+                                <?php
+                                    $author_id = get_post_field('post_author', get_the_ID());
+                                    $author_name = get_the_author_meta('display_name', $author_id);
+                                ?>
 
-                            <?php
-                                $total_views = 105;
-                                $average_rating = 2
-                            ?>
+                                <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                                    <?php echo $author_name; ?>
+                                </p>
 
-                            <div class="d-flex align-items-center">
-                                <p class="me-4 mb-0"><i class="fa-solid fa-eye"></i>&nbsp;&nbsp;<?php echo format_view_count($total_views); ?></p>
-                                <p class="mb-0"><i class="fa-solid fa-star" style="color: gold;"></i>&nbsp;&nbsp;<?php echo $average_rating; ?></p>
+                                <div class="d-flex mt-1">
+                                    <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                        <i class="fa-solid fa-eye me-1"></i>
+                                        <?php echo format_view_count($total_views); ?>
+                                    </div>
+                                    <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <?php
-            } ?>
+                    <?php
+                } ?>
             </div>
         <?php } else {
             // echo 'No stories found for ' . esc_html($category->name);

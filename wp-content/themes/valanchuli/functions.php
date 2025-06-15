@@ -1,5 +1,6 @@
 <?php
 // require_once get_template_directory() . '/inc/wp-bootstrap-navwalker.php';
+// require_once get_template_directory() . '/include/kirki-register.php';
 require_once get_template_directory() . '/class-wp-bootstrap-navwalker.php';
 require_once get_template_directory() . '/include/login.php';
 require_once get_template_directory() . '/include/register.php';
@@ -49,9 +50,67 @@ function enqueue_trumbowyg() {
 }
 add_action('wp_enqueue_scripts', 'enqueue_trumbowyg');
 
+function enqueue_swiper_slider() {
+    wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');
+    wp_enqueue_script('swiper-js', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], null, true);
+}
+add_action('wp_enqueue_scripts', 'enqueue_swiper_slider');
+
 add_action('admin_enqueue_scripts', function() {
     wp_enqueue_media();
 });
+
+if (class_exists('Kirki')) {
+    Kirki::add_config('theme_config', array(
+        'capability'    => 'edit_theme_options',
+        'option_type'   => 'theme_mod',
+    ));
+
+    Kirki::add_panel('homepage_panel', [
+        'priority'    => 10,
+        'title'       => esc_html__('Homepage Settings', 'textdomain'),
+    ]);
+
+    Kirki::add_section('banner_section', [
+        'title'    => esc_html__('Banner Section', 'textdomain'),
+        'panel'    => 'homepage_panel',
+    ]);
+
+    Kirki::add_field('theme_config', [
+        'settings' => 'banner_slides',
+        'type'        => 'repeater',
+        'label'       => esc_html__('Banner Slides', 'textdomain'),
+        'section'     => 'banner_section',
+        'priority'    => 10,
+        'row_label'   => [
+            'type'  => 'field',
+            'field' => 'title',
+        ],
+        'fields'      => [
+            'image' => [
+                'type'        => 'image',
+                'label'       => esc_html__('Banner Image', 'textdomain'),
+            ],
+            'title' => [
+                'type'        => 'text',
+                'label'       => esc_html__('Title', 'textdomain'),
+            ],
+            'description' => [
+                'type'        => 'textarea',
+                'label'       => esc_html__('Description', 'textdomain'),
+            ],
+            'button_text' => [
+                'type'        => 'text',
+                'label'       => esc_html__('Button Text', 'textdomain'),
+            ],
+            'button_url' => [
+                'type'        => 'text',
+                'label'       => esc_html__('Button URL', 'textdomain'),
+            ],
+        ],
+        'default'     => [],
+    ]);
+}
 
 function register_my_menu() {
     register_nav_menus(array(
@@ -122,41 +181,6 @@ function disable_text_selection_script() {
 add_action('wp_footer', 'disable_text_selection_script');
 // disable content select end
 
-if (class_exists('Kirki')) {
-    Kirki::add_config('your_theme_config', array(
-        'capability'    => 'edit_theme_options',
-        'option_type'   => 'theme_mod',
-    ));
-
-    Kirki::add_section('banner_section', array(
-        'title'    => __('Banner Section', 'your-theme'),
-        'priority' => 30,
-    ));
-
-    Kirki::add_field('your_theme_config', [
-        'type'        => 'repeater',
-        'settings'    => 'home_banner_image',
-        'label'       => esc_html__('Home Page Banner Image', 'your-theme'),
-        'section'     => 'banner_section',
-        'priority'    => 10,
-        'row_label'   => [
-            'type'  => 'text',
-            'value' => esc_html__('Home Page Banner Image', 'your-theme'),
-        ],
-        'fields' => [
-            'image' => [
-                'type'  => 'image',
-                'label' => esc_html__('Image', 'your-theme'),
-            ],
-            'link' => [
-                'type'  => 'url',
-                'label' => esc_html__('Link', 'your-theme'),
-            ],
-        ],
-    ]);
-}
-// Banner image end
-
 // Login Start
 function enqueue_ajax_login_script() {
     wp_enqueue_script('ajax-login-script', get_template_directory_uri() . '/js/login.js', array('jquery'), null, true);
@@ -202,6 +226,28 @@ function format_view_count($count) {
     }
     return $count;
 }
+
+add_action( 'show_user_profile', 'add_profile_field' );
+add_action( 'edit_user_profile', 'add_profile_field' );
+
+function add_profile_field( $user ) {
+    $attachment_id = get_user_meta( $user->ID, 'profile_photo', true );
+    $photo_url = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
+    ?>
+    <h3>Profile Photo</h3>
+    <table class="form-table">
+        <tr>
+            <th>Profile Photo</th>
+            <td>
+                <?php if ($photo_url) : ?>
+                    <img src="<?php echo esc_url($photo_url); ?>" style="width: 100px;height: 100px;"><br>
+                <?php endif; ?>
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
 
 
 ?>

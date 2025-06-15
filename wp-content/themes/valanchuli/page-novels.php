@@ -1,79 +1,103 @@
-<?php get_header(); ?>
+<?php
+get_header(); ?>
+
+<?php 
+    $novel_query = new WP_Query([
+        'post_type' => ['story', 'competition_post'],
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+    ]);
+    
+    $novel_stories = [];
+    
+    if ($novel_query->have_posts()) {
+        while ($novel_query->have_posts()) {
+            $novel_query->the_post();
+            $post_id = get_the_ID();
+            $description = get_post_meta($post_id, 'description', true);
+            if (!empty($description)) {
+                $series = get_the_terms($post_id, 'series');
+                $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
+                $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
+
+                $views = get_average_series_views($post_id, $series_id);
+        
+                $novel_stories[] = [
+                    'post' => get_post(),
+                    'views' => $views,
+                ];
+            }
+        }
+        wp_reset_postdata();
+    }
+
+    usort($novel_stories, function ($a, $b) {
+        return $b['views'] <=> $a['views'];
+    });
+?>
 
 <div class="container my-5">
-    <?php
-    $uncategorized = get_term_by('slug', 'uncategorized', 'category');
-    $uncategorized_id = $uncategorized ? $uncategorized->term_id : 1;
-
-    $categories = get_categories([
-        'taxonomy'   => 'category',
-        'hide_empty' => false,
-        'exclude'    => [$uncategorized_id],
-    ]);
-
-    foreach ($categories as $category) :
-    ?>
-        <div class="mb-5">
-            <h6 class="px-4 py-2 mb-4 text-highlight-color" style="background-color: #005d67; color: #fff;">
-                <?php echo esc_html($category->name); ?>
-            </h6>
-
-            <div class="row">
+	<div class="row">
+        <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 நாவல்கள்</h4>
+        <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
+            <?php foreach ($novel_stories as $index => $item): ?>
                 <?php
-                $series_terms = get_terms([
-                    'taxonomy'   => 'series',
-                    'hide_empty' => false,
-                    'orderby'    => 'name',
-                    'order'      => 'ASC',
-                ]);
-
-                foreach ($series_terms as $series) {
-                    // Get division and check if series has posts in this category
-                    $query = new WP_Query([
-                        'post_type'      => 'story',
-                        'posts_per_page' => 1,
-                        'tax_query'      => [
-                            'relation' => 'AND',
-                            [
-                                'taxonomy' => 'category',
-                                'field'    => 'term_id',
-                                'terms'    => [$category->term_id],
-                            ],
-                            [
-                                'taxonomy' => 'series',
-                                'field'    => 'term_id',
-                                'terms'    => [$series->term_id],
-                            ],
-                        ],
-                    ]);
-
-                    if ($query->have_posts()) :
-                        $division = get_term_meta($series->term_id, 'division', true);
+                    $post = $item['post'];
+                    setup_postdata($post);
+                    $post_id = $post->ID;
+                    $total_views = $item['views'];
+                    $series = get_the_terms($post_id, 'series');
+                    $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
+                    $average_rating = get_custom_average_rating($post_id, $series_id);
                 ?>
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100 shadow-sm p-3">
-                            <h5 class="card-title mb-1">
-                                <a href="<?php echo esc_url(add_query_arg([
-                                    'category_id' => $category->term_id,
-                                    'series_id'   => $series->term_id,
-                                ], site_url('/series-stories'))); ?>" class="text-decoration-none text-dark">
-                                    <?php echo esc_html($series->name); ?>
+                <div style="width: 180px;">
+                        <div class="position-relative">
+                            <a href="<?php the_permalink(); ?>">
+                                <?php if (has_post_thumbnail()) : ?>
+                                    <?php the_post_thumbnail('medium', [
+                                        'class' => 'd-block rounded post-image-size',
+                                    ]); ?>
+                                <?php else : ?>
+                                    <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                                            class="d-block rounded post-image-size"
+                                            alt="Default Image">
+                                <?php endif; ?>
+                            </a>
+                            <div class="position-absolute top-0 end-0 bg-primary-color px-2 py-1 mt-3 rounded">
+                                <p class="mb-0 fw-bold" style="color: #FFEB00;">
+                                    <?php echo $average_rating; ?>
+                                    <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <p class="card-title fw-bold mb-1 fs-16px text-truncate">
+                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                    <?php echo esc_html(get_the_title()); ?>
                                 </a>
+                            </p>
+                            <?php
+                                $author_id = get_post_field('post_author', get_the_ID());
+                                $author_name = get_the_author_meta('display_name', $author_id);
+                            ?>
 
-                            </h5>
-                            <?php if ($division) : ?>
-                                <p class="text-muted mb-0">Division: <?php echo esc_html($division); ?></p>
-                            <?php endif; ?>
+                            <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                                <?php echo $author_name; ?>
+                            </p>
+
+                            <div class="d-flex mt-1">
+                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                    <i class="fa-solid fa-eye me-1"></i>
+                                    <?php echo format_view_count($total_views); ?>
+                                </div>
+                                <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                            </div>
                         </div>
                     </div>
-                <?php
-                        wp_reset_postdata();
-                    endif;
-                }
-                ?>
-            </div>
+            <?php endforeach; ?>
         </div>
-    <?php endforeach; ?>
+        
+	</div>
 </div>
 
 <?php get_footer(); ?>

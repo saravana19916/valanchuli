@@ -4,12 +4,18 @@ jQuery(document).ready(function ($) {
 
         $('.error-message').remove();
 
-        const formData = $(this).serialize() + '&action=register_user';
+        // const formData = $(this).serialize() + '&action=register_user';
+        const form = this;
+        const formData = new FormData(form);
+        formData.append('action', 'register_user'); 
+        formData.append('security', ajaxurl.nonce);
 
         $.ajax({
-            type: 'POST',
+            type:'POST',
             url: ajaxurl.url,
-            data: formData + '&security=' + ajaxurl.nonce,
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function (response) {
                 if (typeof response.data === 'object') {
                     $.each(response.data, function (field, message) {

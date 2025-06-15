@@ -16,6 +16,13 @@
             <p class="text-primary-color fs-16px fw-bold">வலஞ்சுழி வலை தளத்திற்கு உங்களை வரவேற்கிறோம் !...</p>
             <p class="mb-4 text-primary-color">Create a free account</p>
 
+            <?php if (isset($wp_error) && is_wp_error($wp_error)) {
+                    foreach ($wp_error->get_error_messages() as $message) {
+                        echo "<div class='alert alert-danger'>$message</div>";
+                    }
+                }
+            ?>
+
             <div id="registerMessage" class="mt-3"></div>
 
             <form id="signup-form">
@@ -53,6 +60,12 @@
                     <div class="col-sm-12 input-group login-form-group register-lastname">
                         <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
                         <input type="text" class="form-control login-input" id="lastname" name="lastname" placeholder="Last Name *">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="col-sm-12 input-group login-form-group">
+                    <input id="profile_photo" name="profile_photo" type="file" accept="image/*" class="form-control">
                     </div>
                 </div>
                 
