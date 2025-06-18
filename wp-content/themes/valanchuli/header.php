@@ -45,6 +45,7 @@
                 <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
                     style="min-width: 200px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
                     <?php if (is_user_logged_in()) : ?>
+                        <a href="<?php echo site_url('/profile'); ?>" class="dropdown-item text-center">சுயவிவரம்</a>
                         <a href="<?php echo wp_logout_url(site_url('/')); ?>" class="dropdown-item text-center">வெளியேறு</a>
                     <?php else : ?>
                         <a href="<?php echo site_url('/login'); ?>" class="dropdown-item text-center">உள்நுழைக</a>

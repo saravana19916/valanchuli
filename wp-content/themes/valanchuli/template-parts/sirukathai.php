@@ -1,7 +1,16 @@
-<?php $trendingUrl = get_permalink(get_page_by_path('sirukathai')); ?>
+<?php
+    $context = $args['context'] ?? '';
+    $current_user = get_current_user_id();
+
+    $sirukathaiUrl = add_query_arg([
+        'context' => $context,
+        'author'  => $current_user
+    ], get_permalink(get_page_by_path('sirukathai')));
+?>
+
 <div class="d-flex justify-content-between align-items-center mt-3">
     <h4 class="py-2 fw-bold m-0">🔥 சிறுகதை</h4>
-    <a href="<?php echo esc_url($trendingUrl); ?>" class="text-primary-color fs-16px">
+    <a href="<?php echo esc_url($sirukathaiUrl); ?>" class="text-primary-color fs-16px">
         மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
     </a>
 </div>
@@ -23,12 +32,12 @@
         continue;
     }
 
-    $stories = new WP_Query([
-        'post_type' => ['story', 'competition_post'],
+    $args = [
+        'post_type'      => ['story', 'competition_post'],
         'posts_per_page' => -1,
-        'orderby' => 'date',
-        'order' => 'DESC',
-        'tax_query' => [
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'tax_query'      => [
             'relation' => 'AND',
             [
                 'taxonomy' => 'category',
@@ -43,7 +52,14 @@
                 'operator' => 'IN',
             ],
         ],
-    ]);
+    ];
+    
+    // If context is "my-creations", filter by current user
+    if ($context === 'my-creations') {
+        $args['author'] = $current_user;
+    }
+    
+    $stories = new WP_Query($args);    
 
     if ($stories->have_posts()) {
         $has_stories = true;
@@ -74,6 +90,25 @@
                                     <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                                 </p>
                             </div>
+
+                            <?php if ($context === 'my-creations') { ?>
+                                <div class="position-absolute bottom-0 end-0 px-2 py-1 me-2 mb-3 d-flex gap-2">
+                                    <a 
+                                        href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                        class="btn btn-warning btn-sm p-1" 
+                                        title="Edit">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+
+                                    <a 
+                                        href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                        class="btn btn-danger btn-sm p-1" 
+                                        title="Delete" 
+                                        onclick="return confirm('Are you sure you want to delete this post?');">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                </div>
+                            <?php } ?>
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">
@@ -130,6 +165,25 @@
                                         <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                                     </p>
                                 </div>
+
+                                <?php if ($context === 'my-creations') { ?>
+                                    <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                                        <a 
+                                            href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                            class="btn btn-warning btn-sm p-1" 
+                                            title="Edit">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </a>
+
+                                        <a 
+                                            href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                            class="btn btn-danger btn-sm p-1" 
+                                            title="Delete" 
+                                            onclick="return confirm('Are you sure you want to delete this post?');">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </a>
+                                    </div>
+                                <?php } ?>
                             </div>
                             <div class="card-body p-2">
                                 <p class="card-title fw-bold mb-1 fs-16px text-truncate">

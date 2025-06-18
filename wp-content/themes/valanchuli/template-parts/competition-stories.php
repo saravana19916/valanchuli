@@ -1,10 +1,21 @@
 <?php
-    $stories = new WP_Query([
-        'post_type' => ['competition_post'],
+    $context = $args['context'] ?? '';
+    $current_user = get_current_user_id();
+
+    $args = [
+        'post_type'      => ['competition_post'],
         'posts_per_page' => -1,
+        'post_status'    => 'publish',
         'orderby' => 'date',
         'order' => 'DESC'
-    ]);
+    ];
+    
+    // If context is "my-creations", filter by current user
+    if ($context === 'my-creations') {
+        $args['author'] = $current_user;
+    }
+    
+    $stories = new WP_Query($args);
 
     $shown_series = [];
     $main_stories = [];
@@ -74,14 +85,18 @@
         }
     
         return $b_views <=> $a_views;
-    });    
+    });
+
+    $competitionUrl = add_query_arg([
+        'context' => $context,
+        'author'  => $current_user
+    ], get_permalink(get_page_by_path('pottigal-stories')));
 ?>
 
-<?php $trendingUrl = get_permalink(get_page_by_path('pottigal-stories')); ?>
 <div class="d-flex justify-content-between align-items-center mt-3">
     <h4 class="py-2 fw-bold m-0">🔥 போட்டிகள்</h4>
     <?php if (count($all_stories) > 0) { ?>
-        <a href="<?php echo esc_url($trendingUrl); ?>" class="text-primary-color fs-16px">
+        <a href="<?php echo esc_url($competitionUrl); ?>" class="text-primary-color fs-16px">
             மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
         </a>
     <?php } ?>

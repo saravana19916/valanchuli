@@ -92,35 +92,63 @@
 
                                     <?php if ($related_stories->have_posts()) { ?>
                                         <div class="row mt-4">
+                                            <?php $count = 0; ?>
                                             <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
-                                                <div class="col-12 col-sm-6 col-md-4 my-3 text-primary-color">
-                                                    <div class="w-100 p-4 login-shadow rounded">
-                                                        <?php $total_views = 98; $average_rating = 3; ?>
-                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                            <!-- Title on the left -->
-                                                            <a href="<?php the_permalink(); ?>" class="fw-bold fs-16px text-decoration-none text-primary-color">
-                                                                <?php echo esc_html(get_the_title()); ?>
-                                                            </a>
+                                                <div class="col-12 col-sm-6 my-3 text-primary-color">
+                                                <div class="w-100 p-4 shadow rounded">
+                                                    <?php
+                                                        $average_rating = get_custom_average_rating(get_the_ID());
+                                                        $total_views = get_custom_post_views(get_the_ID());
+                                                    ?>
+                                                    <div class="mb-2">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <h6 class="mb-0 fw-bold">
+                                                                <?php echo sprintf("%2d", $count + 1); ?>.&nbsp;
+                                                                <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                            </h6>
 
-                                                            <!-- Rating on the right -->
-                                                            <div class="bg-primary-color px-2 py-1 rounded">
-                                                                <p class="mb-0 fw-bold" style="color: #FFEB00;">
-                                                                    <?php echo $average_rating; ?>
-                                                                    <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
-                                                                </p>
-                                                            </div>
+                                                            <?php 
+                                                                $date = get_the_date('j F Y');
+                                                                $tamil_months = array(
+                                                                    'January' => 'ஜனவரி',
+                                                                    'February' => 'பிப்ரவரி',
+                                                                    'March' => 'மார்ச்',
+                                                                    'April' => 'ஏப்ரல்',
+                                                                    'May' => 'மே',
+                                                                    'June' => 'ஜூன்',
+                                                                    'July' => 'ஜூலை',
+                                                                    'August' => 'ஆகஸ்ட்',
+                                                                    'September' => 'செப்டம்பர்',
+                                                                    'October' => 'அக்டோபர்',
+                                                                    'November' => 'நவம்பர்',
+                                                                    'December' => 'டிசம்பர்'
+                                                                );
+
+                                                                $tamil_date = str_replace(array_keys($tamil_months), array_values($tamil_months), $date); 
+                                                            ?>
+                                                            <span class="text-muted fs-custom"><?php echo $tamil_date; ?></span>
                                                         </div>
 
-                                                        <div class="d-flex mt-4">
+                                                        <div class="ms-4 mt-3">
+                                                            <span class="text-muted fs-custom">
+                                                                <i class="fa-solid fa-eye"></i>&nbsp;<?php echo format_view_count($total_views); ?>
+                                                            </span>
+                                                            <span class="mb-0 ms-4">
+                                                                <i class="fa-solid fa-star" style="color: gold;"></i>&nbsp;&nbsp;<?php echo $average_rating; ?>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                        <!-- <div class="d-flex mt-4">
                                                             <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
                                                                 <i class="fa-solid fa-eye me-1"></i>
                                                                 <?php echo format_view_count($total_views); ?>
                                                             </div>
                                                             <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
-                                                        </div>
+                                                        </div> -->
                                                     </div>
                                                 </div>
-                                            <?php endwhile; ?>
+                                            <?php $count++; endwhile; ?>
                                         </div>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
@@ -187,4 +215,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-

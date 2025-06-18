@@ -2,64 +2,53 @@
 get_header(); ?>
 
 <?php 
-
-    $context = $_GET['context'] ?? '';
-    $author = $_GET['author'] ?? '';
-
-    $args = [
-        'post_type'      => ['story', 'competition_post'],
+    $trending_query = new WP_Query([
+        'post_type' => ['story', 'competition_post'],
         'posts_per_page' => -1,
-        'post_status'    => 'publish',
-    ];
+        'post_status'    => 'draft',
+        'author'         => get_current_user_id(),
+    ]);
     
-    // If context is "my-creations" and a valid author is present
-    if ($context === 'my-creations' && !empty($author)) {
-        $args['author'] = (int) $author;
-    }
+    $trending_stories = [];
     
-    $novel_query = new WP_Query($args);
-    
-    $novel_stories = [];
-    
-    if ($novel_query->have_posts()) {
-        while ($novel_query->have_posts()) {
-            $novel_query->the_post();
+    if ($trending_query->have_posts()) {
+        while ($trending_query->have_posts()) {
+            $trending_query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
             if (!empty($description)) {
-                $series = get_the_terms($post_id, 'series');
-                $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-                $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
-
-                $views = get_average_series_views($post_id, $series_id);
-        
-                $novel_stories[] = [
-                    'post' => get_post(),
-                    'views' => $views,
-                ];
+                continue;
             }
+            $series = get_the_terms($post_id, 'series');
+            $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
+            $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
+
+            $views = get_custom_post_views($post_id);
+    
+            $trending_stories[] = [
+                'post' => get_post(),
+                'views' => $views,
+            ];
         }
         wp_reset_postdata();
     }
 
-    usort($novel_stories, function ($a, $b) {
+    usort($trending_stories, function ($a, $b) {
         return $b['views'] <=> $a['views'];
     });
 ?>
 
 <div class="container my-5">
 	<div class="row">
-        <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 நாவல்கள்</h4>
+        <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 டிராப்ட் தொடர்கள்</h4>
         <div class="mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
-            <?php foreach ($novel_stories as $index => $item): ?>
+            <?php foreach ($trending_stories as $index => $item): ?>
                 <?php
                     $post = $item['post'];
                     setup_postdata($post);
                     $post_id = $post->ID;
                     $total_views = $item['views'];
-                    $series = get_the_terms($post_id, 'series');
-                    $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-                    $average_rating = get_custom_average_rating($post_id, $series_id);
+                    $average_rating = get_custom_average_rating($post_id, 0);
                 ?>
                 <div style="width: 180px;">
                         <div class="position-relative">
@@ -74,31 +63,29 @@ get_header(); ?>
                                             alt="Default Image">
                                 <?php endif; ?>
                             </a>
-                            <div class="position-absolute top-0 end-0 bg-primary-color px-2 py-1 mt-3 rounded">
+                            <div class="position-absolute top-0 end-0 bg-primary-color px-2 py-1 me-2 mt-3 rounded">
                                 <p class="mb-0 fw-bold" style="color: #FFEB00;">
                                     <?php echo $average_rating; ?>
                                     <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                                 </p>
                             </div>
 
-                            <?php if ($context === 'my-creations') { ?>
-                                <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
-                                    <a 
-                                        href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
-                                        class="btn btn-warning btn-sm p-1" 
-                                        title="Edit">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </a>
+                            <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
 
-                                    <a 
-                                        href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                        class="btn btn-danger btn-sm p-1" 
-                                        title="Delete" 
-                                        onclick="return confirm('Are you sure you want to delete this post?');">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </a>
-                                </div>
-                            <?php } ?>
+                                <a 
+                                    href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                    class="btn btn-danger btn-sm p-1" 
+                                    title="Delete" 
+                                    onclick="return confirm('Are you sure you want to delete this post?');">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">

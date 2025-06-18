@@ -4,6 +4,13 @@
  */
 get_header(); ?>
 
+<?php
+$postId = '';
+if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
+    $postId = (int) $_GET['id'];
+}
+?>
+
 <div class="container mt-5">
 	<div class="row">
 		<h5 class="text-center text-primary-color fw-bold"> எழுத </h5>
@@ -28,6 +35,7 @@ get_header(); ?>
 						</div>
 					</div>
 					<div class="col-lg-7 col-12 mt-3 mt-lg-0 p-3 p-lg-5 bg-white">
+						<input type="text" id="editPostId" class="d-none" value="<?php echo $postId; ?>">
 						<div class="mb-4">
 							<label class="form-label">தலைப்பு <span style="color: red;">*</span></label>
 							<input type="text" class="form-control tamilwriter login-form-group story-title tamil-suggestion-input" id="story-title">
@@ -500,6 +508,7 @@ get_header(); ?>
 		const description = (series != "தொடர்கதை அல்ல" && seriesFirst == 'true') ? document.getElementById('story-description').value : '';
 		const content = document.getElementById('story-content').value;
 		const imageInput = document.getElementById('story-image');
+		const postId = document.getElementById('editPostId').value;
 
 		let errors = [];
 		if (title === '') {
@@ -531,8 +540,8 @@ get_header(); ?>
 			formData.append('description', description);
 			formData.append('content', content);
 
-			if (lastDraftId) {
-				formData.append('draft_id', lastDraftId);
+			if (postId) {
+				formData.append('post_id', postId);
 			}
 
 			if (imageInput.files.length > 0) {
@@ -564,7 +573,11 @@ get_header(); ?>
 							? `<div class="alert alert-success">${response.data}</div>`
 							: `<div class="alert alert-danger">${response.data}</div>`;
 
-						location.reload();
+						if (postId) {
+							window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
+						} else {
+							location.reload();
+						}
 					}
 				});
 		}
@@ -582,6 +595,7 @@ get_header(); ?>
 		const division = document.getElementById('story-division')?.value || '';
 		const description   = document.getElementById('story-description')?.value || '';
 		const imageInput = document.getElementById('story-image');
+		const postId = document.getElementById('editPostId').value;
 
 		if (!title && !content) return;
 
@@ -595,8 +609,8 @@ get_header(); ?>
 		formData.append('description', description);
 		formData.append('status', 'draft');
 
-		if (lastDraftId) {
-			formData.append('post_id', lastDraftId);
+		if (postId) {
+			formData.append('post_id', postId);
 		}
 
 		if (imageInput && imageInput.files.length > 0) {
@@ -614,7 +628,11 @@ get_header(); ?>
 				var element = document.getElementById("draftAlert");
 				element.classList.remove("d-none");
 
-				location.reload();
+				if (postId) {
+					window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
+				} else {
+					location.reload();
+				}
 			}
 		});
 	}
@@ -656,4 +674,58 @@ get_header(); ?>
 	// 			element.classList.remove("d-none");
 	// 		}
 	// 	});
+
+	document.addEventListener('DOMContentLoaded', () => {
+    // Get postId from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id'); // e.g. page-write.php?id=123
+
+    if (postId) {
+        fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
+            method:'POST',
+            headers:{'Content-Type': 'application/x-www-form-urlencoded'},
+            body:'action=get_story_by_id&post_id=' + postId
+        })
+        .then(response => response.json()) 
+        .then(data => {
+            if (data.success && data.data) {
+                // populate form fields here
+                document.getElementById('story-title').value = data.data.title;
+                document.getElementById('story-content').value = data.data.content;
+
+                if (data.data.category) {
+                    document.getElementById('story-category').value = data.data.category;
+                }
+                
+                if (data.data.series) {
+                    document.getElementById('story-series').value = data.data.series;
+                }
+                
+                if (data.data.division) {
+                    document.getElementById('divisionDropdown').classList.remove('d-none'); 
+                    document.getElementById('story-division').value = data.data.division;
+                }
+                
+                if (data.data.description) {
+                    document.getElementById('descriptionSection').classList.remove('d-none'); 
+                    document.getElementById('story-description').value = data.data.description;
+					document.getElementById('seriesFirst').value = 'true';
+
+					document.getElementById("next-step").classList.add("d-none");
+					document.getElementById("step1Submit").classList.remove("d-none");
+                }
+                
+                if (data.data.image_url) {
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = data.data.image_url;
+                    imgPreview.alt = "Uploaded Image Preview";
+                    imgPreview.style.maxWidth = "100px";
+                    document.getElementById('story-image').parentElement.appendChild(imgPreview);
+                }
+            }
+        })
+        .catch(err => console.error(err)); 
+    }
+});
+
 </script>

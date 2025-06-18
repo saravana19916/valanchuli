@@ -38,7 +38,7 @@ function save_story_ajax() {
     $content = wp_kses_post($_POST['content']);
     $division = sanitize_text_field($_POST['division']);
     $description = sanitize_text_field($_POST['description']);
-    $draft_id = isset($_POST['draft_id']) ? intval($_POST['draft_id']) : 0;
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
 
     $errors = [];
 
@@ -76,8 +76,8 @@ function save_story_ajax() {
         'post_author'  => get_current_user_id(),
     ];
 
-    if ($draft_id && get_post_status($draft_id) === 'draft') {
-        $post_data['ID'] = $draft_id;
+    if ($post_id) {
+        $post_data['ID'] = $post_id;
         $post_id = wp_update_post($post_data);
     } else {
         $post_id = wp_insert_post($post_data);
@@ -228,4 +228,33 @@ function get_last_draft_story() {
 }
 
 // Fetch draft stoyr end
+
+add_action('wp_ajax_get_story_by_id', 'get_story_by_id');
+
+function get_story_by_id()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Not logged in');
+    }
+    $post_id = intval($_POST['post_id']); // or $_GET, depending on your fetch
+    $post = get_post($post_id);
+
+    if (!$post || $post->post_author != get_current_user_id()) {
+        wp_send_json_error('Not authorized or not found');
+    }
+    $series_terms = wp_get_post_terms($post->ID, 'series');
+    $series_name = !empty($series_terms) ? $series_terms[0]->name : '';
+  
+    wp_send_json_success([
+        'post_id'  => $post->ID,
+        'title'    => $post->post_title,
+        'content'  => $post->post_content,
+        'category' => wp_get_post_categories($post->ID)[0] ?? '',
+        'series'   => $series_name,
+        'division' => get_post_meta($post->ID, 'division', true),
+        'description'  => get_post_meta($post->ID, 'description', true),
+        'image_url' => get_the_post_thumbnail_url($post->ID),
+    ]);
+}
+
 

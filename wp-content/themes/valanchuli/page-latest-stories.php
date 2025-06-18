@@ -48,7 +48,7 @@ get_header(); ?>
 <div class="container my-5">
 	<div class="row">
         <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 சமீபத்தில் உருவாக்கப்பட்ட தொடர்கள்</h4>
-        <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
+        <div class="mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
             <?php foreach ($latest_stories as $index => $item): ?>
                 <?php
                     $post = $item['post'];

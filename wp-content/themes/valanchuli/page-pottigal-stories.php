@@ -2,12 +2,24 @@
 get_header(); ?>
 
 <?php
-    $stories = new WP_Query([
-        'post_type' => ['competition_post'],
+
+    $context = $_GET['context'] ?? '';
+    $author = $_GET['author'] ?? '';
+
+    $args = [
+        'post_type'      => ['competition_post'],
         'posts_per_page' => -1,
+        'post_status'    => 'publish',
         'orderby' => 'date',
         'order' => 'DESC'
-    ]);
+    ];
+    
+    // If context is "my-creations" and a valid author is present
+    if ($context === 'my-creations' && !empty($author)) {
+        $args['author'] = (int) $author;
+    }
+    
+    $stories = new WP_Query($args);
 
     $shown_series = [];
     $main_stories = [];

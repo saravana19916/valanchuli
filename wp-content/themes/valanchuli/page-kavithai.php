@@ -5,23 +5,26 @@
 <div class="container my-4">
     <h4 class="py-3 fw-bold m-0 text-primary-color">🔥 கவிதை</h4>
     <?php
-    $categories = get_categories([
-        'taxonomy' => 'category',
-        'hide_empty' => false,
-        'exclude' => [get_cat_ID('Uncategorized')],
-    ]);
+        $context = $_GET['context'] ?? '';
+        $author = $_GET['author'] ?? '';
 
-    $has_stories = false;
+        $categories = get_categories([
+            'taxonomy' => 'category',
+            'hide_empty' => false,
+            'exclude' => [get_cat_ID('Uncategorized')],
+        ]);
 
-    foreach ($categories as $category) {
-?>
+        $has_stories = false;
+
+        foreach ($categories as $category) {
+    ?>
 
     <?php
     if ($category->name !== 'கவிதை') {
         continue;
     }
 
-    $stories = new WP_Query([
+    $args = [
         'post_type' => ['story', 'competition_post'],
         'posts_per_page' => -1,
         'orderby' => 'date',
@@ -41,12 +44,18 @@
                 'operator' => 'IN',
             ],
         ],
-    ]);
+    ];
+
+    if ($context === 'my-creations' && !empty($author)) {
+        $args['author'] = (int) $author;
+    }
+    
+    $stories = new WP_Query($args);  
 
     if ($stories->have_posts()) {
         $has_stories = true;
     ?>
-            <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
+            <div class="mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
                 <?php while ($stories->have_posts()) {
                     $stories->the_post();
                     $post_id = get_the_ID();
@@ -72,6 +81,25 @@
                                         <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                                     </p>
                                 </div>
+
+                                <?php if ($context === 'my-creations') { ?>
+                                    <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                                        <a 
+                                            href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                            class="btn btn-warning btn-sm p-1" 
+                                            title="Edit">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </a>
+
+                                        <a 
+                                            href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                            class="btn btn-danger btn-sm p-1" 
+                                            title="Delete" 
+                                            onclick="return confirm('Are you sure you want to delete this post?');">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </a>
+                                    </div>
+                                <?php } ?>
                             </div>
                             <div class="card-body p-2">
                                 <p class="card-title fw-bold mb-1 fs-16px text-truncate">
