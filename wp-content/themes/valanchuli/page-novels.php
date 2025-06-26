@@ -4,7 +4,7 @@ get_header(); ?>
 <?php 
 
     $context = $_GET['context'] ?? '';
-    $author = $_GET['author'] ?? '';
+    $user_id = $_GET['user_id'] ?? '';
 
     $args = [
         'post_type'      => ['story', 'competition_post'],
@@ -12,9 +12,8 @@ get_header(); ?>
         'post_status'    => 'publish',
     ];
     
-    // If context is "my-creations" and a valid author is present
-    if ($context === 'my-creations' && !empty($author)) {
-        $args['author'] = (int) $author;
+    if (!empty($user_id)) {
+        $args['author'] = (int) $user_id;
     }
     
     $novel_query = new WP_Query($args);

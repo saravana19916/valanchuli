@@ -30,6 +30,12 @@ body, html {
     color: #005d67;
 }
 
+
+.border-primary {
+    --bs-border-opacity: 1;
+    border-color: #005d67 !important;
+}
+
 #navbarNav ul li a {
     color: white;
 }
@@ -530,4 +536,13 @@ a:hover, .footer-menu li:hover {
 
 .swiper-container {
     overflow: scroll;
+}
+
+.comment-text p {
+    margin: 0;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #48A6A7 !important;
+    color: white;
 }

@@ -695,7 +695,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
                 if (data.data.category) {
                     document.getElementById('story-category').value = data.data.category;
-                }
+                } else {
+					document.getElementById("categoryDropdown").classList.add("d-none");
+					document.getElementById("imageSection").classList.add("d-none");
+				}
                 
                 if (data.data.series) {
                     document.getElementById('story-series').value = data.data.series;

@@ -91,7 +91,9 @@
                     ?>
 
                     <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
+                        <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                            <?php echo esc_html($author_name); ?>
+                        </a>
                     </p>
 
                     <div class="d-flex mt-1">
@@ -149,7 +151,9 @@
                     ?>
 
                     <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
+                        <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                            <?php echo esc_html($author_name); ?>
+                        </a>
                     </p>
 
                     <div class="d-flex mt-1">

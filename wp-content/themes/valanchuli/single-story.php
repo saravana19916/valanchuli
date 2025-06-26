@@ -2,30 +2,38 @@
 
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-lg-10">
+        <div class="col-12">
 
-            <div class="card shadow border-0">
-                <div class="card-body p-4">
-                    <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
-                    <p class="text-muted fs-13px text-center">
+            <?php
+                $description = get_post_meta(get_the_ID(), 'description', true);
+                $cardClass = 'card ' . ($description ? 'border-0' : ' border border-2 border-primary rounded');
+            ?>
+
+            <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
+
+            <?php
+                $post_id     = get_the_ID();
+                $author_id   = get_post_field('post_author', $post_id);
+                $author_name = get_the_author_meta('display_name', $author_id);
+                $posted_date = get_the_date('d M Y', $post_id);
+                $division    = get_post_meta($post_id, 'division', true);
+            ?>
+
+            <p class="text-muted fs-13px text-center">
+                <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>" 
+                class="text-primary-color text-decoration-underline">
+                    <?php echo esc_html($author_name); ?>
+                </a>
+                | <?php echo esc_html($posted_date); ?>
+                <?php if (!empty($division)) : ?>
+                    | Division: <?php echo esc_html($division); ?>
+                <?php endif; ?>
+            </p>
+
+            <div class="<?= esc_attr($cardClass); ?>">
+                <div class="card-body p-0">
+                    <div class="card-text mt-3">
                         <?php
-                            $author_id = get_post_field('post_author', get_the_ID());
-                            $author_name = get_the_author_meta('display_name', $author_id);
-                            $posted_date = get_the_date('d M Y');
-
-                            $division = get_post_meta(get_the_ID(), 'division', true);
-
-                            echo esc_html($author_name) . ' | ' . esc_html($posted_date) . ' | Division: ' . esc_html($division);
-                        ?>
-                    </p>
-
-                    <!-- <div class="card-text my-5">
-                        <?php the_content(); ?>
-                    </div> -->
-
-                    <div class="card-text my-5">
-                        <?php
-                            $description = get_post_meta(get_the_ID(), 'description', true);
 
                             if (!empty($description)) {
                                 $terms = get_the_terms(get_the_ID(), 'series');
@@ -50,16 +58,16 @@
                                     ]);
                                     ?>
 
-                                    <div class="row col-9 p-3 mb-4 login-shadow rounded text-primary-color mx-auto">
+                                    <div class="row col-12 p-2 mb-4 border border-2 border-primary rounded mx-auto">
                                         <!-- Image Section -->
                                         <div class="col-12 text-center mb-3">
                                             <?php if (has_post_thumbnail()) : ?>
                                                 <?php the_post_thumbnail('medium', [
-                                                    'class' => 'img-fluid d-inline-block rounded post-image-size-details-page',
+                                                    'class' => 'img-fluid d-inline-block rounded post-image-size',
                                                 ]); ?>
                                             <?php else : ?>
                                                 <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                                    class="img-fluid d-inline-block rounded post-image-size-details-page"
+                                                    class="img-fluid d-inline-block rounded post-image-size"
                                                     alt="Default Image">
                                             <?php endif; ?>
                                         </div>
@@ -80,7 +88,7 @@
                                                         <?php if (!empty($remaining_part)) : ?>
                                                             <span class="dots">... </span>
                                                             <span class="more-text d-none"><?php echo esc_html($remaining_part); ?></span>
-                                                            <a href="javascript:void(0);" class="read-more-toggle text-decoration-underline ms-2">Read more</a>
+                                                            <a href="javascript:void(0);" class="read-more-toggle fw-bold text-decoration-underline ms-2">Read more</a>
                                                         <?php endif; ?>
                                                     </p>
                                                 </div>
@@ -88,64 +96,92 @@
                                         </div>
                                     </div>
 
-                                    <h4 class="py-2 mt-5 text-primary-color fw-bold bottom-border">தொடர்கதைகள்</h4>
+                                    <h4 class="mt-5 fw-bold">பாகங்கள் (<?php echo $related_stories->found_posts; ?>)</h4>
 
                                     <?php if ($related_stories->have_posts()) { ?>
-                                        <div class="row mt-4">
+                                        <div class="row mt-2">
                                             <?php $count = 0; ?>
                                             <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
-                                                <div class="col-12 col-sm-6 my-3 text-primary-color">
-                                                <div class="w-100 p-4 shadow rounded">
-                                                    <?php
-                                                        $average_rating = get_custom_average_rating(get_the_ID());
-                                                        $total_views = get_custom_post_views(get_the_ID());
-                                                    ?>
-                                                    <div class="mb-2">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <h6 class="mb-0 fw-bold">
-                                                                <?php echo sprintf("%2d", $count + 1); ?>.&nbsp;
-                                                                <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
-                                                            </h6>
+                                                <div class="col-12 col-sm-6 my-3">
+                                                    <div class="w-100 p-4 shadow rounded">
+                                                        <?php
+                                                            $average_rating = get_custom_average_rating(get_the_ID());
+                                                            $total_views = get_custom_post_views(get_the_ID());
+                                                        ?>
+                                                        <div>
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <h6 class="mb-0 fw-bold">
+                                                                    <?php echo sprintf("%2d", $count + 1); ?>.&nbsp;
+                                                                    <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                </h6>
 
-                                                            <?php 
-                                                                $date = get_the_date('j F Y');
-                                                                $tamil_months = array(
-                                                                    'January' => 'ஜனவரி',
-                                                                    'February' => 'பிப்ரவரி',
-                                                                    'March' => 'மார்ச்',
-                                                                    'April' => 'ஏப்ரல்',
-                                                                    'May' => 'மே',
-                                                                    'June' => 'ஜூன்',
-                                                                    'July' => 'ஜூலை',
-                                                                    'August' => 'ஆகஸ்ட்',
-                                                                    'September' => 'செப்டம்பர்',
-                                                                    'October' => 'அக்டோபர்',
-                                                                    'November' => 'நவம்பர்',
-                                                                    'December' => 'டிசம்பர்'
-                                                                );
+                                                                <?php 
+                                                                    $date = get_the_date('j F Y');
+                                                                    $tamil_months = array(
+                                                                        'January' => 'ஜனவரி',
+                                                                        'February' => 'பிப்ரவரி',
+                                                                        'March' => 'மார்ச்',
+                                                                        'April' => 'ஏப்ரல்',
+                                                                        'May' => 'மே',
+                                                                        'June' => 'ஜூன்',
+                                                                        'July' => 'ஜூலை',
+                                                                        'August' => 'ஆகஸ்ட்',
+                                                                        'September' => 'செப்டம்பர்',
+                                                                        'October' => 'அக்டோபர்',
+                                                                        'November' => 'நவம்பர்',
+                                                                        'December' => 'டிசம்பர்'
+                                                                    );
 
-                                                                $tamil_date = str_replace(array_keys($tamil_months), array_values($tamil_months), $date); 
-                                                            ?>
-                                                            <span class="text-muted fs-custom"><?php echo $tamil_date; ?></span>
-                                                        </div>
-
-                                                        <div class="ms-4 mt-3">
-                                                            <span class="text-muted fs-custom">
-                                                                <i class="fa-solid fa-eye"></i>&nbsp;<?php echo format_view_count($total_views); ?>
-                                                            </span>
-                                                            <span class="mb-0 ms-4">
-                                                                <i class="fa-solid fa-star" style="color: gold;"></i>&nbsp;&nbsp;<?php echo $average_rating; ?>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                        <!-- <div class="d-flex mt-4">
-                                                            <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
-                                                                <i class="fa-solid fa-eye me-1"></i>
-                                                                <?php echo format_view_count($total_views); ?>
+                                                                    $tamil_date = str_replace(array_keys($tamil_months), array_values($tamil_months), $date); 
+                                                                ?>
+                                                                <span class="text-muted fs-custom"><?php echo $tamil_date; ?></span>
                                                             </div>
-                                                            <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
-                                                        </div> -->
+
+                                                            <div class="ms-4 mt-3">
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <span class="text-muted fs-custom">
+                                                                            <i class="fa-solid fa-eye"></i>&nbsp;<?php echo format_view_count($total_views); ?>
+                                                                        </span>
+                                                                        <span class="mb-0 ms-4">
+                                                                            <i class="fa-solid fa-star" style="color: gold;"></i>&nbsp;&nbsp;<?php echo $average_rating; ?>
+                                                                        </span>
+                                                                    </div>
+                                                                    <?php
+                                                                    $post_id    = get_the_ID();
+                                                                    $author_id  = get_post_field('post_author', $post_id);
+                                                                    $current_id = get_current_user_id();
+
+                                                                    if ($current_id === (int) $author_id) :
+                                                                    ?>
+                                                                        <div>
+                                                                            <a 
+                                                                                href="<?php echo esc_url(home_url('/write?id=' . $post_id)); ?>" 
+                                                                                class="p-1" 
+                                                                                title="Edit">
+                                                                                <i class="fa-solid fa-pen-to-square fa-lg"></i>
+                                                                            </a>
+
+                                                                            <a 
+                                                                                href="<?php echo get_delete_post_link($post_id); ?>" 
+                                                                                class="p-1" 
+                                                                                title="Delete" 
+                                                                                onclick="return confirm('Are you sure you want to delete this post?');">
+                                                                                <i class="fa-solid fa-trash-can fa-lg"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                            <!-- <div class="d-flex mt-4">
+                                                                <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
+                                                                    <i class="fa-solid fa-eye me-1"></i>
+                                                                    <?php echo format_view_count($total_views); ?>
+                                                                </div>
+                                                                <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                                            </div> -->
                                                     </div>
                                                 </div>
                                             <?php $count++; endwhile; ?>
@@ -154,14 +190,19 @@
                                     <?php } else { ?>
                                         <div class="col-12 text-center mt-4">
                                             <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
-                                                இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை.
+                                                <p class="mb-2">
+                                                    இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை. தொடர்கதை உருவாக்க கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
+                                                </p>
+                                                <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                    படைப்பை சேர்க்க
+                                                </a>
                                             </div>
                                         </div>
                                     <?php } ?>
                                     <?php 
                                 }
                             } else { ?>
-                                <div class="text-primary-color">
+                                <div class="px-5 py-2">
                                     <?php
                                         the_content();
                                     ?>
@@ -180,9 +221,11 @@
 
 
                                 <?php if (comments_open() || get_comments_number()) : ?>
-                                    <div class="mt-5 border-0">
-                                        <div class="card-body">
-                                            <?php comments_template(); ?>
+                                    <div class="text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto">
+                                    <div class="col-12 col-md-9 mx-auto border-0 my-3">
+                                            <div class="card-body">
+                                                <?php comments_template(); ?>
+                                            </div>
                                         </div>
                                     </div>
                                 <?php endif; ?>

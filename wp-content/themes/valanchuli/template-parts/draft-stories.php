@@ -87,9 +87,11 @@
                         $author_name = get_the_author_meta('display_name', $author_id);
                     ?>
 
-                    <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
-                    </p>
+                    <!-- <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                        <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                            <?php echo esc_html($author_name); ?>
+                        </a>
+                    </p> -->
 
                     <div class="d-flex mt-1 align-items-center justify-content-between">
                         <div class="d-flex align-items-center px-2 py-1 me-1 fw-bold rounded text-primary-color">
@@ -161,9 +163,11 @@
                         $author_name = get_the_author_meta('display_name', $author_id);
                     ?>
 
-                    <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
-                    </p>
+                    <!-- <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                        <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                            <?php echo esc_html($author_name); ?>
+                        </a>
+                    </p> -->
 
                     <!-- <div class="d-flex mt-1">
                         <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">

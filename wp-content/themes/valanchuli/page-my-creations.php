@@ -25,31 +25,38 @@
 
         <?php if ( $total_count == 0 ) : ?>
             <div class="alert alert-warning text-center" role="alert">
-                உங்கள் படைப்புகளின் பக்கம் இன்னும் காலியாக உள்ளது! உங்களின் அபாரமான கற்பனை திறனை  உலகுக்கு காட்ட  கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
+                <p class="mb-2">
+                    உங்கள் படைப்புகளின் பக்கம் இன்னும் காலியாக உள்ளது! 
+                    உங்களின் அபாரமான கற்பனை திறனை  உலகுக்கு காட்ட  கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
+                </p>
+                <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                    படைப்பை சேர்க்க
+                </a>
             </div>
+
         <?php else : ?>
             <!-- draft stories start -->
             <?php get_template_part('template-parts/draft-stories'); ?>
             <!-- draft stories end -->
 
             <!-- நாவல்கள் stories start -->
-            <?php get_template_part('template-parts/novel-stories', null, ['context' => 'my-creations']); ?>
+            <?php get_template_part('template-parts/novel-stories', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
             <!-- நாவல்கள் stories end -->
 
             <!-- competition stories start -->
-            <?php get_template_part('template-parts/competition-stories', null, ['context' => 'my-creations']); ?>
+            <?php get_template_part('template-parts/competition-stories', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
             <!-- competition stories end -->
 
             <!-- sirukathai stories start -->
-            <?php get_template_part('template-parts/sirukathai', null, ['context' => 'my-creations']); ?>
+            <?php get_template_part('template-parts/sirukathai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
             <!-- sirukathai stories end -->
 
             <!-- kavithai stories start -->
-            <?php get_template_part('template-parts/kavithai', null, ['context' => 'my-creations']); ?>
+            <?php get_template_part('template-parts/kavithai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
             <!-- kavithai stories end -->
 
             <!-- katturai stories start -->
-            <?php get_template_part('template-parts/katturai', null, ['context' => 'my-creations']); ?>
+            <?php get_template_part('template-parts/katturai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
             <!-- katturai stories end -->
         <?php endif; ?>
 

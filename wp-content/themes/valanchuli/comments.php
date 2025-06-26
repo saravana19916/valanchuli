@@ -18,13 +18,13 @@ if (post_password_required()) {
     <div class="accordion" id="accordionExample">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingOne">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                    Comments <span class="count-badge"><?php echo $comments_count; ?></span>
+                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    Comments &nbsp; <span class="badge text-bg-danger"><?php echo $comments_count; ?></span>
                 </button>
             </h2>
             <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                <div class="accordion-body">
-                    <div style="height: 31rem; overflow-y: scroll;">
+                <div class="accordion-body p-0 p-sm-3" style="background-color: #F8FAFC;">
+                    <div style="height: 31rem; overflow-y: scroll; overflow-x: hidden">
                         <?php
                             $comments = get_comments([
                                 'post_id' => get_the_ID(),
@@ -32,7 +32,7 @@ if (post_password_required()) {
                                 'order' => 'DESC'
                             ]);
 
-                            echo '<ul class="comment-list list-unstyled">';
+                            echo '<ul class="comment-list list-unstyled p-2">';
 
                             if ($comments) {
                                 wp_list_comments([
@@ -54,6 +54,14 @@ if (post_password_required()) {
 
                     <div style="display: flow;">
                         <?php
+                            $attachment_id = get_user_meta(get_current_user_id(), 'profile_photo', true);
+
+                            if ($attachment_id) {
+                                $image_url = wp_get_attachment_url($attachment_id);
+                            } else {
+                                $image_url = get_avatar_url(get_current_user_id(), ['size' => 50]); // fallback to Gravatar
+                            }
+
                             if (is_user_logged_in()) {
                                 comment_form([
                                     'id_form'      => 'ajax-comment-form',
@@ -63,10 +71,10 @@ if (post_password_required()) {
                                     'label_submit'  => '', 
                                     'comment_field' => '
                                         <div class="comment-box p-2 rounded position-relative">
-                                            <div class="d-flex align-items-start">
+                                            <div class="d-flex align-items-center">
                                                 <!-- Author Photo -->
                                                 <div class="me-2">
-                                                    <img src="' . get_avatar_url(get_current_user_id(), ["size" => 50]) . '" class="rounded-circle" alt="Author">
+                                                    <img src="' . esc_url($image_url) . '" class="rounded-circle" width="64" height="64" alt="Author">
                                                 </div>
                                                 <!-- Comment Input -->
                                                 <div class="flex-grow-1 position-relative">
@@ -77,7 +85,7 @@ if (post_password_required()) {
                                                     </div>
                                                 </div>
                                                 <!-- Send Button -->
-                                                <button type="button" class="btn btn-primary send-comment">
+                                                <button type="button" class="btn btn-primary ms-2 send-comment">
                                                     <i class="fa-solid fa-paper-plane"></i>
                                                 </button>
                                             </div>

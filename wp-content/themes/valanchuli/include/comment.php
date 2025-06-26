@@ -74,21 +74,28 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
         'order' => 'ASC',
     ]);
     $child_count = count($child_comments);
+
+    $attachment_id = get_user_meta($user_id, 'profile_photo', true);
+
+    if ($attachment_id) {
+        $image_url = wp_get_attachment_url($attachment_id);
+    } else {
+        $image_url = get_avatar_url($user_id, ['size' => 50]); // fallback to Gravatar
+    }
     ?>
     <li id="comment-<?php comment_ID(); ?>">
         <div class="row">
-            <div class="col-2">
-                <?php echo get_avatar($comment, 64, '', '', ['class' => 'rounded-circle img-fluid']); ?>
+            <div class="col-3 col-sm-2">
+                <img src="<?php echo esc_url($image_url); ?>" class="rounded-circle" width="64" height="64" alt="Author">
             </div>
-            <div class="col-10 text-start">
+            <div class="col-9 col-sm-10 text-start">
                 <h6 class="mb-0"><?php comment_author(); ?></h6>
                 <div class="d-flex align-items-center justify-content-between">
-
                     <small class="text-muted"><?php echo date('F j, Y', strtotime($comment->comment_date)); ?></small>
                 </div>
 
-                <div class="mt-2 d-inline-block p-2 border rounded comment-text" style="background-color: #f3f3f3;">
-                    <p class="mb-0 text-wrap"><?php comment_text(); ?></p>
+                <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
+                    <span class="mb-0 text-wrap"><?php comment_text(); ?></span>
                 </div>
 
                 <div class="d-flex align-items-center gap-4 mt-3">
@@ -96,11 +103,11 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
 
                     <?php if (is_user_logged_in()) { ?>
                         <?php if ($child_count > 0): ?>
-                            <a href="#" class="text-decoration-none text-primary-color" onclick="event.preventDefault(); toggleChildComments(<?php echo $comment_id; ?>)">
-                                <i class="fa fa-reply"></i> <span class="<?php echo 'reply-count-' . $comment_id; ?>"><?php echo $child_count; ?></span> <span class="<?php echo 'reply-count-text-' . $comment_id; ?>"><?php echo _n('Reply', 'Replies', $child_count); ?></span>
+                            <a href="#" class="text-decoration-none" onclick="event.preventDefault(); toggleChildComments(<?php echo $comment_id; ?>)">
+                                <i class="fa fa-reply"></i> <span class="<?php echo 'reply-count-text-' . $comment_id; ?>"><?php echo _n('Reply', 'Replies', $child_count); ?></span> <span class="<?php echo 'reply-count-' . $comment_id; ?>"><?php echo "(" . $child_count . ")"; ?></span>
                             </a>
                         <?php else: ?>
-                            <a href="#" class="text-decoration-none text-primary-color" onclick="event.preventDefault(); toggleChildComments(<?php echo $comment_id; ?>)">
+                            <a href="#" class="text-decoration-none" onclick="event.preventDefault(); toggleChildComments(<?php echo $comment_id; ?>)">
                                 <i class="fa fa-reply"></i> <span class="<?php echo 'reply-count-' . $comment_id; ?>"></span> <span class="<?php echo 'reply-count-text-' . $comment_id; ?>"> Reply</span>
                             </a>
                         <?php endif; ?>
@@ -113,17 +120,17 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                         foreach ($child_comments as $child_comment) { ?>
                             <hr/>
                             <div class="row">
-                                <div class="col-2">
-                                    <?php echo get_avatar($comment, 64, '', '', ['class' => 'rounded-circle img-fluid']); ?>
+                                <div class="col-3 col-sm-2">
+                                    <img src="<?php echo esc_url($image_url); ?>" class="rounded-circle" width="64" height="64" alt="Author">
                                 </div>
-                                <div class="col-10 text-start">
+                                <div class="col-9 col-sm-10 text-start">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <h6 class="mb-0"><?php echo get_comment_author($child_comment); ?></h6>
 
                                         <small class="text-muted"><?php echo date('F j, Y', strtotime($child_comment->comment_date)); ?></small>
                                     </div>
 
-                                    <div class="mt-2 d-inline-block p-2 border rounded comment-text" style="background-color: #f3f3f3;">
+                                    <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
                                         <p class="mb-0 text-wrap"><?php echo esc_html($child_comment->comment_content); ?></p>
                                     </div>
                                 </div>

@@ -1,6 +1,6 @@
 <?php
     $context = $args['context'] ?? '';
-    $current_user = get_current_user_id();
+    $current_user = $args['user_id'] ?? '';
 
     $args = [
         'post_type'      => ['competition_post'],
@@ -11,7 +11,7 @@
     ];
     
     // If context is "my-creations", filter by current user
-    if ($context === 'my-creations') {
+    if ($current_user) {
         $args['author'] = $current_user;
     }
     
@@ -89,7 +89,7 @@
 
     $competitionUrl = add_query_arg([
         'context' => $context,
-        'author'  => $current_user
+        'user_id'  => $current_user
     ], get_permalink(get_page_by_path('pottigal-stories')));
 ?>
 
@@ -150,14 +150,19 @@
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
-                    <?php
-                        $author_id = get_post_field('post_author', get_the_ID());
-                        $author_name = get_the_author_meta('display_name', $author_id);
-                    ?>
 
-                    <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
-                    </p>
+                    <?php if (empty($current_user)) { ?>
+                        <?php
+                            $author_id = get_post_field('post_author', get_the_ID());
+                            $author_name = get_the_author_meta('display_name', $author_id);
+                        ?>
+
+                        <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                            <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                                <?php echo esc_html($author_name); ?>
+                            </a>
+                        </p>
+                    <?php } ?>
 
                     <div class="d-flex mt-1">
                         <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
@@ -221,14 +226,19 @@
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
-                    <?php
-                        $author_id = get_post_field('post_author', get_the_ID());
-                        $author_name = get_the_author_meta('display_name', $author_id);
-                    ?>
 
-                    <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <?php echo $author_name; ?>
-                    </p>
+                    <?php if (empty($current_user)) { ?>
+                        <?php
+                            $author_id = get_post_field('post_author', get_the_ID());
+                            $author_name = get_the_author_meta('display_name', $author_id);
+                        ?>
+
+                        <p class="fs-12px text-primary-color text-decoration-underline mb-1">
+                            <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                                <?php echo esc_html($author_name); ?>
+                            </a>
+                        </p>
+                    <?php } ?>
 
                     <div class="d-flex mt-1">
                         <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">

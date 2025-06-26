@@ -10,6 +10,7 @@ require_once get_template_directory() . '/include/competition.php';
 require_once get_template_directory() . '/include/comment.php';
 require_once get_template_directory() . '/include/product.php';
 require_once get_template_directory() . '/include/story-single.php';
+require_once get_template_directory() . '/include/profile.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -210,13 +211,11 @@ function enqueue_tamil_suggestion_script() {
 add_action('wp_enqueue_scripts', 'enqueue_tamil_suggestion_script');
 // Register end
 
-function enable_ada_tamil_writer_frontend() {
-    if (is_page('write')) {
-        wp_enqueue_script('ada-tamil-writer', plugins_url('ada-tamil-writer/assets/js/adadaa_tamiljar.js'), array('jquery'), null, true);
-        wp_enqueue_style('ada-tamil-writer-css', plugins_url('ada-tamil-writer/assets/css/admin-style.css'));
-    }
-}
-add_action('wp_enqueue_scripts', 'enable_ada_tamil_writer_frontend');
+wp_enqueue_script('profile-script', get_template_directory_uri() . '/js/profile.js', ['jquery'], null, true);
+
+wp_localize_script('profile-script', 'myAjax', [
+    'ajaxUrl' => admin_url('admin-ajax.php'),
+]);
 
 function format_view_count($count) {
     if ($count >= 1000000) {

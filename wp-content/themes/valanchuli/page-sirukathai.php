@@ -6,7 +6,7 @@
     <h4 class="py-3 fw-bold m-0 text-primary-color">🔥 சிறுகதை</h4>
     <?php
         $context = $_GET['context'] ?? '';
-        $author = $_GET['author'] ?? '';
+        $user_id = $_GET['user_id'] ?? '';
 
         $categories = get_categories([
             'taxonomy' => 'category',
@@ -39,8 +39,8 @@
             ],
         ];
 
-        if ($context === 'my-creations' && !empty($author)) {
-            $args['author'] = (int) $author;
+        if (!empty($user_id)) {
+            $args['author'] = (int) $user_id;
         }
         
         $stories = new WP_Query($args);  
