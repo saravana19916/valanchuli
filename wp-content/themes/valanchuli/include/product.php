@@ -1,5 +1,23 @@
 <?php
 
+function register_custom_product_post_type() {
+    register_post_type('product_categories',
+        array(
+            'labels' => array(
+                'name' => __('Product Categories'),
+                'singular_name' => __('Product Category'),
+            ),
+            'public' => true,
+            'has_archive' => true,
+            'menu_icon' => 'dashicons-cart',
+            'supports' => array('title'),
+            'taxonomies' => array('custom_product_category'),
+            'show_in_rest' => true,
+        )
+    );
+}
+add_action('init', 'register_custom_product_post_type');
+
 function register_product_post_type() {
     register_post_type('custom_product', [
         'labels' => [
@@ -57,7 +75,13 @@ function render_product_meta_box($post) {
     $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : '';
     $description = get_post_meta($post->ID, 'product_description', true);
 
-    $categories = get_categories(['hide_empty' => false]);
+    $categories = get_posts([
+        'post_type' => 'product_categories',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'orderby' => 'title',
+        'order' => 'ASC',
+    ]);
     ?>
     <p>
         <label>Price:</label><br>
@@ -73,10 +97,10 @@ function render_product_meta_box($post) {
     </p>
     <p>
         <label>Category:</label><br>
-        <select name="product_category">
+        <select name="product_category" style="width: 25%;">
             <?php foreach ($categories as $cat): ?>
-                <option value="<?php echo esc_attr($cat->term_id); ?>" <?php selected($selected_category, $cat->term_id); ?>>
-                    <?php echo esc_html($cat->name); ?>
+                <option value="<?php echo esc_attr($cat->ID); ?>" <?php selected($selected_category, $cat->ID); ?>>
+                    <?php echo esc_html($cat->post_title); ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -171,5 +195,17 @@ function filter_product_title_like($where, $query) {
     return $where;
 }
 add_filter('posts_where', 'filter_product_title_like', 10, 2);
+
+// filte by name
+function custom_product_title_search($where) {
+    print_r("call");exit;
+    global $wpdb;
+    if (!empty($_GET['name'])) {
+        $search = esc_sql(sanitize_text_field($_GET['name']));
+        $where .= " AND {$wpdb->posts}.post_title LIKE '%{$search}%'";
+    }
+    return $where;
+}
+
 
 

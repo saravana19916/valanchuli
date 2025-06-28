@@ -46,13 +46,55 @@ function register_competition_story_post_type() {
 }
 add_action('init', 'register_competition_story_post_type');
 
+// Competition start date
+function add_competition_start_date_metabox() {
+    add_meta_box(
+        'competition_start',
+        'Competition Start Date',
+        'render_competition_start_metabox',
+        'competition',
+        'side',
+        'default'
+    );
+
+    add_meta_box(
+        'competition_start_fields',
+        'Competition Details',
+        'competition_details_callback',
+        'competition',
+        'normal',
+        'default'
+    );
+}
+add_action('add_meta_boxes', 'add_competition_start_date_metabox');
+
+function render_competition_start_metabox($post) {
+    $value = get_post_meta($post->ID, '_competition_start_date', true);
+    ?>
+    <label for="competition_start_date">Start Date:</label>
+    <input type="date" id="competition_start_date" name="competition_start_date" value="<?php echo esc_attr($value); ?>" />
+    <?php
+}
+
+function save_competition_start_date($post_id) {
+    if (array_key_exists('competition_start_date', $_POST)) {
+        update_post_meta(
+            $post_id,
+            '_competition_start_date',
+            sanitize_text_field($_POST['competition_start_date'])
+        );
+    }
+}
+add_action('save_post', 'save_competition_start_date');
+// Competition start date option end
+
 // Competition Expire option start
 function add_competition_expiry_metabox() {
     add_meta_box(
         'competition_expiry',
         'Competition Expiry Date',
         'render_competition_expiry_metabox',
-        'competition', // Change if your post type is named differently
+        'competition',
         'side',
         'default'
     );
