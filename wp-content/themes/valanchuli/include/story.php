@@ -32,6 +32,7 @@ add_action('init', 'register_story_series_taxonomy');
 add_action('wp_ajax_save_story', 'save_story_ajax');
 add_action('wp_ajax_nopriv_save_story', 'save_story_ajax');
 function save_story_ajax() {
+    $competition = sanitize_text_field($_POST['competition']);
     $title = sanitize_text_field($_POST['title']);
     $category = intval($_POST['category']);
     $series_input = sanitize_text_field($_POST['series']);
@@ -99,6 +100,10 @@ function save_story_ajax() {
         wp_send_json_error('Story not saved');
     }
 
+    if ($competition && $competition != 'undefined') {
+        update_post_meta($post_id, 'competition', $competition);
+    }
+
     if ($division) {
         update_post_meta($post_id, 'division', $division);
     }
@@ -119,6 +124,7 @@ function save_story_ajax() {
 // Draft save
 add_action('wp_ajax_save_draft', 'handle_save_draft');
 function handle_save_draft() {
+    $competition        = sanitize_text_field($_POST['competition']);
     $title        = sanitize_text_field($_POST['title']);
     $category     = intval($_POST['category']);
     $series_input = sanitize_text_field($_POST['series']);
@@ -162,6 +168,10 @@ function handle_save_draft() {
         if (!is_wp_error($attachment_id)) {
             set_post_thumbnail($post_id, $attachment_id);
         }
+    }
+
+    if ($competition && $competition != 'undefined') {
+        update_post_meta($post_id, 'competition', $competition);
     }
 
     // Save custom meta
@@ -221,6 +231,7 @@ function get_last_draft_story() {
 		'content'   => $post->post_content,
 		'category'  => wp_get_post_categories($post->ID)[0] ?? '',
 		'series'    => $series_name,
+        'competition'  => get_post_meta($post->ID, 'competition', true),
 		'division'  => get_post_meta($post->ID, 'division', true),
         'description'  => get_post_meta($post->ID, 'description', true),
 		'image_url' => get_the_post_thumbnail_url($post->ID),
@@ -251,6 +262,7 @@ function get_story_by_id()
         'content'  => $post->post_content,
         'category' => wp_get_post_categories($post->ID)[0] ?? '',
         'series'   => $series_name,
+        'competition' => get_post_meta($post->ID, 'competition', true),
         'division' => get_post_meta($post->ID, 'division', true),
         'description'  => get_post_meta($post->ID, 'description', true),
         'image_url' => get_the_post_thumbnail_url($post->ID),

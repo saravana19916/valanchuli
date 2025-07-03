@@ -6,18 +6,13 @@
     <div class="col-md-6 text-end">
         <?php if (is_user_logged_in()) { ?>
             <?php
-                $competition_story_url = get_permalink(get_page_by_path('competition-story'));
-
-                // if ($category_id) {
-                //     $competition_story_url .= '&category_id=' . $category_id;
-                // }
-
-                if ($competition_closed != '1') {
+            $write_page_url = get_permalink(get_page_by_path('write'));
+            $competition_param = 'from=competition';
+            $final_url = $write_page_url . '?' . $competition_param;
             ?>
-                <button class="btn btn-primary btn-sm" onclick="window.location.href='<?php echo esc_url($competition_story_url); ?>'">
-                    <i class="fa-solid fa-plus fa-lg"></i>&nbsp; Create Story
-                </button>
-            <?php } ?>
+            <button class="btn btn-primary btn-sm" onclick="window.location.href='<?php echo esc_url($final_url); ?>'">
+                <i class="fa-solid fa-plus fa-lg"></i>&nbsp; Create Story
+            </button>
         <?php } else { ?>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">Login to create stories</button>
         <?php } ?>

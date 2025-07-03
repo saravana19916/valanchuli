@@ -17,6 +17,13 @@
                 $author_name = get_the_author_meta('display_name', $author_id);
                 $posted_date = get_the_date('d M Y', $post_id);
                 $division    = get_post_meta($post_id, 'division', true);
+
+                $competition = get_post_meta($post_id, 'competition', true);
+
+                $competitionParam = '';
+                if (!empty($competition)) {
+                    $competitionParam = '&from=competition';
+                }
             ?>
 
             <p class="text-muted fs-13px text-center">
@@ -156,7 +163,7 @@
                                                                     ?>
                                                                         <div>
                                                                             <a 
-                                                                                href="<?php echo esc_url(home_url('/write?id=' . $post_id)); ?>" 
+                                                                                href="<?php echo esc_url(home_url('/write?id=' . $post_id . $competitionParam)); ?>" 
                                                                                 class="p-1" 
                                                                                 title="Edit">
                                                                                 <i class="fa-solid fa-pen-to-square fa-lg"></i>
@@ -208,15 +215,32 @@
                                     ?>
                                 </div>
 
-                                <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow">
-                                    <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
-                                    <p class="mb-2">Click on a star to rate it!</p>
-                                    <div class="stars">
-                                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                                            <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
-                                        <?php endfor; ?>
-                                    </div>
-                                    <p>No votes so far! Be the first to rate this post.</p>
+                                <?php
+                                    $series = get_the_terms(get_the_ID(), 'series');
+                                    $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
+                                    $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
+                                    $is_parent = $series_name == 'தொடர்கதை அல்ல' ? false : true;
+                                ?>
+
+                                <div
+                                    class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
+                                    data-post-id="<?php the_ID(); ?>"
+                                    data-series-id="<?php echo esc_attr($series_id); ?>"Add commentMore actions
+                                    data-post-parent="<?php echo $is_parent; ?>">
+                                        <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
+                                        <p class="mb-2">Click on a star to rate it!</p>
+                                        <div class="stars">
+                                            <?php
+                                                $user_id = get_current_user_id();
+                                                $post_id = get_the_ID();
+                                                $rating = get_user_rating_for_post($user_id, $post_id);
+                                            ?>
+
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <p>No votes so far! Be the first to rate this post.</p>
                                 </div>
 
 

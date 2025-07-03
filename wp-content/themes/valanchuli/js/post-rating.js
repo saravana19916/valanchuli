@@ -1,11 +1,12 @@
 jQuery(document).ready(function ($) {
     $('.star-rating .star').on('click', function () {
+        console.log("fffff");
         const rating = $(this).data('value');
         const container = $(this).closest('.star-rating');
         const postId = container.data('post-id');
         var series_id = container.data('series-id');
         var isParent = container.data('post-parent');
-        console.log("ddd", isParent);
+        console.log("fff", postId);
 
         $.post(postRating.ajax_url, {
             action: 'save_post_rating',

@@ -198,14 +198,15 @@ add_filter('posts_where', 'filter_product_title_like', 10, 2);
 
 // filte by name
 function custom_product_title_search($where) {
-    print_r("call");exit;
     global $wpdb;
-    if (!empty($_GET['name'])) {
-        $search = esc_sql(sanitize_text_field($_GET['name']));
+    if (!empty($_GET['productName'])) {
+        $search = esc_sql(sanitize_text_field($_GET['productName']));
         $where .= " AND {$wpdb->posts}.post_title LIKE '%{$search}%'";
     }
     return $where;
 }
+
+
 
 
 

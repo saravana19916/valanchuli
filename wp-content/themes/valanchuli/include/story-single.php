@@ -143,5 +143,3 @@ function get_custom_post_views($post_id) {
     $count = get_post_meta($post_id, 'story_view_count', true);
     return $count ? intval($count) : 0;
 }
-
-

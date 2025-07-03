@@ -3,11 +3,17 @@
     $current_user = $args['user_id'] ?? '';
 
     $args = [
-        'post_type'      => ['competition_post'],
+        'post_type'      => ['story'],
         'posts_per_page' => -1,
         'post_status'    => 'publish',
         'orderby' => 'date',
-        'order' => 'DESC'
+        'order' => 'DESC',
+        'meta_query'     => [
+            [
+                'key'     => 'competition',
+                'compare' => 'EXISTS',
+            ],
+        ]
     ];
     
     // If context is "my-creations", filter by current user
@@ -111,17 +117,19 @@
             
             $series = get_the_terms(get_the_ID(), 'series');
             $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-            $average_rating = get_custom_average_rating($post_id, $series_id);
 
             $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
 
             $total_views = 0;
+            $average_rating = 0;
             if ($series_name == 'தொடர்கதை அல்ல') {
                 $total_views = get_custom_post_views($post_id);
+                $average_rating = get_custom_average_rating($post_id);
             }
             
             if (!empty($description)){
                 $total_views = get_average_series_views($post_id, $series_id);
+                $average_rating = get_custom_average_rating($post_id, $series_id);
             }
         ?>
         <div style="width: 180px;">
@@ -143,6 +151,25 @@
                             <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                         </p>
                     </div>
+
+                    <?php if ($context === 'my-creations') { ?>
+                        <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                            <a 
+                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
+                                class="btn btn-warning btn-sm p-1" 
+                                title="Edit">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+
+                            <a 
+                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                class="btn btn-danger btn-sm p-1" 
+                                title="Delete" 
+                                onclick="return confirm('Are you sure you want to delete this post?');">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </div>
+                    <?php } ?>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
