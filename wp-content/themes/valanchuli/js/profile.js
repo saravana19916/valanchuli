@@ -2,20 +2,32 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
     let isValid = true;
-    let name = this.display_name.value.trim();
+    let firstName = this.firstName.value.trim();
+    let lastName = this.lastName.value.trim();
     let email = this.user_email.value.trim();
     let password = this.new_password.value.trim();
     let confirmPassword = this.confirm_password.value.trim();
 
     document.querySelectorAll('.error-message').forEach(el => el.remove());
 
-    if (name === '') {
+    if (firstName === '') {
         isValid = false;
-        const nameInput = document.querySelector('.name');
+        const nameInput = document.querySelector('.first-name');
 
         const error = document.createElement('p');
         error.className = 'text-danger error-message mt-2 small';
-        error.textContent = 'Name is required.';
+        error.textContent = 'First name is required.';
+
+        nameInput.parentNode.insertBefore(error, nameInput.nextSibling);
+    }
+
+    if (lastName === '') {
+        isValid = false;
+        const nameInput = document.querySelector('.last-name');
+
+        const error = document.createElement('p');
+        error.className = 'text-danger error-message mt-2 small';
+        error.textContent = 'Last name is required.';
 
         nameInput.parentNode.insertBefore(error, nameInput.nextSibling);
     }
@@ -54,9 +66,19 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
     })
     .then(res => res.json())
     .then(response => {
-        const msg = document.getElementById('profile-update-message');
-        msg.innerHTML = `<div class="alert alert-${response.success ? 'success' : 'danger'}">${response.data.message}</div>`;
-        if (response.success) setTimeout(() => location.reload(), 2000);
+        if (!response.success) {
+            const emailInput = document.querySelector('.email');
+
+            const error = document.createElement('p');
+            error.className = 'text-danger error-message mt-2 small';
+            error.textContent = response.data.message;
+
+            emailInput.parentNode.insertBefore(error, emailInput.nextSibling);
+        } else {
+            const msg = document.getElementById('profile-update-message');
+            msg.innerHTML = `<div class="alert alert-${response.success ? 'success' : 'danger'}">${response.data.message}</div>`;
+            if (response.success) setTimeout(() => location.reload(), 2000);
+        }
     });
 });
 

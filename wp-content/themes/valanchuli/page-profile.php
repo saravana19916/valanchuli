@@ -45,9 +45,23 @@ if (!$avatar_url) {
                             </div>
 
                             <div class="mb-3 text-start">
-                                <label for="name" class="form-label">Name <span style="color: red;">*</span></label>
-                                <div class="input-group login-form-group name">
-                                    <input type="text" class="form-control login-input" name="display_name" placeholder="Name" value="<?= esc_attr($current_user->display_name); ?>">
+                                <label for="userName" class="form-label">Username <span style="color: red;">*</span></label>
+                                <div class="input-group login-form-group" style="background: #e9ecef;">
+                                    <input type="text" class="form-control login-input" value="<?= esc_attr($current_user->user_login); ?>" disabled>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 text-start">
+                                <label for="firstName" class="form-label">First Name <span style="color: red;">*</span></label>
+                                <div class="input-group login-form-group first-name">
+                                    <input type="text" class="form-control login-input" name="firstName" placeholder="First Name" value="<?= esc_attr($current_user->first_name); ?>">
+                                </div>
+                            </div>
+
+                            <div class="mb-3 text-start">
+                                <label for="lastName" class="form-label">Last Name <span style="color: red;">*</span></label>
+                                <div class="input-group login-form-group last-name">
+                                    <input type="text" class="form-control login-input" name="lastName" placeholder="Last Name" value="<?= esc_attr($current_user->last_name); ?>">
                                 </div>
                             </div>
 

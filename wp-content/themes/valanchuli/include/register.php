@@ -41,13 +41,15 @@ function ajax_register_user() {
         wp_send_json_error($errors);
     }
 
-    $user_id = wp_insert_user([
-        'user_login' => $username,
-        'user_pass' => $password,
+   $user_id = wp_insert_user([
+        'user_login'    => $username,
+        'user_pass'     => $password,
         'user_nicename' => $username,
-        'user_email' => $email,
-        'display_name' => $firstname . ' ' . $lastname,
-        'role' => 'subscriber',
+        'user_email'    => $email,
+        'display_name'  => $firstname . ' ' . $lastname,
+        'first_name'    => $firstname,
+        'last_name'     => $lastname,
+        'role'          => 'subscriber',
     ]);
 
     if (is_wp_error($user_id)) {

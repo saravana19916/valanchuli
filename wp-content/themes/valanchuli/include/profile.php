@@ -11,12 +11,34 @@ function handle_update_profile() {
     $user_id = get_current_user_id();
     $data = [];
 
-    if (!empty($_POST['display_name'])) {
-        $data['display_name'] = sanitize_text_field($_POST['display_name']);
+    if (!empty($_POST['firstName'])) {
+        $data['first_name'] = sanitize_text_field($_POST['firstName']);
     }
+
+    if (!empty($_POST['lastName'])) {
+        $data['last_name'] = sanitize_text_field($_POST['lastName']);
+    }
+
+    $data['display_name'] = $data['first_name'] . ' ' . $data['last_name'];
 
     if (!empty($_POST['user_email']) && is_email($_POST['user_email'])) {
         $data['user_email'] = sanitize_email($_POST['user_email']);
+    }
+
+    $current_user_id = get_current_user_id();
+    $email = sanitize_email($_POST['user_email']);
+
+    if (!empty($email) && is_email($email)) {
+        $existing_user = get_user_by('email', $email);
+
+        if ($existing_user && $existing_user->ID != $current_user_id) {
+            $error = 'This email is already registered with another account.';
+            wp_send_json_error([ 'message' => 'Email already exists.']);
+        } else {
+            $data['user_email'] = $email;
+        }
+    } else {
+        wp_send_json_error([ 'message' => 'Invalid email address.']);
     }
 
     if (!empty($_POST['new_password'])) {
