@@ -6,7 +6,7 @@
 
             <?php
                 $description = get_post_meta(get_the_ID(), 'description', true);
-                $cardClass = 'card ' . ($description ? 'border-0' : ' border border-2 border-primary rounded');
+                $cardClass = 'card ' . ($description ? 'border-0' : 'border-0 rounded');
             ?>
 
             <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
@@ -39,7 +39,7 @@
 
             <div class="<?= esc_attr($cardClass); ?>">
                 <div class="card-body p-0">
-                    <div class="card-text mt-3">
+                    <div class="card-text">
                         <?php
 
                             if (!empty($description)) {
@@ -49,7 +49,7 @@
                                     $series_term = $terms[0];
 
                                     $related_stories = new WP_Query([
-                                        'post_type'      => 'story',
+                                        'post_type'      => 'post',
                                         'posts_per_page' => -1,
                                         'post_status'    => 'publish',
                                         'orderby'        => 'date',
@@ -209,7 +209,7 @@
                                     <?php 
                                 }
                             } else { ?>
-                                <div class="px-5 py-2">
+                                <div class="py-2">
                                     <?php
                                         the_content();
                                     ?>
@@ -241,6 +241,21 @@
                                             <?php endfor; ?>
                                         </div>
                                         <p>No votes so far! Be the first to rate this post.</p>
+                                </div>
+                                
+                                <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="loginRequiredLabel">Login Required</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            You must be logged in to rate. <br>
+                                            <a href="#" class="btn btn-primary mt-3 login-btn">Login</a>
+                                        </div>
+                                        </div>
+                                    </div>
                                 </div>
 
 

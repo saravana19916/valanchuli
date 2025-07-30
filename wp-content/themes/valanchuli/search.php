@@ -6,7 +6,7 @@
 
         $search_query = new WP_Query(array(
             's' => get_search_query(),
-            'post_type' => ['story', 'competition_post'],
+            'post_type' => ['post'],
             'posts_per_page' => -1,
         ));
 

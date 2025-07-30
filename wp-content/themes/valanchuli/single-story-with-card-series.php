@@ -34,7 +34,7 @@
                                     $series_term = $terms[0];
 
                                     $related_stories = new WP_Query([
-                                        'post_type'      => 'story',
+                                        'post_type'      => 'post',
                                         'posts_per_page' => -1,
                                         'post_status'    => 'publish',
                                         'orderby'        => 'date',

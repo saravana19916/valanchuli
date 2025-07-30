@@ -4,7 +4,6 @@ jQuery(document).ready(function ($) {
 
         $('.error-message').remove();
 
-        // const formData = $(this).serialize() + '&action=register_user';
         const form = this;
         const formData = new FormData(form);
         formData.append('action', 'register_user'); 
@@ -26,10 +25,6 @@ jQuery(document).ready(function ($) {
                 if (response.status === 'success') {
                     $('#registerMessage').html('<div class="alert alert-success">' + response.message + '</div>');
                     $('#signup-form')[0].reset();
-
-                    setTimeout(function () {
-                        window.location.href = response.redirect_url;
-                    }, 2000);
                 }
             },
         });

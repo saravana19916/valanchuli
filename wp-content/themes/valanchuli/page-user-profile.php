@@ -7,31 +7,15 @@ $uid = isset($_GET['uid']) ? intval($_GET['uid']) : 0;
 if ($uid) {
     $user = get_userdata($uid);
     if ($user) {
-        $name = $user->display_name;
-        $profile_photo_id = get_user_meta($uid, 'profile_photo', true);
-        $profile_photo_url = $profile_photo_id ? wp_get_attachment_url($profile_photo_id) : get_avatar_url($uid);
         ?>
 
         <div class="container py-5">
-            <div class="card border-0 shadow-md">
-                <div class="row g-0 align-items-center border-top border-bottom border-3 border-primary rounded-top">
-                    <div class="col-md-4 text-center p-4">
-                        <img src="<?php echo esc_url($profile_photo_url); ?>" 
-                            class="rounded-circle img-fluid shadow-sm border border-3 border-white" 
-                            width="150" 
-                            alt="Profile Photo">
-                    </div>
-                    <div class="col-md-5 text-center p-4">
-                        <h3 class="fw-bold mb-1">Author: <span class="text-primary-color"><?php echo esc_html($name); ?></span></h3>
-                        <p class="text-muted mb-0">Welcome to author page.</p>
-                    </div>
-                </div>
-            </div>
+            <?php get_template_part('template-parts/author-detail', null, ['user_id' => $uid]); ?>
 
             <div class="row mt-5">
                 <?php
                     $args = [
-                        'post_type'      => ['story', 'competition_post'],
+                        'post_type'      => ['post'],
                         'posts_per_page' => -1,
                         'post_status'    => 'publish',
                         'author' => get_current_user_id()

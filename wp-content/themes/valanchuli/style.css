@@ -7,6 +7,14 @@ body, html {
     overflow-x: hidden;
 }
 
+.text-story-title {
+    color: #484747;
+}
+
+.text-story-title-next {
+    color: #616161;
+}
+
 /* Header dropdown start */
 #navbarNav ul.dropdown-menu li a {
     color: #005d67 !important;

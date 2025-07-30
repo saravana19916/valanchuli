@@ -4,6 +4,8 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
     let isValid = true;
     let name = this.display_name.value.trim();
     let email = this.user_email.value.trim();
+    let password = this.new_password.value.trim();
+    let confirmPassword = this.confirm_password.value.trim();
 
     document.querySelectorAll('.error-message').forEach(el => el.remove());
 
@@ -29,6 +31,18 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
         emailInput.parentNode.insertBefore(error, emailInput.nextSibling);
     }
 
+    if (password) {
+        if (password != confirmPassword)
+        isValid = false;
+        const passwordInput = document.querySelector('.confirm-password');
+
+        const error = document.createElement('p');
+        error.className = 'text-danger error-message mt-2 small';
+        error.textContent = 'Confirm password do not match with password.';
+
+        passwordInput.parentNode.insertBefore(error, passwordInput.nextSibling);
+    }
+
     if (!isValid) return;
 
     const formData = new FormData(this);
@@ -46,49 +60,49 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
     });
 });
 
-jQuery(document).ready(function($) {
-    $('#password-form').on('submit', function(e) {
-        e.preventDefault();
+// jQuery(document).ready(function($) {
+//     $('#password-form').on('submit', function(e) {
+//         e.preventDefault();
 
-        const messageContainer = $('#password-update-message');
-        let isValid = true;
-        let currentPassword = $('#current_password').val().trim();
-        let newPassword = $('#new_password').val().trim();
-        let confirmPassword = $('#confirm_password').val().trim();
+//         const messageContainer = $('#password-update-message');
+//         let isValid = true;
+//         let currentPassword = $('#current_password').val().trim();
+//         let newPassword = $('#new_password').val().trim();
+//         let confirmPassword = $('#confirm_password').val().trim();
 
-        $('.error-message').remove();
+//         $('.error-message').remove();
 
-        if (currentPassword === '') {
-            isValid = false;
-            $('.current-password').after('<p class="text-danger error-message mt-2 small">Current password is required.</p>');
-        }
+//         if (currentPassword === '') {
+//             isValid = false;
+//             $('.current-password').after('<p class="text-danger error-message mt-2 small">Current password is required.</p>');
+//         }
 
-        if (newPassword === '') {
-            isValid = false;
-            $('.new-password').after('<p class="text-danger error-message mt-2 small">New password is required.</p>');
-        }
+//         if (newPassword === '') {
+//             isValid = false;
+//             $('.new-password').after('<p class="text-danger error-message mt-2 small">New password is required.</p>');
+//         }
 
-        if (confirmPassword === '') {
-            isValid = false;
-            $('.confirm-password').after('<p class="text-danger error-message mt-2 small">Confirm password is required.</p>');
-        }
+//         if (confirmPassword === '') {
+//             isValid = false;
+//             $('.confirm-password').after('<p class="text-danger error-message mt-2 small">Confirm password is required.</p>');
+//         }
 
-        if (!isValid) return;
+//         if (!isValid) return;
 
-        messageContainer.html('');
+//         messageContainer.html('');
 
-        const data = {
-            action: 'update_user_password',
-            security: $('#update_password_nonce').val(),
-            current_password: $('#current_password').val(),
-            new_password: $('#new_password').val(),
-            confirm_password: $('#confirm_password').val()
-        };
+//         const data = {
+//             action: 'update_user_password',
+//             security: $('#update_password_nonce').val(),
+//             current_password: $('#current_password').val(),
+//             new_password: $('#new_password').val(),
+//             confirm_password: $('#confirm_password').val()
+//         };
 
-        console.log(data); // Debug: See what's being sent
+//         console.log(data); // Debug: See what's being sent
 
-        $.post(myAjax.ajaxUrl, data, function(response) {
-            messageContainer.html('<div class="alert alert-' + (response.success ? 'success' : 'danger') + '">' + response.data.message + '</div>');
-        });
-    });
-});
+//         $.post(myAjax.ajaxUrl, data, function(response) {
+//             messageContainer.html('<div class="alert alert-' + (response.success ? 'success' : 'danger') + '">' + response.data.message + '</div>');
+//         });
+//     });
+// });

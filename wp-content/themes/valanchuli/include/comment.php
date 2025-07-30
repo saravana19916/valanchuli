@@ -2,7 +2,7 @@
 
 add_filter('comments_open', function ($open, $post_id) {
     $post = get_post($post_id);
-    if ($post->post_type === 'story') {
+    if ($post->post_type === 'post') {
         return true;
     }
     return $open;
@@ -94,11 +94,27 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                     <small class="text-muted"><?php echo date('F j, Y', strtotime($comment->comment_date)); ?></small>
                 </div>
 
-                <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
-                    <span class="mb-0 text-wrap"><?php comment_text(); ?></span>
+                <div id="comment-content-<?php echo $comment_id; ?>">
+                    <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
+                        <span class="mb-0 text-wrap content-text"><?php comment_text(); ?></span>
+                    </div>
                 </div>
 
+                <div id="edit-comment-form-<?php echo $comment_id; ?>" style="display: none;">
+                            <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
+                            <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $comment_id; ?>)">Save</button>
+                            <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $comment_id; ?>)">Cancel</button>
+                        </div>
+
                 <div class="d-flex align-items-center gap-4 mt-3">
+                    <?php if (is_user_logged_in() && get_current_user_id() === (int) $comment->user_id): ?>
+                        <div id="edit-button-wrapper-<?php echo $comment_id; ?>">
+                            <button class="btn btn-sm btn-outline-light text-primary-color" onclick="toggleEditForm(<?php echo $comment_id; ?>)">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
                     <?php echo get_like_button($comment_id); ?>
 
                     <?php if (is_user_logged_in()) { ?>
@@ -236,3 +252,35 @@ function handle_ajax_reply_comment() {
         wp_send_json_error('Failed to add comment');
     }
 }
+
+// comment edit
+add_action('wp_ajax_save_edited_comment', 'save_edited_comment_callback');
+
+function save_edited_comment_callback() {
+    check_ajax_referer('save_edited_comment_nonce');
+
+    $comment_id = intval($_POST['comment_id']);
+    $new_content = sanitize_text_field($_POST['comment_content']);
+
+    $comment = get_comment($comment_id);
+
+    if (!$comment) {
+        wp_send_json_error('Comment not found.');
+    }
+
+    if (get_current_user_id() !== (int) $comment->user_id) {
+        wp_send_json_error('Unauthorized.');
+    }
+
+    $updated = wp_update_comment([
+        'comment_ID' => $comment_id,
+        'comment_content' => $new_content
+    ]);
+
+    if ($updated) {
+        wp_send_json_success('Comment updated.');
+    } else {
+        wp_send_json_error('Failed to update comment.');
+    }
+}
+

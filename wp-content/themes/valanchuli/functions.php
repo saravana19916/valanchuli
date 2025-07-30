@@ -2,6 +2,7 @@
 // require_once get_template_directory() . '/inc/wp-bootstrap-navwalker.php';
 // require_once get_template_directory() . '/include/kirki-register.php';
 require_once get_template_directory() . '/class-wp-bootstrap-navwalker.php';
+require_once get_template_directory() . '/include/forget-password.php';
 require_once get_template_directory() . '/include/login.php';
 require_once get_template_directory() . '/include/register.php';
 require_once get_template_directory() . '/include/contact.php';

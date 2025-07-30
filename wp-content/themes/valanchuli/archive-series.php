@@ -8,7 +8,7 @@ $series = get_queried_object();
 echo "<h1>{$series->name}</h1>";
 
 $stories = new WP_Query([
-    'post_type' => 'story',
+    'post_type' => 'post',
     'posts_per_page' => -1,
     'tax_query' => [
         [

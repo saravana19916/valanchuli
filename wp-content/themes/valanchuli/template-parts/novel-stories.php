@@ -3,7 +3,7 @@
     $current_user = $args['user_id'] ?? '';
 
     $args = [
-        'post_type'      => ['story', 'competition_post'],
+        'post_type'      => ['post'],
         'posts_per_page' => -1,
         'post_status'    => 'publish',
     ];
@@ -68,6 +68,28 @@
             $series = get_the_terms($post_id, 'series');
             $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
             $average_rating = get_custom_average_rating($post_id, $series_id);
+
+            $episode_count = 0;
+
+            if ($series_id) {
+                $related_stories = new WP_Query([
+                    'post_type'      => 'post',
+                    'posts_per_page' => -1,
+                    'post_status'    => 'publish',
+                    'orderby'        => 'date',
+                    'order'          => 'ASC',
+                    'post__not_in'   => [$post_id],
+                    'tax_query'      => [
+                        [
+                            'taxonomy' => 'series',
+                            'field'    => 'term_id',
+                            'terms'    => [$series_id],
+                        ],
+                    ],
+                ]);
+
+                $episode_count = $related_stories->found_posts;
+            }
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
@@ -90,7 +112,7 @@
                     </div>
 
                     <?php if ($context === 'my-creations') { ?>
-                        <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                        <div class="position-absolute bottom-0 end-0 px-2 py-2 mb-4 d-flex gap-2">
                             <a 
                                 href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
                                 class="btn btn-warning btn-sm p-1" 
@@ -107,10 +129,17 @@
                             </a>
                         </div>
                     <?php } ?>
+
+                    <div class="position-absolute bottom-0 start-0 w-100">
+                        <div class="d-flex align-items-center text-white gap-2" style="background: rgba(0, 0, 0, 0.5); border-radius: 0.25rem; padding: 4px 8px;">
+                            <i class="fas fa-book"></i>
+                            <span><?php echo $episode_count; ?> பாகங்கள்</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -129,11 +158,11 @@
                     <?php } ?>
 
                     <div class="d-flex mt-1">
-                        <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                        <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                             <i class="fa-solid fa-eye me-1"></i>
                             <?php echo format_view_count($total_views); ?>
                         </div>
-                        <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                        <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                     </div>
                 </div>
             </div>
@@ -141,7 +170,7 @@
 </div>
 
 <!-- Mobile/Tablet Swiper -->
-<div class="swiper trending-swiper d-lg-none px-2 mt-3">
+<div class="swiper trending-swiper d-lg-none px-2 mt-4">
     <div class="swiper-wrapper">
         <?php foreach ($novel_stories as $item): ?>
             <?php
@@ -152,6 +181,28 @@
                 $series = get_the_terms($post_id, 'series');
                 $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
                 $average_rating = get_custom_average_rating($post_id, $series_id);
+
+                $episode_count = 0;
+
+                if ($series_id) {
+                    $related_stories = new WP_Query([
+                        'post_type'      => 'post',
+                        'posts_per_page' => -1,
+                        'post_status'    => 'publish',
+                        'orderby'        => 'date',
+                        'order'          => 'ASC',
+                        'post__not_in'   => [$post_id],
+                        'tax_query'      => [
+                            [
+                                'taxonomy' => 'series',
+                                'field'    => 'term_id',
+                                'terms'    => [$series_id],
+                            ],
+                        ],
+                    ]);
+
+                    $episode_count = $related_stories->found_posts;
+                }
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
@@ -174,7 +225,7 @@
                     </div>
 
                     <?php if ($context === 'my-creations') { ?>
-                        <div class="position-absolute bottom-0 end-0 px-2 py-1 me-2 mb-3 d-flex gap-2">
+                        <div class="position-absolute bottom-0 end-0 px-2 py-2 me-2 mb-4 d-flex gap-2">
                             <a 
                                 href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
                                 class="btn btn-warning btn-sm p-1" 
@@ -191,10 +242,17 @@
                             </a>
                         </div>
                     <?php } ?>
+
+                    <div class="position-absolute bottom-0 start-0 w-100">
+                        <div class="d-flex align-items-center text-white gap-2" style="background: rgba(0, 0, 0, 0.5); border-radius: 0.25rem; padding: 4px 8px;">
+                            <i class="fas fa-book"></i>
+                            <span><?php echo $episode_count; ?> பாகங்கள்</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -213,11 +271,11 @@
                     <?php } ?>
 
                     <div class="d-flex mt-1">
-                        <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                        <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                             <i class="fa-solid fa-eye me-1"></i>
                             <?php echo format_view_count($total_views); ?>
                         </div>
-                        <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                        <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                     </div>
                 </div>
             </div>

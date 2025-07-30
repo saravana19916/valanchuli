@@ -8,7 +8,7 @@
     ], get_permalink(get_page_by_path('sirukathai')));
 ?>
 
-<div class="d-flex justify-content-between align-items-center mt-3">
+<div class="d-flex justify-content-between align-items-center mt-4">
     <h4 class="py-2 fw-bold m-0">🔥 சிறுகதை</h4>
     <a href="<?php echo esc_url($sirukathaiUrl); ?>" class="text-primary-color fs-16px">
         மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
@@ -33,7 +33,7 @@
     }
 
     $args = [
-        'post_type'      => ['story', 'competition_post'],
+        'post_type'      => ['post'],
         'posts_per_page' => -1,
         'orderby'        => 'date',
         'order'          => 'DESC',
@@ -112,7 +112,7 @@
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                                     <?php echo esc_html(get_the_title()); ?>
                                 </a>
                             </p>
@@ -131,11 +131,11 @@
                             <?php } ?>
 
                             <div class="d-flex mt-1">
-                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                                     <i class="fa-solid fa-eye me-1"></i>
                                     <?php echo format_view_count($total_views); ?>
                                 </div>
-                                <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                             </div>
                         </div>
                     </div>
@@ -143,7 +143,7 @@
             } ?>
         </div>
 
-        <div class="swiper trending-swiper d-lg-none px-2 mt-3">
+        <div class="swiper trending-swiper d-lg-none px-2 mt-4">
             <div class="swiper-wrapper">
                 <?php while ($stories->have_posts()) {
                     $stories->the_post();
@@ -192,7 +192,7 @@
                             </div>
                             <div class="card-body p-2">
                                 <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                                    <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                    <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                                         <?php echo esc_html(get_the_title()); ?>
                                     </a>
                                 </p>
@@ -211,11 +211,11 @@
                                 <?php } ?>
 
                                 <div class="d-flex mt-1">
-                                    <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                    <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                                         <i class="fa-solid fa-eye me-1"></i>
                                         <?php echo format_view_count($total_views); ?>
                                     </div>
-                                    <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                    <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                                 </div>
                             </div>
                         </div>

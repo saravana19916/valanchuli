@@ -1,16 +1,25 @@
 <?php
 function enqueue_rating_script() {
+    $currentUrl = get_permalink();
+    $loginPage = get_page_by_path('login');
+    $loginUrl = get_permalink($loginPage);
+
+    $loginUrlWithRedirect = add_query_arg('redirect_to', urlencode($currentUrl), $loginUrl);
+
     wp_enqueue_script('post-rating-js', get_template_directory_uri() . '/js/post-rating.js', ['jquery'], null, true);
     wp_localize_script('post-rating-js', 'postRating', [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce'    => wp_create_nonce('post_rating_nonce'),
         'user_id'  => get_current_user_id(),
+        'is_logged_in' => is_user_logged_in(),
+        'login_url'   => $loginUrlWithRedirect,
     ]);
 }
 add_action('wp_enqueue_scripts', 'enqueue_rating_script');
 
 
 add_action('wp_ajax_save_post_rating', 'save_post_rating');
+add_action('wp_ajax_nopriv_save_post_rating', 'save_post_rating');
 function save_post_rating() {
     check_ajax_referer('post_rating_nonce', 'nonce');
 
@@ -115,7 +124,7 @@ add_action('wp_head', 'increase_story_view_count');
 
 function get_average_series_views($post_id, $term_id) {
     $args = [
-        'post_type'      => 'story',
+        'post_type'      => 'post',
         'posts_per_page' => -1,
         'post__not_in'   => array($post_id),
         'tax_query'      => [

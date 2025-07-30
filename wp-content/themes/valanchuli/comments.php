@@ -95,10 +95,16 @@ if (post_password_required()) {
                                 ]);
                             } else {
                             
-                            $loginUrl = get_permalink(get_page_by_path('login'));
+                            $currentUrl = get_permalink();
+                            $loginPage = get_page_by_path('login');
+                            $loginUrl = get_permalink($loginPage);
+
+                            $loginUrlWithRedirect = add_query_arg('redirect_to', urlencode($currentUrl), $loginUrl);
                         ?>
                             <div class="text-end">
-                                <button class="btn btn-primary btn-sm" onclick="window.location.href='<?php echo esc_url($loginUrl); ?>'">You must log in to reply here</button>
+                                <button class="btn btn-primary btn-sm" onclick="window.location.href='<?php echo esc_url($loginUrlWithRedirect); ?>'">
+                                    You must log in to reply here
+                                </button>
                             </div>
                         <?php } ?>
                     </div>
@@ -245,6 +251,47 @@ jQuery(document).ready(function($) {
         });
     });
 });
+
+// comment edit option
+function toggleEditForm(commentId) {
+    const commentText = document.getElementById(`comment-content-${commentId}`);
+    const editForm = document.getElementById(`edit-comment-form-${commentId}`);
+    const editButton = document.getElementById(`edit-button-wrapper-${commentId}`);
+
+    if (editForm.style.display === 'none') {
+        commentText.style.display = 'none';
+        editForm.style.display = 'block';
+        editButton.style.display = 'none';
+    } else {
+        commentText.style.display = 'block';
+        editForm.style.display = 'none';
+        editButton.style.display = 'block';
+    }
+}
+
+function saveEditedComment(commentId) {
+    const newContent = document.getElementById(`edit-comment-text-${commentId}`).value;
+
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            action: 'save_edited_comment',
+            comment_id: commentId,
+            comment_content: newContent,
+            _ajax_nonce: '<?php echo wp_create_nonce('save_edited_comment_nonce'); ?>'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector(`#comment-content-${commentId} .content-text`).innerText = newContent;
+            toggleEditForm(commentId);
+        }
+    });
+}
 </script>
 
 <style>

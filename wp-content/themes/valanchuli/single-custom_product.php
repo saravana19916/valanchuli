@@ -9,8 +9,11 @@ if (have_posts()) :
         $link = get_post_meta(get_the_ID(), 'product_link', true);
         $cat_id = get_post_meta(get_the_ID(), 'product_category', true);
         $category = get_category($cat_id);
-        $image_id = get_post_meta(get_the_ID(), 'product_image', true);
-        $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
+        // $image_id = get_post_meta(get_the_ID(), 'product_image', true);
+        // $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
+        $image_ids = get_post_meta(get_the_ID(), 'product_images', true);
+$image_ids = is_array($image_ids) ? $image_ids : [];
+
         $description = get_post_meta(get_the_ID(), 'product_description', true);
 ?>
 
@@ -22,18 +25,51 @@ if (have_posts()) :
             <div class="row g-5 align-items-start">
                 <!-- Left: Image -->
                 <div class="col-md-5 text-center">
-                    <?php if ($image_url): ?>
-                        <div class="border rounded shadow-sm p-3 bg-white">
-                            <img src="<?php echo esc_url($image_url); ?>" alt="<?php the_title(); ?>" class="img-fluid rounded" style="max-height: 450px; height: 450px; object-fit: contain;">
-                        </div>
-                    <?php else: ?>
-                        <div class="border rounded shadow-sm p-3 bg-white">
-                            <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                class="img-fluid rounded" style="max-height: 450px; height: 450px; object-fit: contain;"
-                                alt="Default Image">
-                        </div>
-                    <?php endif; ?>
+        <?php if (!empty($image_ids)) : ?>
+            <?php
+                $first_image_url = wp_get_attachment_image_url($image_ids[0], 'large');
+                $first_full = wp_get_attachment_image_url($image_ids[0], 'full');
+            ?>
+            <!-- Main Image -->
+            <div class="border rounded shadow-sm mb-4 p-3 bg-white">
+                <a href="<?php echo esc_url($first_full); ?>" data-lightbox="product-gallery">
+                    <img src="<?php echo esc_url($first_image_url); ?>" class="img-fluid rounded w-100"
+                        style="max-height: 450px; object-fit: contain;" alt="<?php the_title(); ?>">
+                </a>
+            </div>
+
+            <?php if (count($image_ids) > 1): ?>
+                <!-- Swiper Slider for remaining images -->
+                <div class="swiper mySwiper">
+                    <div class="swiper-wrapper">
+                        <?php foreach (array_slice($image_ids, 1) as $image_id) :
+                            $image_url = wp_get_attachment_image_url($image_id, 'thumbnail');
+                            $full = wp_get_attachment_image_url($image_id, 'full');
+                            if (!$image_url && !$full) continue;
+                        ?>
+                            <div class="swiper-slide">
+                                <a href="<?php echo esc_url($full); ?>" data-lightbox="product-gallery">
+                                    <img src="<?php echo esc_url($image_url); ?>" class="img-fluid rounded"
+                                        style="height: 100px; object-fit: contain;" alt="Gallery">
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <!-- Optional nav -->
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
                 </div>
+            <?php endif; ?>
+
+        <?php else: ?>
+            <!-- Default Image -->
+            <div class="border rounded shadow-sm p-3 bg-white">
+                <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                    class="img-fluid rounded" style="max-height: 450px; height: 450px; object-fit: contain;"
+                    alt="Default Image">
+            </div>
+        <?php endif; ?>
+    </div>
 
                 <!-- Right: Product Info -->
                 <div class="col-md-7">
@@ -100,3 +136,25 @@ endif;
 ?>
 
 <?php get_footer(); ?>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new Swiper('.mySwiper', {
+            slidesPerView: 3, // Show 3 at a time (adjust based on screen)
+            spaceBetween: 15,
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            breakpoints: {
+                768: {
+                    slidesPerView: 4
+                },
+                1024: {
+                    slidesPerView: 5
+                }
+            }
+        });
+    });
+</script>
+

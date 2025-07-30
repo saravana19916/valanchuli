@@ -1,12 +1,21 @@
 <?php
 /* Template Name: Product List Page */
 get_header();
+
+ $args = [
+    'post_type' => 'custom_product',
+    'posts_per_page' => -1,
+    'ignore_sticky_posts' => true,
+    'suppress_filters' => false,
+];
+
+$products = new WP_Query($args);
 ?>
 
 <div class="container py-5">
     <div class="row mb-3">
         <div class="d-flex justify-content-between align-items-center">
-            <h4 class="text-primary-color fw-bold mb-0">Products</h4>
+            <h4 class="fw-bold mb-0">Products</h4>
 
             <!-- Hamburger button for mobile -->
             <button class="btn btn-outline-primary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" aria-controls="mobileFilters">
@@ -15,20 +24,24 @@ get_header();
         </div>
     </div>
 
-    <div class="row">
-        <!-- Filters (visible only on desktop) -->
-        <div class="col-12 col-lg-3 mt-4 d-none d-lg-block">
-            <h5 class="offcanvas-title text-primary-color" id="mobileFiltersLabel">Filters</h5>
-            <?php get_template_part('template-parts/product-filter-form'); ?>
-        </div>
+    <?php if ($products->found_posts == 0) { ?>
+        <div class="alert alert-warning mt-4">No products found.</div>
+    <?php } else { ?>
+        <div class="row">
+            <!-- Filters (visible only on desktop) -->
+            <div class="col-12 col-lg-3 mt-4 d-none d-lg-block">
+                <h5 class="offcanvas-title text-primary-color" id="mobileFiltersLabel">Filters</h5>
+                <?php get_template_part('template-parts/product-filter-form'); ?>
+            </div>
 
-        <!-- Product Results -->
-        <div class="col-12 col-lg-9" style="height: 70vh; overflow-y: auto;">
-            <div class="row">
-                <?php get_template_part('template-parts/product-list'); ?>
+            <!-- Product Results -->
+            <div class="col-12 col-lg-9" style="height: 70vh; overflow-y: auto;">
+                <div class="row">
+                    <?php get_template_part('template-parts/product-list'); ?>
+                </div>
             </div>
         </div>
-    </div>
+    <?php } ?>
 </div>
 
 <!-- Offcanvas for mobile filters -->

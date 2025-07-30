@@ -1,24 +1,7 @@
 <?php
 
-function register_story_post_type() {
-    register_post_type('story', [
-        'label' => 'Stories',
-        'public' => true,
-        'supports' => ['title', 'editor', 'custom-fields', 'thumbnail', 'comments'],
-        'taxonomies' => ['category', 'series'],
-        'show_in_rest' => true,
-        'rewrite' => ['slug' => 'stories'],
-        'has_archive' => true,
-    ]);
-
-    // Link built-in category taxonomy to custom post type
-    register_taxonomy_for_object_type('category', 'story');
-}
-add_action('init', 'register_story_post_type');
-
-
 function register_story_series_taxonomy() {
-    register_taxonomy('series', 'story', [
+    register_taxonomy('series', 'post', [
         'label' => 'Series',
         'public' => true,
         'hierarchical' => false,
@@ -72,7 +55,7 @@ function save_story_ajax() {
         'post_title'   => $title,
         'post_content' => $content,
         'post_status'  => 'publish',
-        'post_type'    => 'story',
+        'post_type'    => 'post',
         'post_category'=> [$category],
         'post_author'  => get_current_user_id(),
     ];
@@ -138,7 +121,7 @@ function handle_save_draft() {
     }
 
     $post_data = [
-        'post_type'    => 'story',
+        'post_type'    => 'post',
         'post_title'   => $title,
         'post_content' => $content,
         'post_status'  => $post_status,
@@ -207,7 +190,7 @@ function get_last_draft_story() {
 	$user_id = get_current_user_id();
 
 	$last_draft = get_posts([
-		'post_type'   => 'story',
+		'post_type'   => 'post',
 		'post_status' => 'draft',
 		'author'      => $user_id,
 		'numberposts' => 1,

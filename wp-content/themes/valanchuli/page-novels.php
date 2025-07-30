@@ -7,7 +7,7 @@ get_header(); ?>
     $user_id = $_GET['user_id'] ?? '';
 
     $args = [
-        'post_type'      => ['story', 'competition_post'],
+        'post_type'      => ['post'],
         'posts_per_page' => -1,
         'post_status'    => 'publish',
     ];
@@ -46,9 +46,9 @@ get_header(); ?>
     });
 ?>
 
-<div class="container my-5">
+<div class="container my-4">
 	<div class="row">
-        <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 நாவல்கள்</h4>
+        <h4 class="py-2 fw-bold m-0">🔥 நாவல்கள்</h4>
         <div class="mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
             <?php foreach ($novel_stories as $index => $item): ?>
                 <?php
@@ -59,6 +59,28 @@ get_header(); ?>
                     $series = get_the_terms($post_id, 'series');
                     $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
                     $average_rating = get_custom_average_rating($post_id, $series_id);
+
+                    $episode_count = 0;
+
+                    if ($series_id) {
+                        $related_stories = new WP_Query([
+                            'post_type'      => 'post',
+                            'posts_per_page' => -1,
+                            'post_status'    => 'publish',
+                            'orderby'        => 'date',
+                            'order'          => 'ASC',
+                            'post__not_in'   => [$post_id],
+                            'tax_query'      => [
+                                [
+                                    'taxonomy' => 'series',
+                                    'field'    => 'term_id',
+                                    'terms'    => [$series_id],
+                                ],
+                            ],
+                        ]);
+
+                        $episode_count = $related_stories->found_posts;
+                    }
                 ?>
                 <div style="width: 180px;">
                         <div class="position-relative">
@@ -81,7 +103,7 @@ get_header(); ?>
                             </div>
 
                             <?php if ($context === 'my-creations') { ?>
-                                <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                                <div class="position-absolute bottom-0 end-0 px-2 py-2 mb-4 d-flex gap-2">
                                     <a 
                                         href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
                                         class="btn btn-warning btn-sm p-1" 
@@ -98,10 +120,17 @@ get_header(); ?>
                                     </a>
                                 </div>
                             <?php } ?>
+
+                            <div class="position-absolute bottom-0 start-0 w-100">
+                                <div class="d-flex align-items-center text-white gap-2" style="background: rgba(0, 0, 0, 0.5); border-radius: 0.25rem; padding: 4px 8px;">
+                                    <i class="fas fa-book"></i>
+                                    <span><?php echo $episode_count; ?> பாகங்கள்</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                                     <?php echo esc_html(get_the_title()); ?>
                                 </a>
                             </p>
@@ -109,17 +138,18 @@ get_header(); ?>
                                 $author_id = get_post_field('post_author', get_the_ID());
                                 $author_name = get_the_author_meta('display_name', $author_id);
                             ?>
-
                             <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                                <?php echo $author_name; ?>
+                                <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                                    <?php echo esc_html($author_name); ?>
+                                </a>
                             </p>
 
                             <div class="d-flex mt-1">
-                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                                     <i class="fa-solid fa-eye me-1"></i>
                                     <?php echo format_view_count($total_views); ?>
                                 </div>
-                                <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                             </div>
                         </div>
                     </div>

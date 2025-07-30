@@ -41,7 +41,7 @@ if (!empty($banners)) :
 </div>
 <?php endif; ?>
 
-<div class="container my-5">
+<div class="container my-4">
     <!-- Trending stories start -->
     <?php get_template_part('template-parts/trending-stories'); ?>
     <!-- Trending stories end -->

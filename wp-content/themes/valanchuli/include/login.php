@@ -16,15 +16,20 @@ function ajax_login_handler() {
 
     $user = wp_signon($creds, is_ssl());
 
-    if (isset($user->errors) && isset($user->errors['invalid_username'])) {
-        $response['status'] = 'error';
-        $response['message'] = 'Invalid username or password.';
-        wp_send_json($response);
-    }
+    if (is_wp_error($user)) {
+        $error_codes = $user->get_error_codes();
 
-    if (isset($user->errors) && isset($user->errors['email_not_verified'])) {
-        $response['status'] = 'error';
-        $response['message'] = 'Please verify your email before logging in.';
+        if (in_array('invalid_username', $error_codes) || in_array('incorrect_password', $error_codes)) {
+            $response['status'] = 'error';
+            $response['message'] = 'Invalid username or password.';
+        } elseif (in_array('email_not_verified', $error_codes)) {
+            $response['status'] = 'error';
+            $response['message'] = 'Please verify your email before logging in.';
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = $user->get_error_message();
+        }
+
         wp_send_json($response);
     }
 
@@ -34,7 +39,7 @@ function ajax_login_handler() {
 
     $response['status'] = 'success';
     $response['message'] = 'Login successful!';
-    $response['redirect_url'] = home_url();
+    $response['redirect_url'] = !empty($_POST['redirect_to']) ? esc_url_raw($_POST['redirect_to']) : home_url();
 
     wp_send_json($response);
 }

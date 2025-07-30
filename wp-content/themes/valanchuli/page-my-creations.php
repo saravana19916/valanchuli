@@ -12,9 +12,9 @@
     <?php else : ?>
         <?php
             $args = [
-                'post_type'      => ['story', 'competition_post'],
+                'post_type'      => ['post'],
                 'posts_per_page' => -1,
-                'post_status'    => 'publish',
+                'post_status'    => ['publish', 'draft'],
                 'author' => get_current_user_id()
             ];
             
@@ -23,8 +23,11 @@
             $total_count = $novel_query->found_posts;
         ?>
 
+        <!-- Author details -->
+        <?php get_template_part('template-parts/author-detail', null, ['user_id' => get_current_user_id()]); ?>
+
         <?php if ( $total_count == 0 ) : ?>
-            <div class="alert alert-warning text-center" role="alert">
+            <div class="alert alert-warning text-center mt-5" role="alert">
                 <p class="mb-2">
                     உங்கள் படைப்புகளின் பக்கம் இன்னும் காலியாக உள்ளது! 
                     உங்களின் அபாரமான கற்பனை திறனை  உலகுக்கு காட்ட  கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!

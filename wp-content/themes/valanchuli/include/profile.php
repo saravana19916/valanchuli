@@ -19,6 +19,10 @@ function handle_update_profile() {
         $data['user_email'] = sanitize_email($_POST['user_email']);
     }
 
+    if (!empty($_POST['new_password'])) {
+        $data['user_pass'] = sanitize_text_field($_POST['new_password']);
+    }
+
     if (!empty($data)) {
         wp_update_user(array_merge(['ID' => $user_id], $data));
     }
@@ -40,35 +44,35 @@ function handle_update_profile() {
     wp_send_json_success(['message' => 'Profile updated successfully']);
 }
 
-add_action('wp_ajax_update_user_password', 'handle_password_update');
-function handle_password_update() {
-    check_ajax_referer('update_password_action', 'security');
+// add_action('wp_ajax_update_user_password', 'handle_password_update');
+// function handle_password_update() {
+//     check_ajax_referer('update_password_action', 'security');
 
-    $current_password = sanitize_text_field($_POST['current_password']);
-    $new_password = sanitize_text_field($_POST['new_password']);
-    $confirm_password = sanitize_text_field($_POST['confirm_password']);
-    $user_id = get_current_user_id();
+//     $current_password = sanitize_text_field($_POST['current_password']);
+//     $new_password = sanitize_text_field($_POST['new_password']);
+//     $confirm_password = sanitize_text_field($_POST['confirm_password']);
+//     $user_id = get_current_user_id();
 
-    if (!$user_id) {
-        wp_send_json_error(['message' => 'You must be logged in.']);
-    }
+//     if (!$user_id) {
+//         wp_send_json_error(['message' => 'You must be logged in.']);
+//     }
 
-    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
-        wp_send_json_error(['message' => 'All fields are required.']);
-    }
+//     if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+//         wp_send_json_error(['message' => 'All fields are required.']);
+//     }
 
-    if ($new_password !== $confirm_password) {
-        wp_send_json_error(['message' => 'New passwords do not match.']);
-    }
+//     if ($new_password !== $confirm_password) {
+//         wp_send_json_error(['message' => 'New passwords do not match.']);
+//     }
 
-    $user = get_user_by('id', $user_id);
+//     $user = get_user_by('id', $user_id);
 
-    if (!wp_check_password($current_password, $user->data->user_pass, $user->ID)) {
-        wp_send_json_error(['message' => 'Current password is incorrect.']);
-    }
+//     if (!wp_check_password($current_password, $user->data->user_pass, $user->ID)) {
+//         wp_send_json_error(['message' => 'Current password is incorrect.']);
+//     }
 
-    wp_set_password($new_password, $user_id);
+//     wp_set_password($new_password, $user_id);
 
-    wp_send_json_success(['message' => 'Password updated successfully. Please log in again.']);
-}
+//     wp_send_json_success(['message' => 'Password updated successfully. Please log in again.']);
+// }
 

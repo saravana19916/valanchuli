@@ -31,6 +31,7 @@ jQuery(document).ready(function ($) {
             url: ajax_login_object.ajax_url,
             data: {
                 action: 'ajax_login',
+                redirect_to: $('#redirect_to').val(),
                 username: username,
                 password: password,
                 security: ajax_login_object.security,
@@ -49,10 +50,5 @@ jQuery(document).ready(function ($) {
                 }
             },
         });
-    });
-
-    $('#loginModal').on('hidden.bs.modal', function () {
-        $('#login-form')[0].reset();
-        $('.error-message').remove();
     });
 });

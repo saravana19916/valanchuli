@@ -4,26 +4,35 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
 
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-4">
-                    <h4 class="text-primary-color fw-bold"><?php the_title(); ?></h4>
-                    <p class="text-muted fs-13px">
-                        <?php
-                            $author_id = get_post_field('post_author', get_the_ID());
-                            $author_name = get_the_author_meta('display_name', $author_id);
-                            $posted_date = get_the_date('d M Y');
+            <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
 
-                            $series_id = get_post_meta(get_the_ID(), '_competition_series', true);
-                            $series_name = $series_id ? get_term($series_id)->name : 'தொடர்கதை அல்ல';
+            <?php
+                $categories = get_the_category(get_the_ID());
+                $author_id = get_post_field('post_author', get_the_ID());
+                $author_name = get_the_author_meta('display_name', $author_id);
+                $posted_date = get_the_date('d M Y');
+            ?>
 
-                            echo esc_html($author_name) . ' | ' . esc_html($posted_date) . ' | ' . esc_html($series_name);
-                        ?>
-                    </p>
+            <p class="text-muted fs-13px text-center">
+                <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>" 
+                class="text-primary-color text-decoration-underline">
+                    <?php echo esc_html($author_name); ?>
+                </a>
+                | <?php echo esc_html($posted_date); ?>
+            </p>
 
-                    <div class="card-text my-5">
+            <?php if (!empty($categories) && isset($categories[0])) { ?>
+                <p class="text-muted fs-13px text-center">
+                    <b>Category:</b> <?php echo $categories[0]->name; ?>
+                </p>
+            <?php } ?>
+
+            <div class="card border border-2 border-primary rounded">
+                <div class="card-body p-0">
+                    <div class="card-text mt-3 px-3 py-2">
                         <?php
                             $content = get_post_meta(get_the_ID(), '_competition_content', true);
-                            echo wpautop(esc_html($content));
+                            echo wpautop(wp_strip_all_tags($content));
                         ?>
                     </div>
                 </div>
@@ -37,6 +46,13 @@
                     </div>
                 </div>
             <?php endif; ?>
+
+            <!-- Related stories start -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4 class="py-2 fw-bold m-0 mt-4">🔥 Related Stories</h4>
+            </div>
+            <?php get_template_part('template-parts/competition-related-stories', null, ['competition_id' => get_the_ID()]); ?>
+            <!-- Related stories end -->
         </div>
     </div>
 </div>

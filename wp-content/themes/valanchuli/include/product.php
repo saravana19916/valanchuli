@@ -1,5 +1,11 @@
 <?php
 
+function enqueue_lightbox_assets() {
+    wp_enqueue_style('lightbox-css', 'https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/css/lightbox.min.css');
+    wp_enqueue_script('lightbox-js', 'https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/js/lightbox.min.js', [], null, true);
+}
+add_action('wp_enqueue_scripts', 'enqueue_lightbox_assets');
+
 function register_custom_product_post_type() {
     register_post_type('product_categories',
         array(
@@ -105,12 +111,32 @@ function render_product_meta_box($post) {
             <?php endforeach; ?>
         </select>
     </p>
-    <p>
+    <!-- <p>
         <label>Product Image:</label>
         <img id="product_image_preview" src="<?php echo esc_url($image_url); ?>" style="max-width: 150px; display: <?php echo $image_url ? 'block' : 'none'; ?>;"><br>
         <input type="hidden" name="product_image" id="product_image" value="<?php echo esc_attr($image_id); ?>">
         <button type="button" class="button" id="upload_product_image">Upload Image</button>
         <button type="button" class="button" id="remove_product_image" style="display: <?php echo $image_url ? 'inline-block' : 'none'; ?>;">Remove</button>
+    </p> -->
+
+    <p>
+        <label>Product Images (max 10):</label><br>
+        <div id="product_images_container">
+            <?php
+            $image_ids = get_post_meta($post->ID, 'product_images', true);
+            $image_ids = is_array($image_ids) ? $image_ids : [];
+
+            foreach ($image_ids as $id) {
+                $img_url = wp_get_attachment_image_url($id, 'thumbnail');
+                echo '<div class="product-image-item" style="display:inline-block;margin-right:10px;">
+                        <img src="' . esc_url($img_url) . '" style="max-width:100px;" />
+                        <input type="hidden" name="product_images[]" value="' . esc_attr($id) . '">
+                        <button type="button" class="remove-product-image button">Remove</button>
+                    </div>';
+            }
+            ?>
+        </div>
+        <button type="button" class="button" id="upload_product_images">Upload Images</button>
     </p>
 
     <p>
@@ -120,36 +146,49 @@ function render_product_meta_box($post) {
 
     <script>
         jQuery(document).ready(function ($) {
-            var mediaUploader;
+               let mediaUploader;
 
-            $('#upload_product_image').click(function (e) {
+            $('#upload_product_images').on('click', function (e) {
                 e.preventDefault();
+
                 if (mediaUploader) {
                     mediaUploader.open();
                     return;
                 }
+
                 mediaUploader = wp.media({
-                    title: 'Select Product Image',
+                    title: 'Select Product Images',
                     button: {
-                        text: 'Use this image'
+                        text: 'Add Images'
                     },
-                    multiple: false
+                    multiple: true
                 });
 
                 mediaUploader.on('select', function () {
-                    var attachment = mediaUploader.state().get('selection').first().toJSON();
-                    $('#product_image').val(attachment.id);
-                    $('#product_image_preview').attr('src', attachment.url).show();
-                    $('#remove_product_image').show();
+                    const attachments = mediaUploader.state().get('selection').toJSON();
+                    const container = $('#product_images_container');
+                    let currentCount = container.find('.product-image-item').length;
+
+                    attachments.forEach(function (attachment) {
+                        if (currentCount >= 10) return; // limit to 10 images
+
+                        const html = `
+                            <div class="product-image-item" style="display:inline-block;margin-right:10px;">
+                                <img src="${attachment.url}" style="max-width:100px;" />
+                                <input type="hidden" name="product_images[]" value="${attachment.id}">
+                                <button type="button" class="remove-product-image button">Remove</button>
+                            </div>
+                        `;
+                        container.append(html);
+                        currentCount++;
+                    });
                 });
 
                 mediaUploader.open();
             });
 
-            $('#remove_product_image').click(function () {
-                $('#product_image').val('');
-                $('#product_image_preview').hide();
-                $(this).hide();
+            $(document).on('click', '.remove-product-image', function () {
+                $(this).closest('.product-image-item').remove();
             });
         });
     </script>
@@ -172,9 +211,17 @@ function save_product_meta_data($post_id) {
     if (isset($_POST['product_category'])) {
         update_post_meta($post_id, 'product_category', intval($_POST['product_category']));
     }
-    if (isset($_POST['product_image'])) {
-        update_post_meta($post_id, 'product_image', intval($_POST['product_image']));
+    // if (isset($_POST['product_image'])) {
+    //     update_post_meta($post_id, 'product_image', intval($_POST['product_image']));
+    // }
+
+    if (isset($_POST['product_images'])) {
+        $image_ids = array_map('intval', $_POST['product_images']);
+        update_post_meta($post_id, 'product_images', $image_ids);
+    } else {
+        delete_post_meta($post_id, 'product_images'); // clear if none submitted
     }
+
     if (isset($_POST['product_description'])) {
         update_post_meta($post_id, 'product_description', sanitize_text_field($_POST['product_description']));
     }

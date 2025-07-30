@@ -111,10 +111,15 @@ foreach ($categories as $cat) :
                 if (!empty($_GET['rating']) && $_GET['rating'] != $rating) {
                     continue;
                 }
-                $thumb = get_post_meta(get_the_ID(), 'product_image', true);
-                $img_url = $thumb 
-                    ? wp_get_attachment_image_url($thumb, 'medium') 
-                    : get_template_directory_uri() . '/images/no-image.jpeg';
+
+                $image_ids = get_post_meta(get_the_ID(), 'product_images', true);
+                $img_url = get_template_directory_uri() . '/images/no-image.jpeg';
+
+                if (!empty($image_ids) && is_array($image_ids)) {
+                    $first_image_id = $image_ids[0];
+                    $img_url = wp_get_attachment_image_url($first_image_id, 'medium');
+                }
+
                 $total_views = get_custom_post_views(get_the_ID());
 
                 $product_count++;

@@ -73,7 +73,28 @@ function ajax_register_user() {
     update_user_meta($user_id, 'email_verified', 0);
 
     $verification_url = site_url("?verify_email=$code&user_id=$user_id");
-    wp_mail($email, 'Verify your email', "Click the link to verify: $verification_url");
+
+    ob_start();
+    $template_path = locate_template('template-parts/email-verification-email-template.php');
+    if ($template_path) {
+        $args = [
+            'firstname' => $firstname,
+            'verification_url' => $verification_url
+        ];
+        extract($args);
+        include $template_path;
+        $message = ob_get_clean();
+    } else {
+        $message = 'Email template not found.';
+    }
+
+    add_filter('wp_mail_content_type', 'set_html_content_type');
+    add_filter( 'wp_mail_from', 'custom_wp_mail_from_email' );
+    add_filter( 'wp_mail_from_name', 'custom_wp_mail_from_name' );
+    wp_mail($email, 'Verify your email', $message);
+    remove_filter( 'wp_mail_from', 'custom_wp_mail_from_email' );
+    remove_filter( 'wp_mail_from_name', 'custom_wp_mail_from_name' );
+    remove_filter('wp_mail_content_type', 'set_html_content_type');
 
     $response['status'] = 'success';
     $response['message'] = 'Registration successful! Check your email to verify your account.';

@@ -10,7 +10,7 @@ if ($category_id && $series_id) {
     $series   = get_term($series_id, 'series');
 
     $query = new WP_Query([
-        'post_type'      => 'story',
+        'post_type'      => 'post',
         'posts_per_page' => -1,
         'tax_query'      => [
             'relation' => 'AND',

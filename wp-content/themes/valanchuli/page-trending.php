@@ -3,7 +3,7 @@ get_header(); ?>
 
 <?php 
     $trending_query = new WP_Query([
-        'post_type' => ['story', 'competition_post'],
+        'post_type' => ['post'],
         'posts_per_page' => -1,
         'post_status' => 'publish',
     ]);
@@ -41,9 +41,9 @@ get_header(); ?>
     $top_trending = array_slice($trending_stories, 0, 10);
 ?>
 
-<div class="container my-5">
+<div class="container my-4">
 	<div class="row">
-        <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 ட்ரெண்டிங் தொடர்கள்</h4>
+        <h4 class="py-2 fw-bold m-0">🔥 ட்ரெண்டிங் தொடர்கள்</h4>
         <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
             <?php foreach ($top_trending as $index => $item): ?>
                 <?php
@@ -75,7 +75,7 @@ get_header(); ?>
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate">
+                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
                                     <?php echo esc_html(get_the_title()); ?>
                                 </a>
                             </p>
@@ -83,17 +83,18 @@ get_header(); ?>
                                 $author_id = get_post_field('post_author', get_the_ID());
                                 $author_name = get_the_author_meta('display_name', $author_id);
                             ?>
-
                             <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                                <?php echo $author_name; ?>
+                                <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                                    <?php echo esc_html($author_name); ?>
+                                </a>
                             </p>
 
                             <div class="d-flex mt-1">
-                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
+                                <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 rounded text-story-title-next">
                                     <i class="fa-solid fa-eye me-1"></i>
                                     <?php echo format_view_count($total_views); ?>
                                 </div>
-                                <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
+                                <span class="mt-1 fs-13px text-center text-story-title-next">வாசித்தவர்கள்</span>
                             </div>
                         </div>
                         <!-- <div class="card-body p-2">

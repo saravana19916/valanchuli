@@ -43,9 +43,14 @@
                 </div>
 
                 <div class="mb-3">
-                    <div class="col-sm-12 input-group login-form-group register-password">
-                        <span class="input-group-text login-group-text"><i class="fas fa-lock text-primary-color"></i></span>
+                    <div class="input-group login-form-group register-password">
+                        <span class="input-group-text login-group-text">
+                            <i class="fas fa-lock text-primary-color"></i>
+                        </span>
                         <input type="password" class="form-control login-input" id="password" name="password" placeholder="Password *">
+                        <span class="input-group-text login-input bg-white" id="togglePassword" style="cursor: pointer;">
+                            <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                        </span>
                     </div>
                 </div>
 
@@ -88,3 +93,20 @@
 
 
 <?php get_footer(); ?>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const passwordField = document.getElementById("password");
+        const togglePassword = document.getElementById("togglePassword");
+        const togglePasswordIcon = document.getElementById("togglePasswordIcon");
+
+        togglePassword.addEventListener("click", function () {
+            const type = passwordField.getAttribute("type") === "password" ? "text" : "password";
+            passwordField.setAttribute("type", type);
+
+            // Toggle the icon
+            togglePasswordIcon.classList.toggle("fa-eye");
+            togglePasswordIcon.classList.toggle("fa-eye-slash");
+        });
+    });
+</script>
