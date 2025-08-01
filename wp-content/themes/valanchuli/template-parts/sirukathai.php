@@ -53,8 +53,7 @@
             ],
         ],
     ];
-    
-    // If context is "my-creations", filter by current user
+
     if ($current_user) {
         $args['author'] = $current_user;
     }

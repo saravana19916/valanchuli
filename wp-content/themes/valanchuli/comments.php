@@ -24,7 +24,7 @@ if (post_password_required()) {
             </h2>
             <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                 <div class="accordion-body p-0 p-sm-3" style="background-color: #F8FAFC;">
-                    <div style="height: 31rem; overflow-y: scroll; overflow-x: hidden">
+                    <div style="max-height: 31rem; overflow-y: auto; overflow-x: hidden">
                         <?php
                             $comments = get_comments([
                                 'post_id' => get_the_ID(),

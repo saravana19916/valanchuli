@@ -111,7 +111,7 @@
         <?php if (empty($competitionId)) { ?>
             <h4 class="py-2 fw-bold m-0 text-primary-color">🔥 போட்டிகள்</h4>
         <?php } ?>
-        <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
+        <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-center justify-content-sm-start" style="gap: 2rem;">
             <?php foreach ($all_stories as $post): ?>
                 <?php
                     setup_postdata($post);
@@ -155,16 +155,16 @@
                         }
                     }
                 ?>
-                <div style="width: 180px;">
+                <div class="page-post-image-size-div">
                         <div class="position-relative">
                             <a href="<?php the_permalink(); ?>">
                                 <?php if (has_post_thumbnail()) : ?>
                                     <?php the_post_thumbnail('medium', [
-                                        'class' => 'd-block rounded post-image-size',
+                                        'class' => 'd-block rounded page-post-image-size',
                                     ]); ?>
                                 <?php else : ?>
                                     <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                            class="d-block rounded post-image-size"
+                                            class="d-block rounded page-post-image-size"
                                             alt="Default Image">
                                 <?php endif; ?>
                             </a>

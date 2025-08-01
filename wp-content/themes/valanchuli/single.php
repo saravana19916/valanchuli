@@ -250,7 +250,7 @@
                                             <h5 class="modal-title" id="loginRequiredLabel">Login Required</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
-                                        <div class="modal-body">
+                                        <div class="modal-body text-center">
                                             You must be logged in to rate. <br>
                                             <a href="#" class="btn btn-primary mt-3 login-btn">Login</a>
                                         </div>

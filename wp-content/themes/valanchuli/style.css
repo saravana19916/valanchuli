@@ -470,6 +470,25 @@ a:hover, .footer-menu li:hover {
     scrollbar-width: none;
 }
 
+.page-post-image-size-div {
+    width: 180px;
+}
+
+.page-post-image-size {
+    width: 180px;
+    height: 270px;
+}
+
+@media (max-width: 415px) {
+    .page-post-image-size-div {
+        width: 220px;
+    }
+
+    .page-post-image-size {
+        width: 200px;
+    }
+}
+
 
 /* .post-image-size {
     width: 100%;

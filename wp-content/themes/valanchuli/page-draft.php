@@ -41,7 +41,7 @@ get_header(); ?>
 <div class="container my-4">
 	<div class="row">
         <h4 class="py-2 fw-bold m-0">🔥 டிராப்ட் தொடர்கள்</h4>
-        <div class="mt-4 d-lg-flex flex-wrap justify-content-start" style="gap: 2rem;">
+        <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-center justify-content-sm-start" style="gap: 2rem;">
             <?php foreach ($trending_stories as $index => $item): ?>
                 <?php
                     $post = $item['post'];
@@ -50,16 +50,16 @@ get_header(); ?>
                     $total_views = $item['views'];
                     $average_rating = get_custom_average_rating($post_id, 0);
                 ?>
-                <div style="width: 180px;">
+                <div class="page-post-image-size-div">
                         <div class="position-relative">
                             <a href="<?php the_permalink(); ?>">
                                 <?php if (has_post_thumbnail()) : ?>
                                     <?php the_post_thumbnail('medium', [
-                                        'class' => 'd-block rounded post-image-size',
+                                        'class' => 'd-block rounded page-post-image-size',
                                     ]); ?>
                                 <?php else : ?>
                                     <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                            class="d-block rounded post-image-size"
+                                            class="d-block rounded page-post-image-size"
                                             alt="Default Image">
                                 <?php endif; ?>
                             </a>
