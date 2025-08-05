@@ -209,6 +209,21 @@
                                     <?php 
                                 }
                             } else { ?>
+                                <div class="row col-12 mb-3 mx-auto">
+                                    <!-- Image Section -->
+                                    <div class="col-12 text-center mb-3">
+                                        <?php if (has_post_thumbnail()) : ?>
+                                            <?php the_post_thumbnail('medium', [
+                                                'class' => 'img-fluid d-inline-block rounded post-image-size',
+                                            ]); ?>
+                                        <?php else : ?>
+                                            <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                                                class="img-fluid d-inline-block rounded post-image-size"
+                                                alt="Default Image">
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
                                 <div class="py-2">
                                     <?php
                                         the_content();

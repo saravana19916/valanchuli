@@ -7,22 +7,10 @@
     <?php
         $context = $_GET['context'] ?? '';
         $user_id = $_GET['user_id'] ?? '';
-
-        $categories = get_categories([
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'exclude' => [get_cat_ID('Uncategorized')],
-        ]);
-
-        $has_stories = false;
-
-        foreach ($categories as $category) {
     ?>
 
         <?php
-        if ($category->name !== 'சிறுகதை') {
-            continue;
-        }
+        $term_id = get_cat_ID('சிறுகதை');
     
         $args = [
             'post_type' => ['post'],
@@ -30,10 +18,17 @@
             'orderby' => 'date',
             'order' => 'DESC',
             'tax_query' => [
+                'relation' => 'AND',
                 [
                     'taxonomy' => 'category',
-                    'field'    => 'term_id',
-                    'terms'    => [$category->term_id],
+                    'field' => 'term_id',
+                    'terms' => [$term_id],
+                    'operator' => 'IN',
+                ],
+                [
+                    'taxonomy' => 'series',
+                    'field' => 'name',
+                    'terms' => ['தொடர்கதை அல்ல'],
                     'operator' => 'IN',
                 ],
             ],
@@ -43,17 +38,19 @@
             $args['author'] = (int) $user_id;
         }
         
-        $stories = new WP_Query($args);  
+        $query = new WP_Query($args);
 
-        error_log('Query for category: ' . esc_html($category->name));
-        error_log('Total posts: ' . $stories->found_posts);
+        $stories = $query->posts;
 
-        if ($stories->have_posts()) {
-            $has_stories = true;
+        usort($stories, function ($a, $b) {
+            $views_a = (int) get_post_meta($a->ID, 'story_view_count', true);
+            $views_b = (int) get_post_meta($b->ID, 'story_view_count', true);
+            return $views_b <=> $views_a;
+        });
         ?>
             <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-center justify-content-sm-start" style="gap: 2rem;">
-                <?php while ($stories->have_posts()) {
-                    $stories->the_post();
+                <?php foreach ($stories as $index => $post) {
+                    setup_postdata($post);
                     $post_id = get_the_ID();
                     $total_views = get_custom_post_views($post_id);
                     $average_rating = get_custom_average_rating($post_id);
@@ -125,14 +122,8 @@
                     <?php
                 } ?>
             </div>
-        <?php } else {
-            // echo 'No stories found for ' . esc_html($category->name);
-        }
-        wp_reset_postdata();
-        ?>
-    <?php } ?>
 
-    <?php if (!$has_stories) { ?>
+    <?php if (count($stories) == 0) { ?>
         <div class="alert alert-warning text-center" role="alert">
             No stories found.
         </div>

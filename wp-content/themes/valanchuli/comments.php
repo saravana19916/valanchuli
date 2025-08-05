@@ -271,6 +271,7 @@ function toggleEditForm(commentId) {
 
 function saveEditedComment(commentId) {
     const newContent = document.getElementById(`edit-comment-text-${commentId}`).value;
+    console.log("dfdfdf", newContent);
 
     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
         method: 'POST',

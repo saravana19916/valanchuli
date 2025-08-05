@@ -2,15 +2,15 @@
     $context = $args['context'] ?? '';
     $current_user = $args['user_id'] ?? '';
 
-    $kavithaiUrl = add_query_arg([
+    $sirukathaiUrl = add_query_arg([
         'context' => $context,
         'user_id'  => $current_user
-    ], get_permalink(get_page_by_path('kavithai')));
+    ], get_permalink(get_page_by_path('sirukathai')));
 ?>
 
 <div class="d-flex justify-content-between align-items-center mt-4">
-    <h4 class="py-2 fw-bold m-0">🔥 கவிதை</h4>
-    <a href="<?php echo esc_url($kavithaiUrl); ?>" class="text-primary-color fs-16px">
+    <h4 class="py-2 fw-bold m-0">🔥 சிறுகதை</h4>
+    <a href="<?php echo esc_url($sirukathaiUrl); ?>" class="text-primary-color fs-16px">
         மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
     </a>
 </div>
@@ -28,16 +28,28 @@
 ?>
 
     <?php
-    if ($category->name !== 'கவிதை') {
+    if ($category->name !== 'சிறுகதை') {
         continue;
     }
 
     $args = [
-        'post_type' => ['post'],
+        'post_type'      => ['post'],
         'posts_per_page' => -1,
-        'orderby' => 'date',
-        'order' => 'DESC',
-        'tax_query' => [
+        'meta_key'       => 'story_view_count',
+        'orderby'        => 'meta_value_num',
+        'order'          => 'DESC',
+        'meta_query'     => [
+            'relation' => 'OR',
+            [
+                'key'     => 'story_view_count',
+                'compare' => 'EXISTS',
+            ],
+            [
+                'key'     => 'story_view_count',
+                'compare' => 'NOT EXISTS',
+            ],
+        ],
+        'tax_query'      => [
             'relation' => 'AND',
             [
                 'taxonomy' => 'category',
@@ -54,12 +66,11 @@
         ],
     ];
 
-    // If context is "my-creations", filter by current user
     if ($current_user) {
         $args['author'] = $current_user;
     }
     
-    $stories = new WP_Query($args);  
+    $stories = new WP_Query($args);    
 
     if ($stories->have_posts()) {
         $has_stories = true;

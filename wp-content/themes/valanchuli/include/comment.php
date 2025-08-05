@@ -80,7 +80,7 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
     if ($attachment_id) {
         $image_url = wp_get_attachment_url($attachment_id);
     } else {
-        $image_url = get_avatar_url($user_id, ['size' => 50]); // fallback to Gravatar
+        $image_url = get_avatar_url($user_id, ['size' => 50]);
     }
     ?>
     <li id="comment-<?php comment_ID(); ?>">
@@ -101,10 +101,10 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                 </div>
 
                 <div id="edit-comment-form-<?php echo $comment_id; ?>" style="display: none;">
-                            <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
-                            <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $comment_id; ?>)">Save</button>
-                            <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $comment_id; ?>)">Cancel</button>
-                        </div>
+                    <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
+                    <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $comment_id; ?>)">Save</button>
+                    <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $comment_id; ?>)">Cancel</button>
+                </div>
 
                 <div class="d-flex align-items-center gap-4 mt-3">
                     <?php if (is_user_logged_in() && get_current_user_id() === (int) $comment->user_id): ?>
@@ -133,11 +133,21 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                 <!-- Child Comments Container -->
                 <div id="child-comments-<?php echo $comment_id; ?>" class="mt-3 d-none">
                     <?php
-                        foreach ($child_comments as $child_comment) { ?>
+                        foreach ($child_comments as $child_comment) {
+                            $child_comment_id = $child_comment->comment_ID;
+                            $child_user_id = $child_comment->user_id;
+                            $attachment_id = get_user_meta($child_user_id, 'profile_photo', true);
+
+                            if ($attachment_id) {
+                                $child_image_url = wp_get_attachment_url($attachment_id);
+                            } else {
+                                $child_image_url = get_avatar_url($child_user_id, ['size' => 50]);
+                            }
+                    ?>
                             <hr/>
                             <div class="row">
                                 <div class="col-3 col-sm-2">
-                                    <img src="<?php echo esc_url($image_url); ?>" class="rounded-circle" width="64" height="64" alt="Author">
+                                    <img src="<?php echo esc_url($child_image_url); ?>" class="rounded-circle" width="64" height="64" alt="Author">
                                 </div>
                                 <div class="col-9 col-sm-10 text-start">
                                     <div class="d-flex align-items-center justify-content-between">
@@ -146,8 +156,28 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                                         <small class="text-muted"><?php echo date('F j, Y', strtotime($child_comment->comment_date)); ?></small>
                                     </div>
 
-                                    <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
-                                        <p class="mb-0 text-wrap"><?php echo esc_html($child_comment->comment_content); ?></p>
+                                    <div id="comment-content-<?php echo $child_comment_id; ?>">
+                                        <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
+                                            <span class="mb-0 text-wrap content-text"><?php echo esc_html($child_comment->comment_content); ?></span>
+                                        </div>
+                                    </div>
+
+                                    <div id="edit-comment-form-<?php echo $child_comment_id; ?>" style="display: none;">
+                                        <textarea id="edit-comment-text-<?php echo $child_comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
+                                        <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $child_comment_id; ?>)">Save</button>
+                                        <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $child_comment_id; ?>)">Cancel</button>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-4 mt-3">
+                                        <?php if (is_user_logged_in() && get_current_user_id() === (int) $child_comment->user_id): ?>
+                                            <div id="edit-button-wrapper-<?php echo $child_comment_id; ?>">
+                                                <button class="btn btn-sm btn-outline-light text-primary-color" onclick="toggleEditForm(<?php echo $child_comment_id; ?>)">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php echo get_like_button($child_comment_id); ?>
                                     </div>
                                 </div>
                             </div>

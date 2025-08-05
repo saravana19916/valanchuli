@@ -51,15 +51,15 @@
             <!-- competition stories end -->
 
             <!-- sirukathai stories start -->
-            <?php get_template_part('template-parts/sirukathai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
+            <?php get_template_part('template-parts/category-stories', null, ['context' => 'my-creations', 'user_id' => get_current_user_id(), 'categoryKey' => 'sirukathai', 'categoryValue' => 'சிறுகதை']); ?>
             <!-- sirukathai stories end -->
 
             <!-- kavithai stories start -->
-            <?php get_template_part('template-parts/kavithai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
+            <?php get_template_part('template-parts/category-stories', null, ['context' => 'my-creations', 'user_id' => get_current_user_id(), 'categoryKey' => 'kavithai', 'categoryValue' => 'கவிதை']); ?>
             <!-- kavithai stories end -->
 
             <!-- katturai stories start -->
-            <?php get_template_part('template-parts/katturai', null, ['context' => 'my-creations', 'user_id' => get_current_user_id()]); ?>
+            <?php get_template_part('template-parts/category-stories', null, ['context' => 'my-creations', 'user_id' => get_current_user_id(), 'categoryKey' => 'katturai', 'categoryValue' => 'கட்டுரை']); ?>
             <!-- katturai stories end -->
         <?php endif; ?>
 

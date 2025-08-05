@@ -46,9 +46,11 @@
 <?php $trendingUrl = get_permalink(get_page_by_path('latest-stories')); ?>
 <div class="d-flex justify-content-between align-items-center mt-4">
     <h4 class="py-2 fw-bold m-0">🔥 சமீபத்தில் உருவாக்கப்பட்ட தொடர்கள்</h4>
-    <a href="<?php echo esc_url($trendingUrl); ?>" class="text-primary-color fs-16px">
-        மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
-    </a>
+    <?php if (count($latest_stories) > 0) { ?>
+        <a href="<?php echo esc_url($trendingUrl); ?>" class="text-primary-color fs-16px">
+            மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
+        </a>
+    <?php } ?>
 </div>
 
 <!-- LG & Up Static Cards -->

@@ -79,12 +79,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							</div>
 						<?php } ?>
 
-						<div class="mb-4">
-							<label class="form-label">தலைப்பு <span style="color: red;">*</span></label>
-							<input type="text" class="form-control tamilwriter login-form-group story-title tamil-suggestion-input" id="story-title">
-							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-title" style="display: none;"></p>
-						</div>
-
 						<?php
 
 							if (isset($_GET['from']) && $_GET['from'] === 'competition') {
@@ -118,6 +112,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							</ul>
 
 							<p class="my-2 fs-12px" style="color: gray;"><i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக  இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i></p>
+						</div>
+
+						<div class="mb-4">
+							<label class="form-label">தலைப்பு <span style="color: red;">*</span></label>
+							<input type="text" class="form-control tamilwriter login-form-group story-title tamil-suggestion-input" id="story-title">
+							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-title" style="display: none;"></p>
 						</div>
 
 						<!-- <div class="mb-4 dropdown">

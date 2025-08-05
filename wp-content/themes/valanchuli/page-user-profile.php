@@ -40,15 +40,15 @@ if ($uid) {
                     <!-- competition stories end -->
 
                     <!-- sirukathai stories start -->
-                    <?php get_template_part('template-parts/sirukathai', null, ['context' => 'user-profile', 'user_id' => $uid]); ?>
+                    <?php get_template_part('template-parts/category-stories', null, ['context' => 'user-profile', 'user_id' => $uid, 'categoryKey' => 'sirukathai', 'categoryValue' => 'சிறுகதை']); ?>
                     <!-- sirukathai stories end -->
 
                     <!-- kavithai stories start -->
-                    <?php get_template_part('template-parts/kavithai', null, ['context' => 'user-profile', 'user_id' => $uid]); ?>
+                    <?php get_template_part('template-parts/category-stories', null, ['context' => 'user-profile', 'user_id' => $uid, 'categoryKey' => 'kavithai', 'categoryValue' => 'கவிதை']); ?>
                     <!-- kavithai stories end -->
 
                     <!-- katturai stories start -->
-                    <?php get_template_part('template-parts/katturai', null, ['context' => 'user-profile', 'user_id' => $uid]); ?>
+                    <?php get_template_part('template-parts/category-stories', null, ['context' => 'user-profile', 'user_id' => $uid, 'categoryKey' => 'katturai', 'categoryValue' => 'கட்டுரை']); ?>
                     <!-- katturai stories end -->
                 <?php endif; ?>
             </div>
