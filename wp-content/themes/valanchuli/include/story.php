@@ -252,4 +252,64 @@ function get_story_by_id()
     ]);
 }
 
+add_action('wp_ajax_get_series_list', 'ajax_get_series_list');
+add_action('wp_ajax_nopriv_get_series_list', 'ajax_get_series_list');
+
+function ajax_get_series_list() {
+    $competition_id = intval($_POST['competition_id'] ?? 0);
+
+    // Your "if from competition" condition
+    if ($competition_id) {
+        $static_series = [];
+    } else {
+        $static_series = ['தொடர்கதை அல்ல'];
+    }
+
+    $current_user_id = get_current_user_id();
+
+    $series_terms = get_terms([
+        'taxonomy'   => 'series',
+        'hide_empty' => false,
+    ]);
+
+    $filtered_series = array_filter($series_terms, function ($term) use ($current_user_id, $competition_id) {
+        if ($term->name === 'தொடர்கதை அல்ல') {
+            return false;
+        }
+
+        $query_args = [
+            'post_type'      => 'post',
+            'posts_per_page' => 1,
+            'post_status'    => 'any',
+            'author'         => $current_user_id,
+            'tax_query'      => [
+                [
+                    'taxonomy' => 'series',
+                    'field'    => 'term_id',
+                    'terms'    => $term->term_id,
+                ],
+            ],
+        ];
+
+        // Filter by competition meta if needed
+        if ($competition_id) {
+            $query_args['meta_query'][] = [
+                'key'     => 'competition',
+                'value'   => $competition_id,
+                'compare' => '=',
+            ];
+        }
+
+        $query = new WP_Query($query_args);
+        return $query->have_posts();
+    });
+
+    $dynamic_series = [];
+    foreach ($filtered_series as $term) {
+        $dynamic_series[] = $term->name;
+    }
+
+    wp_send_json_success($dynamic_series);
+}
+
 

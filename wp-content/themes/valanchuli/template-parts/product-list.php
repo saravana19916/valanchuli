@@ -107,7 +107,8 @@ foreach ($categories as $cat) :
                 $product_offer_price = get_post_meta(get_the_ID(), 'product_offer_price', true);
                 $user_id = get_current_user_id();
                 $post_id = get_the_ID();
-                $rating = get_user_rating_for_post($user_id, $post_id) ?? 0;
+                // $rating = get_user_rating_for_post($user_id, $post_id) ?? 0;
+                $rating = get_product_average_rating_for_post($post_id);
                 if (!empty($_GET['rating']) && $_GET['rating'] != $rating) {
                     continue;
                 }
@@ -126,14 +127,21 @@ foreach ($categories as $cat) :
             ?>
             <div class="col-sm-6 col-md-4 col-xxl-3 mb-4">
                 <div class="card h-100">
-                    <img src="<?php echo esc_url($img_url); ?>" class="card-img-top img-fluid mx-auto d-block" style="max-height: 300px; object-fit: contain;" alt="<?php the_title(); ?>">
+                    <a href="<?php the_permalink(); ?>">
+                        <img src="<?php echo esc_url($img_url); ?>" class="card-img-top img-fluid mx-auto d-block" style="max-height: 300px; object-fit: contain;" alt="<?php the_title(); ?>">
+                    </a>
+
                     <div class="card-body">
                         <p class="card-title fw-bold mb-1 fs-16px text-truncate">
                             <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
                         </p>
                         <p class="card-text mb-1">
-                            <span class="text-muted text-decoration-line-through">₹<?php echo esc_html($price); ?></span> &nbsp;
-                            <span>₹<?php echo esc_html($product_offer_price); ?></span>
+                            <span class="text-muted <?php echo !empty($product_offer_price) ? 'text-decoration-line-through' : ''; ?>">
+                                ₹<?php echo esc_html($price); ?>
+                            </span> &nbsp;
+                            <?php if($product_offer_price) { ?>
+                                <span>₹<?php echo esc_html($product_offer_price); ?></span>
+                            <?php } ?>
                         </p>
                         <div class="d-flex align-items-center">
                             <p class="me-4 mb-0"><i class="fa-solid fa-eye"></i> <?php echo format_view_count($total_views); ?></p>

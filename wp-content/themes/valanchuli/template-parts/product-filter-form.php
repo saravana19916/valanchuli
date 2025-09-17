@@ -80,5 +80,8 @@
     </div>
 
     <!-- Submit -->
-    <button type="submit" class="btn btn-primary w-100">Apply</button>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Apply</button>
+        <button type="button" id="clear-filters" class="btn btn-secondary w-100">Clear</button>
+    </div>
 </form>

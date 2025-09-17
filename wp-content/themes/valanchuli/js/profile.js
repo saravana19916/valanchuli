@@ -44,15 +44,16 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
     }
 
     if (password) {
-        if (password != confirmPassword)
-        isValid = false;
-        const passwordInput = document.querySelector('.confirm-password');
+        if (password != confirmPassword) {
+            isValid = false;
+            const passwordInput = document.querySelector('.confirm-password');
 
-        const error = document.createElement('p');
-        error.className = 'text-danger error-message mt-2 small';
-        error.textContent = 'Confirm password do not match with password.';
+            const error = document.createElement('p');
+            error.className = 'text-danger error-message mt-2 small';
+            error.textContent = 'Confirm password do not match with password.';
 
-        passwordInput.parentNode.insertBefore(error, passwordInput.nextSibling);
+            passwordInput.parentNode.insertBefore(error, passwordInput.nextSibling);
+        }
     }
 
     if (!isValid) return;

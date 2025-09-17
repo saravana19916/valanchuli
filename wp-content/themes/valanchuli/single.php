@@ -1,4 +1,9 @@
-<?php get_header(); ?>
+<?php get_header();
+    $pageMyCreation = false;
+    if ( isset($_GET['from']) && $_GET['from'] === 'mycreation' ) {
+        $pageMyCreation = true;
+    }
+?>
 
 <div class="container my-5">
     <div class="row justify-content-center">
@@ -109,7 +114,7 @@
                                         <div class="row mt-2">
                                             <?php $count = 0; ?>
                                             <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
-                                                <div class="col-12 col-sm-6 my-3">
+                                                <div class="col-12 col-md-6 col-xl-4 my-3">
                                                     <div class="w-100 p-4 shadow rounded">
                                                         <?php
                                                             $average_rating = get_custom_average_rating(get_the_ID());
@@ -159,7 +164,7 @@
                                                                     $author_id  = get_post_field('post_author', $post_id);
                                                                     $current_id = get_current_user_id();
 
-                                                                    if ($current_id === (int) $author_id) :
+                                                                    if ($pageMyCreation && $current_id === (int) $author_id) :
                                                                     ?>
                                                                         <div>
                                                                             <a 

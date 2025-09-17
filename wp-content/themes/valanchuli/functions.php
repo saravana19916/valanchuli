@@ -248,6 +248,43 @@ function add_profile_field( $user ) {
     <?php
 }
 
+function handle_frontend_post_delete() {
+    // Check if this is our delete request
+    if ( isset( $_GET['action'] ) && $_GET['action'] === 'frontend_delete_post' ) {
+
+        $post_id = isset( $_GET['post_id'] ) ? intval( $_GET['post_id'] ) : 0;
+        $nonce   = isset( $_GET['nonce'] ) ? sanitize_text_field( $_GET['nonce'] ) : '';
+
+        // Security check
+        if ( ! wp_verify_nonce( $nonce, 'frontend_delete_post_' . $post_id ) ) {
+            wp_die( 'Security check failed. Invalid nonce!' );
+        }
+
+        // Check if user is logged in
+        if ( ! is_user_logged_in() ) {
+            wp_die( 'You must be logged in to delete posts.' );
+        }
+
+        $current_user_id = get_current_user_id();
+        $post_author_id  = (int) get_post_field( 'post_author', $post_id );
+
+        // Check if user can delete this post
+        if ( $current_user_id === $post_author_id) {
+
+            // Delete the post
+            wp_delete_post( $post_id, true ); // true = force delete, false = move to trash
+
+            // Redirect after deletion
+            wp_safe_redirect( home_url( '/my-creations/?post_deleted=1' ) );
+            exit;
+        } else {
+            wp_die( 'You do not have permission to delete this post.' );
+        }
+    }
+}
+add_action( 'init', 'handle_frontend_post_delete' );
+
+
 
 
 ?>

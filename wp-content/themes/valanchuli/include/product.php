@@ -253,6 +253,85 @@ function custom_product_title_search($where) {
     return $where;
 }
 
+// Get user rating for a post
+function get_product_user_rating_for_post($user_id, $post_id) {
+    return (int) get_user_meta($user_id, 'post_rating_' . $post_id, true);
+}
+
+// Save user rating for a post
+function save_user_rating_for_post($user_id, $post_id, $rating) {
+    update_user_meta($user_id, 'post_rating_' . $post_id, $rating);
+
+    // Store all ratings in post meta for statistics
+    $ratings = get_post_meta($post_id, 'post_ratings', true);
+    if (!$ratings) {
+        $ratings = [];
+    }
+    $ratings[$user_id] = $rating;
+    update_post_meta($post_id, 'post_ratings', $ratings);
+}
+
+// Get counts of ratings for a post
+function get_post_rating_counts($post_id) {
+    $ratings = get_post_meta($post_id, 'post_ratings', true);
+    $counts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+
+    if (is_array($ratings)) {
+        foreach ($ratings as $r) {
+            if (isset($counts[$r])) {
+                $counts[$r]++;
+            }
+        }
+    }
+    return $counts;
+}
+
+function get_product_average_rating_for_post($post_id) {
+    $ratings = get_post_meta($post_id, 'post_ratings', true);
+
+    // If no ratings exist, return 0
+    if (empty($ratings) || !is_array($ratings)) {
+        return 0;
+    }
+
+    // Calculate average
+    $total_ratings = array_sum($ratings);
+    $total_users   = count($ratings);
+    $average       = $total_ratings / $total_users;
+
+    return round($average, 1); // Return value like 4.3
+}
+
+
+add_action('wp_ajax_product_save_post_rating', 'product_save_post_rating');
+add_action('wp_ajax_nopriv_product_save_post_rating', 'must_login_for_rating');
+
+function must_login_for_rating() {
+    wp_send_json_error(['message' => 'You must be logged in to rate.']);
+}
+
+function product_save_post_rating() {
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'You must be logged in to rate.']);
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $rating = intval($_POST['rating']);
+    $user_id = get_current_user_id();
+
+    if ($rating < 1 || $rating > 5) {
+        wp_send_json_error(['message' => 'Invalid rating value']);
+    }
+
+    save_user_rating_for_post($user_id, $post_id, $rating);
+
+    wp_send_json_success([
+        'message' => 'Rating saved successfully!',
+        'counts' => get_post_rating_counts($post_id)
+    ]);
+}
+
+
 
 
 

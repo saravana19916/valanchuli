@@ -259,6 +259,12 @@ body, html {
     color: #005d67;
 }
 
+.btn-primary:disabled {
+    background-color: #005d67 !important;
+    border-color: #005d67 !important;
+    color: #ffffff !important;
+}
+
 .btn-secondary {
     background-color: white;
     border-color: #005d67;
@@ -524,14 +530,14 @@ a:hover, .footer-menu li:hover {
 
 
 /* Rating section start */
-.star {
+.star, .star-product {
     font-size: 35px;
     cursor: pointer;
     color: transparent;
     -webkit-text-stroke: 1px gold; /* Border color */
     transition: 0.3s;
 }
-.star.rated, .star:hover {
+.star.rated, .star:hover, .star-product.rated, .star-product:hover {
     color: gold;
 }
 
@@ -572,4 +578,10 @@ a:hover, .footer-menu li:hover {
 .accordion-button:not(.collapsed) {
     background-color: #48A6A7 !important;
     color: white;
+}
+
+/* Make arrows white */
+#productImageSlider .carousel-control-prev-icon, #thumbnailCarousel .carousel-control-prev-icon,
+#productImageSlider .carousel-control-next-icon, #thumbnailCarousel .carousel-control-next-icon {
+    filter: invert(100%);
 }

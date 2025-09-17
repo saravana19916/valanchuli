@@ -13,13 +13,6 @@
                     'posts_per_page' => -1,
                     'post_status' => 'publish',
                     'meta_query'     => [
-                        'relation' => 'AND',
-                        [
-                            'key'     => '_competition_start_date',
-                            'value'   => $today,
-                            'compare' => '<=',
-                            'type'    => 'DATE',
-                        ],
                         [
                             'key'     => '_competition_end_date',
                             'value'   => $today,
@@ -37,7 +30,8 @@
             $final_url = $write_page_url . '?' . $competition_param;
             if ($query->have_posts()) {
             ?>
-                <button class="btn btn-primary btn-sm" onclick="window.location.href='<?php echo esc_url($final_url); ?>'">
+                <h5 class="fw-bold mt-3">போட்டிகளில் கலந்து கொள்ள கீழே உள்ள லிங்க் ஐ கிளிக் செய்யவும்</h5>
+                <button class="btn btn-primary btn-sm mt-3" onclick="window.location.href='<?php echo esc_url($final_url); ?>'">
                     <i class="fa-solid fa-plus fa-lg"></i>&nbsp; படைப்பை சேர்க்க
                 </button>
             <?php } else { ?>
@@ -76,13 +70,6 @@
                 ],
                 'post_status' => 'publish',
                 'meta_query'     => [
-                    'relation' => 'AND',
-                    [
-                        'key'     => '_competition_start_date',
-                        'value'   => $today,
-                        'compare' => '<=',
-                        'type'    => 'DATE',
-                    ],
                     [
                         'key'     => '_competition_end_date',
                         'value'   => $today,
@@ -107,7 +94,9 @@
                                     $image_id = get_post_meta(get_the_ID(), '_competition_image_id', true);
                                     $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : get_template_directory_uri() . '/images/no-image.jpeg';
                                     ?>
-                                    <img src="<?php echo esc_url($image_url); ?>" class="img-fluid" alt="<?php the_title(); ?>" style="height: 300px;">
+                                    <a href="<?php the_permalink(); ?>">
+                                        <img src="<?php echo esc_url($image_url); ?>" class="img-fluid" alt="<?php the_title(); ?>" style="height: 300px;">
+                                    </a>
                                 </div>
 
                                 <div class="p-3">

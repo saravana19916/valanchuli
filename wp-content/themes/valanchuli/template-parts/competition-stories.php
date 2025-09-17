@@ -156,7 +156,7 @@
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -176,20 +176,20 @@
 
                     <?php if ($context === 'my-creations') { ?>
                         <div class="position-absolute bottom-0 end-0 px-2 py-2 mb-4 d-flex gap-2">
-                            <a 
-                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
-                                class="btn btn-warning btn-sm p-1" 
-                                title="Edit">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
+                            <?php
+                            $post_time = get_the_time( 'U' );
+                            $current_time = current_time( 'timestamp' );
 
-                            <a 
-                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                class="btn btn-danger btn-sm p-1" 
-                                title="Delete" 
-                                onclick="return confirm('Are you sure you want to delete this post?');">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </a>
+                            $hours_diff = ($current_time - $post_time) / 3600;
+
+                            if ( $hours_diff <= 24 ) : ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php } ?>
 
@@ -204,7 +204,7 @@
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -260,7 +260,7 @@
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -277,10 +277,29 @@
                             <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                         </p>
                     </div>
+
+                    <?php if ($context === 'my-creations') { ?>
+                        <div class="position-absolute bottom-0 end-0 px-2 py-2 mb-4 d-flex gap-2">
+                            <?php
+                            $post_time = get_the_time( 'U' );
+                            $current_time = current_time( 'timestamp' );
+
+                            $hours_diff = ($current_time - $post_time) / 3600;
+
+                            if ( $hours_diff <= 24 ) : ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php } ?>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>

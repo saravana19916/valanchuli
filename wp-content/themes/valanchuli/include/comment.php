@@ -98,10 +98,39 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                     <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
                         <span class="mb-0 text-wrap content-text"><?php comment_text(); ?></span>
                     </div>
+
+                   <div id="comment-images-<?php echo $comment_id; ?>" class="mt-2 d-flex flex-wrap">
+                        <?php
+                        $comment_images = get_comment_meta($comment_id, 'comment_images', true);
+
+                        if (!empty($comment_images) && is_array($comment_images)) {
+                            foreach ($comment_images as $index => $img) {
+                                echo '<div class="position-relative me-2" style="display:inline-block;">';
+                                echo '<a href="' . esc_url($img) . '" class="comment-lightbox" data-gallery="comment-gallery-' . esc_attr($comment_id) . '">
+                                        <img src="' . esc_url($img) . '" alt="Comment Image" style="max-width: 80px; max-height: 80px; margin:5px; border-radius:6px;">
+                                    </a>';
+
+                                if (is_user_logged_in() && get_current_user_id() === (int) $comment->user_id) {
+                                    echo '<button class="remove-comment-image position-absolute top-0 end-0"
+                                                data-comment-id="' . esc_attr($comment_id) . '"
+                                                data-image-url="' . esc_url($img) . '"
+                                                style="background:none;border:none;color:#ff0000;font-size:22px;font-weight:bold;line-height:1;cursor:pointer;">
+                                            &times;
+                                        </button>';
+                                }
+
+                                echo '</div>';
+                            }
+                        }
+                        ?>
+                    </div>
                 </div>
 
                 <div id="edit-comment-form-<?php echo $comment_id; ?>" style="display: none;">
                     <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
+                    <div class="mb-2">
+                        <input type="file" name="edit_comment_image[]" id="edit_comment_image_<?php echo $comment_id; ?>" accept="image/*" class="form-control form-control-sm" multiple>
+                    </div>
                     <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $comment_id; ?>)">Save</button>
                     <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $comment_id; ?>)">Cancel</button>
                 </div>
@@ -222,11 +251,42 @@ add_action('wp_ajax_ajax_comment', 'handle_ajax_comment');
 add_action('wp_ajax_nopriv_ajax_comment', 'handle_ajax_comment');
 
 function handle_ajax_comment() {
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+
+    $uploaded_images = [];
+
+    if (!empty($_FILES['comment_image']['name'][0])) {
+        $files = $_FILES['comment_image'];
+        $count = count($files['name']);
+
+        for ($i = 0; $i < $count; $i++) {
+            if ($files['error'][$i] === 0) {
+                $file = [
+                    'name'     => $files['name'][$i],
+                    'type'     => $files['type'][$i],
+                    'tmp_name' => $files['tmp_name'][$i],
+                    'error'    => $files['error'][$i],
+                    'size'     => $files['size'][$i],
+                ];
+
+                $upload = wp_handle_upload($file, ['test_form' => false]);
+
+                if (!isset($upload['error']) && isset($upload['url'])) {
+                    $uploaded_images[] = esc_url($upload['url']);
+                }
+            }
+        }
+    }
+
     $comment_data = wp_handle_comment_submission(wp_unslash($_POST));
 
     if (is_wp_error($comment_data)) {
         wp_send_json_error($comment_data->get_error_message());
     } else {
+        if (!empty($uploaded_images)) {
+            add_comment_meta($comment_data->comment_ID, 'comment_images', $uploaded_images);
+        }
+
         ob_start();
         wp_list_comments([
             'callback' => 'bootstrap5_comment_callback',
@@ -291,7 +351,6 @@ function save_edited_comment_callback() {
 
     $comment_id = intval($_POST['comment_id']);
     $new_content = sanitize_text_field($_POST['comment_content']);
-
     $comment = get_comment($comment_id);
 
     if (!$comment) {
@@ -302,15 +361,108 @@ function save_edited_comment_callback() {
         wp_send_json_error('Unauthorized.');
     }
 
+    // Update comment text
     $updated = wp_update_comment([
-        'comment_ID' => $comment_id,
+        'comment_ID'      => $comment_id,
         'comment_content' => $new_content
     ]);
 
-    if ($updated) {
-        wp_send_json_success('Comment updated.');
-    } else {
-        wp_send_json_error('Failed to update comment.');
+    // Handle image uploads
+    $new_images = [];
+    if (!empty($_FILES['edit_comment_image']['name'][0])) {
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+
+        $files = $_FILES['edit_comment_image'];
+        foreach ($files['name'] as $key => $value) {
+            if ($files['name'][$key]) {
+                $file = [
+                    'name'     => $files['name'][$key],
+                    'type'     => $files['type'][$key],
+                    'tmp_name' => $files['tmp_name'][$key],
+                    'error'    => $files['error'][$key],
+                    'size'     => $files['size'][$key]
+                ];
+
+                $upload = wp_handle_upload($file, ['test_form' => false]);
+
+                if (!isset($upload['error'])) {
+                    $new_images[] = esc_url($upload['url']);
+                }
+            }
+        }
+
+        if (!empty($new_images)) {
+            $existing_images = get_comment_meta($comment_id, 'comment_images', true);
+            if (!is_array($existing_images)) {
+                $existing_images = [];
+            }
+            $updated_images = array_merge($existing_images, $new_images);
+
+            update_comment_meta($comment_id, 'comment_images', $updated_images);
+        }
     }
+
+    wp_send_json_success([
+        'message'     => 'Comment updated.',
+        'new_images'  => $new_images
+    ]);
 }
 
+add_action('wp_ajax_remove_comment_image', 'remove_comment_image_callback');
+add_action('wp_ajax_nopriv_remove_comment_image', 'remove_comment_image_callback');
+
+function remove_comment_image_callback() {
+    if (!isset($_POST['comment_id']) || !isset($_POST['image_url'])) {
+        wp_send_json_error('Invalid request.');
+    }
+
+    $comment_id = intval($_POST['comment_id']);
+    $image_url  = esc_url_raw($_POST['image_url']);
+
+    $comment = get_comment($comment_id);
+    if (!$comment) {
+        wp_send_json_error('Comment not found.');
+    }
+
+    if (!is_user_logged_in() || get_current_user_id() !== (int) $comment->user_id) {
+        wp_send_json_error('You are not authorized to remove this image.');
+    }
+
+    $comment_images = get_comment_meta($comment_id, 'comment_images', true);
+
+    if (!empty($comment_images) && is_array($comment_images)) {
+        $updated_images = array_filter($comment_images, function ($img) use ($image_url) {
+            return $img !== $image_url;
+        });
+
+        update_comment_meta($comment_id, 'comment_images', array_values($updated_images));
+
+        $file_path = str_replace(wp_get_upload_dir()['baseurl'], wp_get_upload_dir()['basedir'], $image_url);
+        if (file_exists($file_path)) {
+            unlink($file_path);
+        }
+
+        wp_send_json_success('Image removed successfully.');
+    }
+
+    wp_send_json_error('Image not found.');
+}
+
+function enqueue_glightbox_scripts() {
+    wp_enqueue_style( 'glightbox-css', 'https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css' );
+
+    wp_enqueue_script( 'glightbox-js', 'https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js', [], null, true );
+
+    wp_add_inline_script( 'glightbox-js', '
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = GLightbox({
+                selector: ".comment-lightbox",
+                touchNavigation: true,
+                loop: true,
+                zoomable: true,
+                closeButton: true,
+            });
+        });
+    ' );
+}
+add_action( 'wp_enqueue_scripts', 'enqueue_glightbox_scripts' );

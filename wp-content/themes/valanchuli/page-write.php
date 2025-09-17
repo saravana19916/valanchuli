@@ -17,10 +17,16 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		<h5 class="text-center text-primary-color fw-bold"> எழுத </h5>
 	</div>
 
-	<?php if ( ! is_user_logged_in() ) { ?>
+	<?php if ( ! is_user_logged_in() ) {
+		$currentUrl = get_permalink();
+		$loginPage = get_page_by_path('login');
+		$loginUrl = get_permalink($loginPage);
+
+		$loginUrlWithRedirect = add_query_arg('redirect_to', urlencode($currentUrl), $loginUrl);
+	?>
 		<div class="alert alert-warning text-center w-50 mx-auto mt-3" role="alert" id="draftAlert">
 			தயவு செய்து உள்நுழையவும். This page is restricted. Please 
-			<a href="login" class="alert-link">Login / Register</a> to view this page.
+			<a href="<?php echo esc_url($loginUrlWithRedirect); ?>" class="alert-link">Login / Register</a> to view this page.
 		</div>
 	<?php } else { ?>
 
@@ -87,21 +93,47 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								$static_series = ['தொடர்கதை அல்ல'];
 							}
 
-							$series_terms = get_terms(['taxonomy' => 'series', 'hide_empty' => false]);
-							$filtered_series = array_filter($series_terms, function ($term) {
-								return $term->name !== 'தொடர்கதை அல்ல';
+							$current_user_id = get_current_user_id();
+
+							$series_terms = get_terms([
+								'taxonomy'   => 'series',
+								'hide_empty' => false,
+							]);
+
+							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id) {
+								if ($term->name === 'தொடர்கதை அல்ல') {
+									return false;
+								}
+
+								$query = new WP_Query([
+									'post_type'      => 'post',
+									'posts_per_page' => 1,
+									'post_status'    => 'any',
+									'author'         => $current_user_id,
+									'tax_query'      => [
+										[
+											'taxonomy' => 'series',
+											'field'    => 'term_id',
+											'terms'    => $term->term_id,
+										],
+									],
+								]);
+
+								return $query->have_posts();
 							});
+
 							$dynamic_series = [];
 							foreach ($filtered_series as $term) {
 								$dynamic_series[] = $term->name;
 							}
+
 						?>
 
 						<div class="mb-4 dropdown">
 							<label for="category_dropdown_input" class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
 
 							<input type="text" readonly class="form-control dropdown-toggle form-select login-form-group story-series_input" id="story-series"
-								name="story-series" data-bs-toggle="dropdown" value="தொடர்கதை அல்ல">
+								name="story-series" data-bs-toggle="dropdown">
 
 							<ul class="dropdown-menu w-100 p-2" id="category_dropdown">
 								<li>
@@ -189,7 +221,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							அடுத்தது</button>
 						<button type="submit" id="step1Submit" class="btn btn-primary me-2 d-none"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
 						சமர்ப்பிக்க</button>
-					</div>
+					</div>					
 				</div>
 			</div>
 
@@ -202,13 +234,22 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				</div>
 
 				<div class="my-3">
-					<label class="form-label">படைப்பை சேர்க்கவும் <span style="color: red;">*</span></label>
+					<label class="form-label">
+						படைப்பை சேர்க்கவும் <span style="color: red;">*</span>
+						<span class="spinner-border text-success ms-2 align-middle" role="status" id="content-loader" style="display: none; width: 1rem; height: 1rem;" aria-hidden="true"></span>
+					</label>
 					<textarea id="story-content" class="form-control tamilwriter story-content" rows="6"></textarea>
 					<ul id="tanglishSuggestions" 
 						style="position:absolute; z-index:9999; background:#fff; border:1px solid #ccc; list-style:none; padding:0; margin:0; display:none; min-width:120px;">
 					</ul>
-					<p class="mt-2 d-block text-primary-color fw-bold">Word Count: <span class="badge bg-primary-color text-highlight-color fw-bold fs-14px p-2" id="word-count">0</span></p>
+					<p class="mt-2 d-block text-primary-color fw-bold">
+						Word Count:
+						<span class="badge bg-primary-color text-highlight-color fw-bold fs-14px p-2" id="word-count">0</span>
+						<span class="spinner-border text-success ms-2 align-middle" role="status" id="content-loader-2" style="display: none; width: 1rem; height: 1rem;" aria-hidden="true"></span>
+					</p>
+
 				</div>
+
 
 				<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp;
 					முந்தையது</button>
@@ -274,7 +315,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							["bold", "italic", "underline"],
 							['justifyLeft', 'justifyCenter', 'justifyRight'],
 							['unorderedList', 'orderedList'],
-							["link"],
 							["insertImage"],
 							["emoji"]
 						],
@@ -292,6 +332,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						console.error('Editor not found');
 						return;
 					}
+
+					let activeRequests = 0;
 
 					editor.addEventListener('input', () => {
 						const sel = window.getSelection();
@@ -313,21 +355,37 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						const lastWord = textBeforeCursor.trim().split(/\s+/).pop();
 
 						if (!lastWord) {
-						suggestionBox.hide();
-						return;
+							suggestionBox.hide();
+							return;
 						}
+
+						$('#content-loader').show();
+						$('#content-loader-2').show();
+
+						$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', true);
+
+						activeRequests++;
 
 						fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(lastWord)}&itc=ta-t-i0-und&num=5`)
 						.then(res => res.json())
 						.then(data => {
 							if (data[0] === "SUCCESS") {
-							const suggestions = data[1][0][1];
-							showSuggestions(suggestions, range);
+								const suggestions = data[1][0][1];
+								showSuggestions(suggestions, range);
 							} else {
-							suggestionBox.hide();
+								suggestionBox.hide();
 							}
 						})
-						.catch(() => suggestionBox.hide());
+						.catch(() => suggestionBox.hide())
+						.finally(() => {
+							activeRequests--;
+
+							if (activeRequests === 0) {
+								$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
+								$('#content-loader').hide();
+								$('#content-loader-2').hide();
+							}
+						});
 					});
 
 					function showSuggestions(suggestions, range) {
@@ -394,6 +452,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			const textOnly = $('<div>').html(content).text();
 			const wordCount = textOnly.trim().split(/\s+/).filter(word => word.length > 0).length;
 			$('#word-count').text(wordCount);
+
+			// setTimeout(() => {
+			// 	$('#content-loader').hide();
+			// 	$('#content-loader-2').hide();
+			// 	$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
+			// }, 300);
 		}
 
 		$('#prev-step').on('click', function () {
@@ -401,19 +465,26 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			$('#step-1').show();
 		});
 
-		// $('#story-content').on('tbwchange', function () {
-		// 	clearTimeout(autoSaveTimeout);
-		// 	autoSaveTimeout = setTimeout(autoSaveDraft, 2000);
-		// });
+		$('#story-content').on('tbwchange', function () {
+			startAutoSave();
+		});
+
+		let autoSaveInterval = null;
+
+		function startAutoSave() {
+			autoSaveInterval = setInterval(function () {
+				autoSaveDraft(true);
+			}, 2 * 60 * 1000);
+		}
+
+		startAutoSave();
 
 		$('#saveDraft').click(function() {
-			autoSaveDraft();
+			autoSaveDraft(false);
 		});
 	});
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const categoryInput = document.getElementById('series_input');
-		const selectedInput = document.getElementById('story-series');
+	function updateList(filter = '') {
 		const categoryList = document.getElementById('category_list');
 
 		const staticSeries = <?php echo json_encode($static_series, JSON_UNESCAPED_UNICODE); ?>;
@@ -426,20 +497,26 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 		const categories = Object.values(staticSeries).concat(Object.values(dynamicSeries));
 
-		function updateList(filter = '') {
+			const selectedInput = document.getElementById('story-series');
+
 			categoryList.innerHTML = '';
 			const filtered = categories.filter(cat => cat.toLowerCase().includes(filter.toLowerCase()));
 			
 			if (filtered.length > 0) {
-				document.getElementById("seriesFirst").value = 'false';
-				document.getElementById("descriptionSection").classList.add("d-none");
-				document.getElementById("next-step").classList.remove("d-none");
-				document.getElementById("step1Submit").classList.add("d-none");
-				document.getElementById("categoryDropdown").classList.add("d-none");
-				document.getElementById("divisionDropdown").classList.add("d-none");
-				document.getElementById("imageSection").classList.add("d-none");
+				if (selectedInput.value != 'தொடர்கதை அல்ல') {
+					const seriesFirst = document.getElementById("seriesFirst").value;
 
-				// if ()
+					if (seriesFirst || seriesFirst == 'true') {
+					} else {
+						document.getElementById("descriptionSection").classList.add("d-none");
+						document.getElementById("categoryDropdown").classList.add("d-none");
+						document.getElementById("divisionDropdown").classList.add("d-none");
+						document.getElementById("imageSection").classList.add("d-none");
+						document.getElementById("step1Submit").classList.add("d-none");
+						document.getElementById("next-step").classList.remove("d-none");
+					}
+					
+				}
 
 				filtered.forEach(cat => {
 					const item = document.createElement('li');
@@ -517,6 +594,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			}
 		}
 
+	document.addEventListener('DOMContentLoaded', function () {
+		const categoryInput = document.getElementById('series_input');
+		const selectedInput = document.getElementById('story-series');
+
 		categoryInput.addEventListener('input', function () {
 			updateList(this.value);
 		});
@@ -530,9 +611,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					// var element = document.getElementById("divisionDropdown");
 					// element.classList.remove("d-none");
 
-					// var element = document.getElementById("categoryDropdown");
-					// element.classList.add("d-none");
-					// document.getElementById("imageSection").classList.add("d-none");
+					const seriesFirst = document.getElementById('seriesFirst').value;
+					if (!seriesFirst || seriesFirst == 'false') {
+						var element = document.getElementById("categoryDropdown");
+						element.classList.add("d-none");
+						document.getElementById("imageSection").classList.add("d-none");
+					}
 				} else {
 					var element = document.getElementById("divisionDropdown");
 					element.classList.add("d-none");
@@ -552,6 +636,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 	document.getElementById('write-story-form').addEventListener('submit', function (e) {
 		e.preventDefault();
+
+		jQuery('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', true);
 
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
 		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
@@ -637,8 +723,14 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						if (postId) {
 							window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
 						} else {
-							location.reload();
+							if ((series != "தொடர்கதை அல்ல" && seriesFirst == 'true')) {
+								window.location.href = "<?php echo esc_url( site_url('/story-success/?status=series') ); ?>";
+							} else {
+								window.location.href = "<?php echo esc_url( site_url('/story-success/?status=other') ); ?>";
+							}
 						}
+
+						jQuery('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
 					}
 				});
 		}
@@ -648,7 +740,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 	let autoSaveTimeout;
 	let lastDraftId = null;
 
-	function autoSaveDraft() {
+	function autoSaveDraft(isAutoSave) {
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
 		const title    = document.getElementById('story-title').value;
 		const content  = document.getElementById('story-content').value;
@@ -686,7 +778,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		})
 		.then(res => res.json())
 		.then(response => {
-			if (response.success) {
+			if (response.success && !isAutoSave) {
 				lastDraftId = response.data.post_id;
 				var element = document.getElementById("draftAlert");
 				element.classList.remove("d-none");
@@ -694,7 +786,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				if (postId) {
 					window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
 				} else {
-					location.reload();
+					// location.reload();
+					window.location.href = "<?php echo esc_url( site_url('/story-success/?status=draft') ); ?>";
 				}
 			}
 		});
@@ -800,9 +893,14 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						imgPreview.style.maxWidth = "100px";
 						document.getElementById('story-image').parentElement.appendChild(imgPreview);
 					}
+
+					updateList();
 				}
 			})
 			.catch(err => console.error(err)); 
+		} else {
+			document.getElementById('story-series').value = 'தொடர்கதை அல்ல';
+			updateList();
 		}
 	});
 
@@ -813,11 +911,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		// Function to remove the specific list item
 		function removeNonSeriesOption() {
 			const items = categoryList.querySelectorAll('.dropdown-item');
-			console.log("rr", items);
 			items.forEach(item => {
-				console.log("rr", item);
 				if (item.textContent.trim() === 'தொடர்கதை அல்ல') {
-					console.log("remove1");
 					item.parentElement.remove(); // remove <li>
 				}
 			});

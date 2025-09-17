@@ -55,10 +55,12 @@
             $post_id = $post->ID;
             $total_views = $item['views'];
             $average_rating = get_custom_average_rating($post_id, 0);
+
+            $isCompetition = get_post_meta($post_id, 'competition', true);
         ?>
             <div style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . ($isCompetition ? "&from=competition" : ''))); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -75,10 +77,42 @@
                             <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                         </p>
                     </div>
+
+                    <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                        <a href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . ($isCompetition ? "&from=competition" : ''))); ?>"
+                            class="btn btn-warning btn-sm p-1" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+
+                        <?php
+                            if ( is_user_logged_in() ) {
+                                $post_id = get_the_ID();
+                                $current_user_id = get_current_user_id();
+                                $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                if ( $current_user_id === $post_author_id ) {
+                                    $nonce = wp_create_nonce( 'frontend_delete_post_' . $post_id );
+                                    $delete_url = add_query_arg( [
+                                        'action'   => 'frontend_delete_post',
+                                        'post_id'  => $post_id,
+                                        'nonce'    => $nonce,
+                                    ], home_url() );
+                                    ?>
+                                    <a href="<?php echo esc_url( $delete_url ); ?>"
+                                    class="btn btn-danger btn-sm p-1"
+                                    title="Delete"
+                                    onclick="return confirm('Are you sure you want to delete this post?');">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                    <?php
+                                }
+                            }
+                        ?>
+                    </div>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . '?from=mycreation'; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -97,23 +131,6 @@
                         <div class="d-flex align-items-center px-2 py-1 me-1 rounded text-story-title-next">
                             <i class="fa-solid fa-eye me-1"></i>
                             <?php echo format_view_count($total_views); ?>
-                        </div>
-
-                        <div class="d-flex align-items-center">
-                            <a 
-                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
-                                class="edit-story p-1" 
-                                title="Edit">
-                                <i class="fa-solid fa-pen-to-square fa-lg"></i>
-                            </a>
-
-                            <a 
-                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                class="p-1" 
-                                title="Delete" 
-                                onclick="return confirm('Are you sure you want to delete this post?');" style="color: black;">
-                                <i class="fa-solid fa-trash-can fa-lg"></i>
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -134,7 +151,7 @@
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo the_permalink() . '?from=mycreation'; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -151,10 +168,42 @@
                             <i class="fa-solid fa-star ms-2" style="color: gold;"></i>
                         </p>
                     </div>
+
+                    <div class="position-absolute bottom-0 end-0 px-2 py-1 mb-3 d-flex gap-2">
+                        <a href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . ($isCompetition ? "&from=competition" : ''))); ?>"
+                            class="btn btn-warning btn-sm p-1" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+
+                        <?php
+                            if ( is_user_logged_in() ) {
+                                $post_id = get_the_ID();
+                                $current_user_id = get_current_user_id();
+                                $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                if ( $current_user_id === $post_author_id ) {
+                                    $nonce = wp_create_nonce( 'frontend_delete_post_' . $post_id );
+                                    $delete_url = add_query_arg( [
+                                        'action'   => 'frontend_delete_post',
+                                        'post_id'  => $post_id,
+                                        'nonce'    => $nonce,
+                                    ], home_url() );
+                                    ?>
+                                    <a href="<?php echo esc_url( $delete_url ); ?>"
+                                    class="btn btn-danger btn-sm p-1"
+                                    title="Delete"
+                                    onclick="return confirm('Are you sure you want to delete this post?');">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    </a>
+                                    <?php
+                                }
+                            }
+                        ?>
+                    </div>
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . '?from=mycreation'; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -181,23 +230,6 @@
                         <div class="d-flex align-items-center px-2 py-1 me-1 rounded text-story-title-next">
                             <i class="fa-solid fa-eye me-1"></i>
                             <?php echo format_view_count($total_views); ?>
-                        </div>
-
-                        <div class="d-flex align-items-center">
-                            <a 
-                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
-                                class="edit-story p-1" 
-                                title="Edit">
-                                <i class="fa-solid fa-pen-to-square fa-lg"></i>
-                            </a>
-
-                            <a 
-                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                class="p-1" 
-                                title="Delete" 
-                                onclick="return confirm('Are you sure you want to delete this post?');" style="color: black;">
-                                <i class="fa-solid fa-trash-can fa-lg"></i>
-                            </a>
                         </div>
                     </div>
                 </div>

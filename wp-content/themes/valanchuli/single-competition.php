@@ -49,7 +49,7 @@
 
             <!-- Related stories start -->
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <h4 class="py-2 fw-bold m-0 mt-4">🔥 Related Stories</h4>
+                <h4 class="py-2 fw-bold m-0 mt-4">🔥 இந்த போட்டியில் சமர்ப்பிக்கப்பட்ட படைப்புகள்</h4>
             </div>
             <?php get_template_part('template-parts/competition-related-stories', null, ['competition_id' => get_the_ID()]); ?>
             <!-- Related stories end -->

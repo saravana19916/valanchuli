@@ -77,5 +77,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    document.getElementById('clear-filters').addEventListener('click', function () {
+        document.getElementById('filter-form').reset();
+
+        window.location.href = window.location.pathname;
+    });
 });
 </script>

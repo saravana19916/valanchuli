@@ -123,8 +123,17 @@
     });
 
     document.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 'p')) {
-            e.preventDefault();
+        // if (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 'p')) {
+        //     e.preventDefault();
+        // }
+
+        const allowedElements = document.getElementsByClassName('trumbowyg-editor');
+        const isInAllowedTextarea = Array.from(allowedElements).some(el => el === document.activeElement);
+
+        if (e.ctrlKey && ['c', 'u', 'p'].includes(e.key.toLowerCase())) {
+            if (!isInAllowedTextarea) {
+                e.preventDefault();
+            }
         }
     });
 

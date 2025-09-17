@@ -93,7 +93,7 @@
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -120,13 +120,30 @@
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </a>
 
-                            <a 
-                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                class="btn btn-danger btn-sm p-1" 
-                                title="Delete" 
-                                onclick="return confirm('Are you sure you want to delete this post?');">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </a>
+                            <?php
+                                if ( is_user_logged_in() ) {
+                                    $post_id = get_the_ID();
+                                    $current_user_id = get_current_user_id();
+                                    $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                    if ( $current_user_id === $post_author_id ) {
+                                        $nonce = wp_create_nonce( 'frontend_delete_post_' . $post_id );
+                                        $delete_url = add_query_arg( [
+                                            'action'   => 'frontend_delete_post',
+                                            'post_id'  => $post_id,
+                                            'nonce'    => $nonce,
+                                        ], home_url() );
+                                        ?>
+                                        <a href="<?php echo esc_url( $delete_url ); ?>"
+                                        class="btn btn-danger btn-sm p-1"
+                                        title="Delete"
+                                        onclick="return confirm('Are you sure you want to delete this post?');">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                        </a>
+                                        <?php
+                                    }
+                                }
+                            ?>
                         </div>
                     <?php } ?>
 
@@ -139,7 +156,7 @@
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -206,7 +223,7 @@
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php the_permalink(); ?>">
+                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -233,13 +250,30 @@
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </a>
 
-                            <a 
-                                href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
-                                class="btn btn-danger btn-sm p-1" 
-                                title="Delete" 
-                                onclick="return confirm('Are you sure you want to delete this post?');">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </a>
+                            <?php
+                                if ( is_user_logged_in() ) {
+                                    $post_id = get_the_ID();
+                                    $current_user_id = get_current_user_id();
+                                    $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                    if ( $current_user_id === $post_author_id ) {
+                                        $nonce = wp_create_nonce( 'frontend_delete_post_' . $post_id );
+                                        $delete_url = add_query_arg( [
+                                            'action'   => 'frontend_delete_post',
+                                            'post_id'  => $post_id,
+                                            'nonce'    => $nonce,
+                                        ], home_url() );
+                                        ?>
+                                        <a href="<?php echo esc_url( $delete_url ); ?>"
+                                        class="btn btn-danger btn-sm p-1"
+                                        title="Delete"
+                                        onclick="return confirm('Are you sure you want to delete this post?');">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                        </a>
+                                        <?php
+                                    }
+                                }
+                            ?>
                         </div>
                     <?php } ?>
 
@@ -252,7 +286,7 @@
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>

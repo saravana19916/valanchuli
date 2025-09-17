@@ -18,7 +18,7 @@ if ($uid) {
                         'post_type'      => ['post'],
                         'posts_per_page' => -1,
                         'post_status'    => 'publish',
-                        'author' => get_current_user_id()
+                        'author' => $uid
                     ];
                     
                     $novel_query = new WP_Query($args);
