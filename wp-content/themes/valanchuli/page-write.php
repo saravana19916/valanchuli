@@ -196,12 +196,23 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 						<div class="mb-4 d-none" id="divisionDropdown">
 							<label class="form-label">பிரிவுகள்</label>
-							<select class="form-select login-form-group" id="story-division" name="sotry-division">
-								<option value="">Select Division</option>
-								<option value="division1">Division 1</option>
-								<option value="division2">Division 2</option>
-								<option value="division3">Division 3</option>
-							</select>
+							<?php
+								$divisions = get_terms(array(
+									'taxonomy'   => 'division',
+									'hide_empty' => false, // show even if no posts are assigned
+								));
+
+								if (!empty($divisions) && !is_wp_error($divisions)) :
+							?>
+									<select class="form-select login-form-group" id="story-division" name="sotry-division">
+										<option value="">Select Division</option>
+										<?php foreach ($divisions as $division) : ?>
+											<option value="<?php echo esc_attr($division->term_id); ?>">
+												<?php echo esc_html($division->name); ?>
+											</option>
+										<?php endforeach; ?>
+									</select>
+								<?php endif; ?>
 						</div>
 
 						<input type="text" class="form-control mb-2 d-none" id="seriesFirst">
@@ -265,6 +276,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 <?php get_footer(); ?>
 
 <script>
+    var my_ajax_object = {
+        ajax_url: '<?php echo admin_url('admin-ajax.php'); ?>',
+        nonce: '<?php echo wp_create_nonce('trumbowyg_upload_nonce'); ?>'
+    };
+</script>
+<script>
 
 	jQuery(document).ready(function ($) {
 		$('#next-step').on('click', function () {
@@ -315,10 +332,27 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							["bold", "italic", "underline"],
 							['justifyLeft', 'justifyCenter', 'justifyRight'],
 							['unorderedList', 'orderedList'],
-							["insertImage"],
+							["insertImage", "upload"],
 							["emoji"]
 						],
-						autogrow: true
+						autogrow: true,
+						plugins: {
+        upload: {
+            serverPath: '/wp-admin/admin-ajax.php',
+            fileFieldName: 'file',
+            data: { action: 'trumbowyg_upload' },
+            urlPropertyName: 'url', // JSON response property with file URL
+            success: function(data) {
+                // optional: editor-ku manual insert panna
+                if (data && data.url) {
+                    $('#story-content').trumbowyg('execCmd', {
+                        cmd: 'insertImage',
+                        param: data.url
+                    });
+                }
+            }
+        }
+    }
 					}).on('tbwchange tbwinit', updateWordCount);
 
 					const suggestionBox = $('#tanglishSuggestions');
@@ -485,6 +519,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 	});
 
 	function updateList(filter = '') {
+		const categoryInput = document.getElementById('series_input');
 		const categoryList = document.getElementById('category_list');
 
 		const staticSeries = <?php echo json_encode($static_series, JSON_UNESCAPED_UNICODE); ?>;
@@ -503,10 +538,13 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			const filtered = categories.filter(cat => cat.toLowerCase().includes(filter.toLowerCase()));
 			
 			if (filtered.length > 0) {
+				const storyCategory = document.getElementById('story-category');
+
 				if (selectedInput.value != 'தொடர்கதை அல்ல') {
 					const seriesFirst = document.getElementById("seriesFirst").value;
 
 					if (seriesFirst || seriesFirst == 'true') {
+						storyCategory.disabled = true;
 					} else {
 						document.getElementById("descriptionSection").classList.add("d-none");
 						document.getElementById("categoryDropdown").classList.add("d-none");
@@ -516,6 +554,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						document.getElementById("next-step").classList.remove("d-none");
 					}
 					
+				} else {
+					storyCategory.disabled = false;
 				}
 
 				filtered.forEach(cat => {
@@ -606,6 +646,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			const dropdown = document.getElementById('category_dropdown');
 			dropdown.addEventListener('click', function (e) {
 				const selectedValue = e.target.textContent.trim();
+				const storyCategory = document.getElementById('story-category');
 
 				if (selectedValue !== "தொடர்கதை அல்ல") {
 					// var element = document.getElementById("divisionDropdown");
@@ -616,8 +657,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						var element = document.getElementById("categoryDropdown");
 						element.classList.add("d-none");
 						document.getElementById("imageSection").classList.add("d-none");
+					} else {
+						storyCategory.disabled = true;
 					}
 				} else {
+					storyCategory.disabled = false;
 					var element = document.getElementById("divisionDropdown");
 					element.classList.add("d-none");
 

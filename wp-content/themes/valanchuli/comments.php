@@ -148,7 +148,11 @@ jQuery(document).ready(function($) {
         let form = jQuery("#ajax-comment-form")[0];
         let formData = new FormData(form);
 
-        if ($('.emojionearea-editor').text() == '') {
+        let editor = $('.emojionearea-editor');
+        let hasText = $.trim(editor.text()) !== '';
+        let hasEmoji = editor.find('img.emojioneemoji').length > 0;
+
+        if (!hasText && !hasEmoji) {
             alert("Please type your comment.");
         } else {
             formData.append("action", "ajax_comment");

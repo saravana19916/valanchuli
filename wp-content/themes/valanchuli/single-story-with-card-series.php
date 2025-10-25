@@ -13,9 +13,17 @@
                             $author_name = get_the_author_meta('display_name', $author_id);
                             $posted_date = get_the_date('d M Y');
 
-                            $division = get_post_meta(get_the_ID(), 'division', true);
+                            $division_id = get_post_meta(get_the_ID(), 'division', true);
 
-                            echo esc_html($author_name) . ' | ' . esc_html($posted_date) . ' | Division: ' . esc_html($division);
+                            $divisionName = '';
+                            if ($division_id) {
+                                $division = get_term($division_id, 'division');
+                                if (!is_wp_error($division) && $division) {
+                                    $divisionName = $division->name;
+                                }
+                            }
+
+                            echo esc_html($author_name) . ' | ' . esc_html($posted_date) . ' | Division: ' . esc_html($divisionName);
                         ?>
                     </p>
 

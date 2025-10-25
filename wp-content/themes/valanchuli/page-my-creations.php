@@ -38,6 +38,12 @@
             </div>
 
         <?php else : ?>
+            <div class="text-end my-3"> 
+                <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block fs-15px">
+                    படைப்புகள் சேர்க்க
+                </a>
+            </div>
+
             <!-- draft stories start -->
             <?php get_template_part('template-parts/draft-stories'); ?>
             <!-- draft stories end -->

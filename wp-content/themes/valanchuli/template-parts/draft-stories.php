@@ -101,7 +101,7 @@
                                     <a href="<?php echo esc_url( $delete_url ); ?>"
                                     class="btn btn-danger btn-sm p-1"
                                     title="Delete"
-                                    onclick="return confirm('Are you sure you want to delete this post?');">
+                                    onclick="return confirm('இந்த படைப்பை நீக்க விரும்புகிறீர்களா?');">
                                     <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                     <?php
@@ -192,7 +192,7 @@
                                     <a href="<?php echo esc_url( $delete_url ); ?>"
                                     class="btn btn-danger btn-sm p-1"
                                     title="Delete"
-                                    onclick="return confirm('Are you sure you want to delete this post?');">
+                                    onclick="return confirm('இந்த படைப்பை நீக்க விரும்புகிறீர்களா?');">
                                     <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                     <?php

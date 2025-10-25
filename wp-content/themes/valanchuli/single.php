@@ -21,7 +21,6 @@
                 $author_id   = get_post_field('post_author', $post_id);
                 $author_name = get_the_author_meta('display_name', $author_id);
                 $posted_date = get_the_date('d M Y', $post_id);
-                $division    = get_post_meta($post_id, 'division', true);
 
                 $competition = get_post_meta($post_id, 'competition', true);
 
@@ -37,9 +36,14 @@
                     <?php echo esc_html($author_name); ?>
                 </a>
                 | <?php echo esc_html($posted_date); ?>
-                <?php if (!empty($division)) : ?>
-                    | Division: <?php echo esc_html($division); ?>
-                <?php endif; ?>
+                <?php 
+                $division_id = get_post_meta($post_id, 'division', true);
+
+                if ($division_id) {
+                    $division = get_term($division_id, 'division');
+                    if (!is_wp_error($division) && $division) { ?>
+                        | Division: <?php echo esc_html($division->name); ?>
+                    <?php } } ?>
             </p>
 
             <div class="<?= esc_attr($cardClass); ?>">
@@ -178,7 +182,7 @@
                                                                                 href="<?php echo get_delete_post_link($post_id); ?>" 
                                                                                 class="p-1" 
                                                                                 title="Delete" 
-                                                                                onclick="return confirm('Are you sure you want to delete this post?');">
+                                                                                onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீக்க விரும்புகிறீர்களா?');">
                                                                                 <i class="fa-solid fa-trash-can fa-lg"></i>
                                                                             </a>
                                                                         </div>
@@ -197,6 +201,15 @@
                                                     </div>
                                                 </div>
                                             <?php $count++; endwhile; ?>
+                                        </div>
+
+                                        <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
+                                            <p class="mb-2">
+                                                அடுத்த பாகம் சேர்க்க கீழே உள்ள லிங்கை கிளிக் செய்யுங்கள்
+                                            </p>
+                                            <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                படைப்பை சேர்க்க
+                                            </a>
                                         </div>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
@@ -241,6 +254,53 @@
                                     $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
                                     $is_parent = $series_name == 'தொடர்கதை அல்ல' ? false : true;
                                 ?>
+
+                                <?php
+                                    if ($is_parent && $series_id) :
+                                        // Get all posts from the same series ordered by date
+                                        $episodes = get_posts([
+                                            'post_type'      => 'post',
+                                            'posts_per_page' => -1,
+                                            'orderby'        => 'date',
+                                            'order'          => 'ASC',
+                                            'tax_query'      => [
+                                                [
+                                                    'taxonomy' => 'series',
+                                                    'field'    => 'term_id',
+                                                    'terms'    => $series_id,
+                                                ],
+                                            ],
+                                        ]);
+
+                                        $episode_ids = wp_list_pluck($episodes, 'ID');
+                                        $current_index = array_search(get_the_ID(), $episode_ids);
+
+                                        $prev_episode_id = ($current_index > 1) ? $episode_ids[$current_index - 1] : null;
+                                        $next_episode_id = ($current_index < count($episode_ids) - 1) ? $episode_ids[$current_index + 1] : null;
+                                        ?>
+
+                                        <div class="episode-navigation row my-4">
+                                            <div class="col-6 text-start">
+                                                <?php if ($prev_episode_id): ?>
+                                                    <button type="button"
+                                                            class="btn btn-primary"
+                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($prev_episode_id)); ?>'">
+                                                        ← Previous Episode
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+
+                                            <div class="col-6 text-end">
+                                                <?php if ($next_episode_id): ?>
+                                                    <button type="button"
+                                                            class="btn btn-primary"
+                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($next_episode_id)); ?>'">
+                                                        Next Episode →
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
 
                                 <div
                                     class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"

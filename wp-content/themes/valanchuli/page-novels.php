@@ -115,7 +115,7 @@ get_header(); ?>
                                         href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
                                         class="btn btn-danger btn-sm p-1" 
                                         title="Delete" 
-                                        onclick="return confirm('Are you sure you want to delete this post?');">
+                                        onclick="return confirm('இந்த படைப்பை நீக்க விரும்புகிறீர்களா?');">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                 </div>

@@ -45,12 +45,55 @@ function enqueue_trumbowyg() {
     // wp_enqueue_script('jquery');
     // wp_enqueue_script('trumbowyg-script', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/trumbowyg.min.js', array('jquery'), null, true);
 
-    wp_enqueue_style('trumbowyg-style', 'https://cdn.rawgit.com/Alex-D/Trumbowyg/v2.25.1/dist/ui/trumbowyg.min.css');
-    wp_enqueue_script('trumbowyg-script', 'https://cdn.rawgit.com/Alex-D/Trumbowyg/v2.25.1/dist/trumbowyg.min.js', array('jquery'), null, true);
+     wp_enqueue_style(
+        'trumbowyg-style',
+        'https://cdn.jsdelivr.net/npm/trumbowyg@2.27.3/dist/ui/trumbowyg.min.css'
+    );
+    wp_enqueue_script(
+    'trumbowyg-core',
+    'https://cdn.jsdelivr.net/npm/trumbowyg@2.27.3/dist/trumbowyg.min.js',
+    ['jquery'],
+    null,
+    true
+);
+     wp_enqueue_script(
+        'trumbowyg-upload',
+        'https://cdn.jsdelivr.net/npm/trumbowyg@2.27.3/dist/plugins/upload/trumbowyg.upload.min.js',
+        array('jquery', 'trumbowyg-core'),
+        null,
+        true
+    );
 
-    wp_enqueue_script('trumbowyg-emoji', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/plugins/emoji/trumbowyg.emoji.min.js', array('jquery'), null, true);
+
+    // wp_enqueue_script('trumbowyg-emoji', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/plugins/emoji/trumbowyg.emoji.min.js', array('jquery'), null, true);
+
+    wp_localize_script('trumbowyg-init', 'my_ajax_object', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('trumbowyg_upload_nonce'),
+    ]);
 }
 add_action('wp_enqueue_scripts', 'enqueue_trumbowyg');
+
+add_action('wp_ajax_trumbowyg_image_upload', 'trumbowyg_image_upload_callback');
+add_action('wp_ajax_nopriv_trumbowyg_image_upload', 'trumbowyg_image_upload_callback');
+
+function trumbowyg_image_upload_callback() {
+    check_ajax_referer('trumbowyg_upload_nonce');
+
+    if (!function_exists('wp_handle_upload')) {
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+    }
+
+    $file = $_FILES['image'];
+    $uploaded = wp_handle_upload($file, ['test_form' => false]);
+
+    if (isset($uploaded['url'])) {
+        wp_send_json(['success' => true, 'file' => $uploaded['url']]);
+    } else {
+        wp_send_json(['success' => false, 'message' => 'Upload failed']);
+    }
+}
+
 
 function enqueue_swiper_slider() {
     wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');

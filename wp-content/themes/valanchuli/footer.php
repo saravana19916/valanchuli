@@ -119,21 +119,28 @@
 
 <script>
     document.addEventListener('contextmenu', function (e) {
+        // Allow right-click inside trumbowyg editor
+        if (e.target.closest('.trumbowyg-editor')) {
+            return true;
+        }
         e.preventDefault();
     });
 
     document.addEventListener('keydown', function (e) {
-        // if (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 'p')) {
-        //     e.preventDefault();
-        // }
-
-        const allowedElements = document.getElementsByClassName('trumbowyg-editor');
-        const isInAllowedTextarea = Array.from(allowedElements).some(el => el === document.activeElement);
+        const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
 
         if (e.ctrlKey && ['c', 'u', 'p'].includes(e.key.toLowerCase())) {
             if (!isInAllowedTextarea) {
                 e.preventDefault();
             }
+        }
+    });
+
+    // Allow paste inside Trumbowyg editor but block elsewhere
+    document.addEventListener('paste', function (e) {
+        const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
+        if (!isInAllowedTextarea) {
+            e.preventDefault();
         }
     });
 

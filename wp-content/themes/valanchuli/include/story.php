@@ -1,4 +1,31 @@
 <?php
+// Register 'division' taxonomy
+function register_division_taxonomy() {
+    $labels = array(
+        'name'              => _x('Divisions', 'taxonomy general name'),
+        'singular_name'     => _x('Division', 'taxonomy singular name'),
+        'search_items'      => __('Search Divisions'),
+        'all_items'         => __('All Divisions'),
+        'edit_item'         => __('Edit Division'),
+        'update_item'       => __('Update Division'),
+        'add_new_item'      => __('Add New Division'),
+        'new_item_name'     => __('New Division Name'),
+        'menu_name'         => __('Divisions'),
+    );
+
+    $args = array(
+        'hierarchical'      => true, // like categories
+        'labels'            => $labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'division'),
+    );
+
+    register_taxonomy('division', array('post'), $args); // attach to 'post' or any custom post type
+}
+add_action('init', 'register_division_taxonomy');
+
 
 function register_story_series_taxonomy() {
     register_taxonomy('series', 'post', [

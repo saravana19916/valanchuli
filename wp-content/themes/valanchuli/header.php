@@ -47,7 +47,7 @@
                     <?php if (is_user_logged_in()) : $current_user = wp_get_current_user(); ?>
                         <span class="dropdown-item text-center">Welcome <?php echo esc_html( $current_user->user_login ); ?> </span>
                         <a href="<?php echo site_url('/profile'); ?>" class="dropdown-item text-center">சுயவிவரம்</a>
-                        <a href="<?php echo wp_logout_url(site_url('/')); ?>" class="dropdown-item text-center">வெளியேறு</a>
+                        <a href="<?php echo wp_logout_url(site_url('/')); ?>" class="dropdown-item text-center">வெளியேறு (logout)</a>
                     <?php else : ?>
                         <a href="<?php echo site_url('/login'); ?>" class="dropdown-item text-center">உள்நுழைக</a>
                     <?php endif; ?>

@@ -39,10 +39,16 @@
                     போட்டிகள் விரைவில் அறிவிக்கப்படும்.
                 </div>
             <?php } ?>
-        <?php } else { ?>
+        <?php } else {
+            $currentUrl = get_permalink();
+            $loginPage = get_page_by_path('login');
+            $loginUrl = get_permalink($loginPage);
+
+            $loginUrlWithRedirect = add_query_arg('redirect_to', urlencode($currentUrl), $loginUrl);
+            ?>
             <div class="alert alert-warning text-center w-50 mx-auto mt-3" role="alert" id="draftAlert">
                 தயவு செய்து உள்நுழையவும். Story create is restricted. Please 
-                <a href="login" class="alert-link">Login / Register</a> to create stories.
+                <a href="<?php echo esc_url($loginUrlWithRedirect); ?>" class="alert-link">Login / Register</a> to create stories.
             </div>
         <?php } ?>
     </div>

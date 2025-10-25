@@ -115,7 +115,8 @@
                                         href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
                                         class="btn btn-danger btn-sm p-1" 
                                         title="Delete" 
-                                        onclick="return confirm('Are you sure you want to delete this post?');">
+                                        onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீ க்க
+விரும் புகிறீர்களா?');">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                 </div>
@@ -195,7 +196,8 @@
                                             href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
                                             class="btn btn-danger btn-sm p-1" 
                                             title="Delete" 
-                                            onclick="return confirm('Are you sure you want to delete this post?');">
+                                            onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீ க்க
+விரும் புகிறீர்களா?');">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </a>
                                     </div>
