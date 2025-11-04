@@ -115,6 +115,36 @@ function render_competition_meta_box($post) {
                 });
                 frame.open();
             });
+
+            const $series = $('#competition_series');
+            const $category = $('select[name="competition_category"]');
+
+            function handleSeriesChange() {
+                const selectedSeries = $series.val().trim();
+
+                if (selectedSeries === 'தொடர்கதை') {
+                    // Find the "தொடர்கதை" category option
+                    let found = false;
+                    $category.find('option').each(function() {
+                        if ($(this).text().trim() === 'தொடர்கதை') {
+                            $(this).prop('selected', true);
+                            found = true;
+                            return false; // break
+                        }
+                    });
+
+                    if (found) {
+                        $category.css('pointer-events', 'none')
+                            .css('opacity', '0.6')
+                            .attr('data-locked', 'true');
+                    }
+                } else {
+                    // Re-enable dropdown if not தொடர்கதை
+                    $category.css('pointer-events', '').css('opacity', '').removeAttr('data-locked');
+                }
+            }
+
+            $series.on('change', handleSeriesChange);
         });
     </script>
 

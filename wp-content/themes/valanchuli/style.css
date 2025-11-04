@@ -585,3 +585,24 @@ a:hover, .footer-menu li:hover {
 #productImageSlider .carousel-control-next-icon, #thumbnailCarousel .carousel-control-next-icon {
     filter: invert(100%);
 }
+
+#story-search {
+    height: 40px;
+    resize: none;
+    overflow: hidden;
+}
+
+#searchDropdown .tamil-suggestion-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    z-index: 1001;
+    height: 40px;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}

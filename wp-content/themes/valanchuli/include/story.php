@@ -44,7 +44,7 @@ add_action('wp_ajax_nopriv_save_story', 'save_story_ajax');
 function save_story_ajax() {
     $competition = sanitize_text_field($_POST['competition']);
     $title = sanitize_text_field($_POST['title']);
-    $category = intval($_POST['category']);
+    $category_id = intval($_POST['category']);
     $series_input = sanitize_text_field($_POST['series']);
     $content = wp_kses_post($_POST['content']);
     $division = sanitize_text_field($_POST['division']);
@@ -61,7 +61,12 @@ function save_story_ajax() {
         $errors['series_input'] = 'தொடர்கதை is required.';
     }
 
-    if (empty($description) && empty($content)) {
+    $category = '';
+    if (!empty($category_id)) {
+        $category = get_category($category_id)->name;
+    }
+
+    if ($category != 'தொடர்கதை' && empty($content)) {
         $errors['content'] = 'படைப்பு is required.';
     }
 
@@ -83,7 +88,7 @@ function save_story_ajax() {
         'post_content' => $content,
         'post_status'  => 'publish',
         'post_type'    => 'post',
-        'post_category'=> [$category],
+        'post_category'=> [$category_id],
         'post_author'  => get_current_user_id(),
     ];
 
@@ -136,14 +141,19 @@ add_action('wp_ajax_save_draft', 'handle_save_draft');
 function handle_save_draft() {
     $competition        = sanitize_text_field($_POST['competition']);
     $title        = sanitize_text_field($_POST['title']);
-    $category     = intval($_POST['category']);
+    $category_id     = intval($_POST['category']);
     $series_input = sanitize_text_field($_POST['series']);
     $content      = wp_kses_post($_POST['content']);
     $division     = sanitize_text_field($_POST['division']);
     $description     = sanitize_text_field($_POST['description']);
     $post_status  = in_array($_POST['status'], ['draft', 'publish']) ? $_POST['status'] : 'draft';
 
-    if (!$title || !$content) {
+    $category = '';
+    if (!empty($category_id)) {
+        $category = get_category($category_id)->name;
+    }
+
+    if (!$title || ($category != 'தொடர்கதை' && !$content)) {
         wp_send_json_error('Title and Content are required');
     }
 
@@ -151,16 +161,23 @@ function handle_save_draft() {
         'post_type'    => 'post',
         'post_title'   => $title,
         'post_content' => $content,
-        'post_status'  => $post_status,
-        'post_category'=> [$category],
+        'post_category'=> [$category_id],
         'post_author'  => get_current_user_id(),
     ];
 
     // Check if editing an existing post
-    if (!empty($_POST['post_id']) && get_post($_POST['post_id'])) {
-        $post_data['ID'] = intval($_POST['post_id']);
+    if (!empty($_POST['post_id']) && $existing_post = get_post(intval($_POST['post_id']))) {
+        $post_data['ID'] = $existing_post->ID;
+
+        if ($existing_post->post_status === 'publish') {
+            $post_data['post_status'] = 'publish';
+        } else {
+            $post_data['post_status'] = $post_status;
+        }
+
         $post_id = wp_update_post($post_data, true);
     } else {
+        $post_data['post_status'] = $post_status;
         $post_id = wp_insert_post($post_data);
     }
 

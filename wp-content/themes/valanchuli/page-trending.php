@@ -15,7 +15,8 @@ get_header(); ?>
             $trending_query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
-            if (!empty($description)) {
+            $division = get_post_meta($post_id, 'division', true);
+            if (!empty($description) || !empty($division)) {
                 continue;
             }
             $series = get_the_terms($post_id, 'series');

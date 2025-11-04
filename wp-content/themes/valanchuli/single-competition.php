@@ -13,7 +13,7 @@
                 $posted_date = get_the_date('d M Y');
             ?>
 
-            <p class="text-muted fs-13px text-center">
+            <p class="text-muted fs-16px text-center">
                 <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>" 
                 class="text-primary-color text-decoration-underline">
                     <?php echo esc_html($author_name); ?>
@@ -22,13 +22,13 @@
             </p>
 
             <?php if (!empty($categories) && isset($categories[0])) { ?>
-                <p class="text-muted fs-13px text-center">
+                <p class="text-muted fs-16px text-center">
                     <b>Category:</b> <?php echo $categories[0]->name; ?>
                 </p>
             <?php } ?>
 
             <div class="card border border-2 border-primary rounded">
-                <div class="card-body p-0">
+                <div class="card-body p-0 fs-16px">
                     <div class="card-text mt-3 px-3 py-2">
                         <?php
                             $content = get_post_meta(get_the_ID(), '_competition_content', true);
@@ -41,7 +41,7 @@
             <!-- Comments Section -->
             <?php if (comments_open() || get_comments_number()) : ?>
                 <div class="mt-5 shadow-sm border-0">
-                    <div class="card-body">
+                    <div class="card-body fs-16px">
                         <?php comments_template(); ?>
                     </div>
                 </div>

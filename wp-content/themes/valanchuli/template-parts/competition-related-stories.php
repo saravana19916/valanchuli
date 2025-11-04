@@ -45,7 +45,8 @@
         $series_terms = wp_get_post_terms($post_id, 'series');
         $series_id = (!empty($series_terms) && !is_wp_error($series_terms)) ? $series_terms[0]->term_id : 0;
 
-        if (!empty($description)) {
+        $division = get_post_meta($post_id, 'division', true);
+        if (!empty($description) || !empty($division)) {
             if ($series_id && !isset($shown_series[$series_id])) {
                 $shown_series[$series_id] = true;
                 $main_stories[] = get_post();
@@ -135,7 +136,8 @@
                         $total_views = get_custom_post_views($post_id);
                     }
                     
-                    if (!empty($description)){
+                    $division = get_post_meta($post_id, 'division', true);
+                    if (!empty($description) || !empty($division)) {
                         $total_views = get_average_series_views($post_id, $series_id);
 
                         $episode_count = 0;
@@ -200,7 +202,8 @@
                                 </div>
                             <?php } ?>
 
-                            <?php if (!empty($description)) { ?>
+                            <?php $division = get_post_meta($post_id, 'division', true);
+                            if (!empty($description) || !empty($division)) { ?>
                                 <div class="position-absolute bottom-0 start-0 w-100">
                                     <div class="d-flex align-items-center text-white gap-2" style="background: rgba(0, 0, 0, 0.5); border-radius: 0.25rem; padding: 4px 8px;">
                                         <i class="fas fa-book"></i>

@@ -314,8 +314,34 @@ function handle_frontend_post_delete() {
         // Check if user can delete this post
         if ( $current_user_id === $post_author_id) {
 
+            $series_terms = wp_get_post_terms( $post_id, 'series', ['fields' => 'all'] );
+
             // Delete the post
             wp_delete_post( $post_id, true ); // true = force delete, false = move to trash
+
+            // 🔹 Delete the series term(s) if no other posts use them
+            if ( ! empty( $series_terms ) ) {
+                foreach ( $series_terms as $term ) {
+                    $term_posts = get_posts([
+                        'post_type'      => 'post',
+                        'post_status'    => 'any',
+                        'tax_query'      => [
+                            [
+                                'taxonomy' => 'series',
+                                'field'    => 'term_id',
+                                'terms'    => $term->term_id,
+                            ],
+                        ],
+                        'fields'         => 'ids',
+                        'posts_per_page' => 1,
+                    ]);
+
+                    // Delete term only if no other post uses it
+                    if ( empty( $term_posts ) ) {
+                        wp_delete_term( $term->term_id, 'series' );
+                    }
+                }
+            }
 
             // Redirect after deletion
             wp_safe_redirect( home_url( '/my-creations/?post_deleted=1' ) );
@@ -326,6 +352,25 @@ function handle_frontend_post_delete() {
     }
 }
 add_action( 'init', 'handle_frontend_post_delete' );
+
+// Global search
+function search_by_title_only( $search, $wp_query ) {
+    global $wpdb;
+
+    if ( empty( $search ) ) {
+        return $search;
+    }
+
+    if ( ! is_admin() && isset( $wp_query->query['s'] ) ) {
+        $search = $wpdb->prepare(
+            " AND {$wpdb->posts}.post_title LIKE %s ",
+            '%' . $wpdb->esc_like( $wp_query->query['s'] ) . '%'
+        );
+    }
+
+    return $search;
+}
+add_filter( 'posts_search', 'search_by_title_only', 10, 2 );
 
 
 

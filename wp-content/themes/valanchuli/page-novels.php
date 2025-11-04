@@ -25,7 +25,8 @@ get_header(); ?>
             $novel_query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
-            if (!empty($description)) {
+            $division = get_post_meta($post_id, 'division', true);
+            if (!empty($description) || !empty($division)) {
                 $series = get_the_terms($post_id, 'series');
                 $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
                 $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';

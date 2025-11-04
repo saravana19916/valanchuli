@@ -7,7 +7,7 @@
             <div class="card shadow border-0">
                 <div class="card-body p-4">
                     <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
-                    <p class="text-muted fs-13px text-center">
+                    <p class="text-muted fs-16px text-center">
                         <?php
                             $author_id = get_post_field('post_author', get_the_ID());
                             $author_name = get_the_author_meta('display_name', $author_id);
@@ -31,11 +31,12 @@
                         <?php the_content(); ?>
                     </div> -->
 
-                    <div class="card-text my-5">
+                    <div class="card-text my-5 fs-16px">
                         <?php
                             $description = get_post_meta(get_the_ID(), 'description', true);
 
-                            if (!empty($description)) {
+                            $division = get_post_meta($post_id, 'division', true);
+                            if (!empty($description) || !empty($division)) {
                                 $terms = get_the_terms(get_the_ID(), 'series');
 
                                 if (!empty($terms) && !is_wp_error($terms)) {
@@ -148,7 +149,7 @@
                                 </div>
 
                                 <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow">
-                                    <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
+                                    <p class="my-2 fw-bold fs-16px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
                                     <p class="mb-2">Click on a star to rate it!</p>
                                     <div class="stars">
                                         <?php for ($i = 1; $i <= 5; $i++): ?>
@@ -161,7 +162,7 @@
 
                                 <?php if (comments_open() || get_comments_number()) : ?>
                                     <div class="mt-5 border-0">
-                                        <div class="card-body">
+                                        <div class="card-body fs-16px">
                                             <?php comments_template(); ?>
                                         </div>
                                     </div>

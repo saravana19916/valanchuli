@@ -108,7 +108,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								$query = new WP_Query([
 									'post_type'      => 'post',
 									'posts_per_page' => 1,
-									'post_status'    => 'any',
+									'post_status'    => 'publish',
 									'author'         => $current_user_id,
 									'tax_query'      => [
 										[
@@ -150,6 +150,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							<label class="form-label">தலைப்பு <span style="color: red;">*</span></label>
 							<input type="text" class="form-control tamilwriter login-form-group story-title tamil-suggestion-input" id="story-title">
 							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-title" style="display: none;"></p>
+							<p class="my-2 fs-12px d-none" style="color: gray;" id="titleInfo"><i>உங்கள் தொடர்கதையின் தலைப்பை மீண்டும் டைப் செய்யுங்கள்</i></p>
+							<p class="my-2 fs-12px d-none" style="color: gray;" id="titleEpisodeInfo"><i>இங்கு உங்கள் கதையின் எந்த எபிசோடை பதிவிட விரும்புகிறீர்களோ அந்த எபிசோட் எண்ணை டைப் செய்யுங்கள்(உதாரணம் -  எபிசோட் 1, எபிசோட் 2)</i></p>
 						</div>
 
 						<!-- <div class="mb-4 dropdown">
@@ -187,15 +189,15 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 									'exclude' => get_cat_ID('Uncategorized'),
 								]);
 								foreach ($categories as $cat) {
-									echo '<option value="' . esc_attr($cat->term_id) . '">' . esc_html($cat->name) . '</option>';
+									$disabled = ($cat->name === 'தொடர்கதை') ? 'disabled' : '';
+        							echo '<option value="' . esc_attr($cat->term_id) . '" ' . $disabled . '>' . esc_html($cat->name) . '</option>';
 								}
 								?>
 							</select>
-							<p class="my-2 fs-12px" style="color: gray;"><i>இந்த படைப்பு எந்த வகையை சேர்ந்தது என்பதை தேர்ந்தெடுக்கவும் (உதாரணம்: காதல், குடும்பம், நகைச்சுவை, தொடர்கதை)</i></p>
 						</div>
 
 						<div class="mb-4 d-none" id="divisionDropdown">
-							<label class="form-label">பிரிவுகள்</label>
+							<label class="form-label">பிரிவுகள் <span style="color: red;">*</span></label>
 							<?php
 								$divisions = get_terms(array(
 									'taxonomy'   => 'division',
@@ -204,7 +206,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 								if (!empty($divisions) && !is_wp_error($divisions)) :
 							?>
-									<select class="form-select login-form-group" id="story-division" name="sotry-division">
+									<select class="form-select login-form-group story-division" id="story-division" name="sotry-division">
 										<option value="">Select Division</option>
 										<?php foreach ($divisions as $division) : ?>
 											<option value="<?php echo esc_attr($division->term_id); ?>">
@@ -213,6 +215,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 										<?php endforeach; ?>
 									</select>
 								<?php endif; ?>
+							<p class="my-2 fs-12px" style="color: gray;"><i>இந்த படைப்பு எந்த வகையை சேர்ந்தது என்பதை தேர்ந்தெடுக்கவும் (உதாரணம்: காதல், குடும்பம், நகைச்சுவை, தொடர்கதை)</i></p>
 						</div>
 
 						<input type="text" class="form-control mb-2 d-none" id="seriesFirst">
@@ -232,6 +235,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							அடுத்தது</button>
 						<button type="submit" id="step1Submit" class="btn btn-primary me-2 d-none"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
 						சமர்ப்பிக்க</button>
+						<button type="button" class="btn btn-primary d-none" id="step1SaveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
+						Save Draft</button>
 					</div>					
 				</div>
 			</div>
@@ -264,7 +269,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 				<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp;
 					முந்தையது</button>
-				<button type="submit" class="btn btn-primary me-2"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
+				<button type="submit" class="btn btn-primary me-2" id="step2Submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
 					சமர்ப்பிக்க</button>
 				<button type="button" class="btn btn-primary" id="saveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
 					Save Draft</button>
@@ -396,7 +401,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						$('#content-loader').show();
 						$('#content-loader-2').show();
 
-						$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', true);
+						$('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
 
 						activeRequests++;
 
@@ -415,7 +420,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							activeRequests--;
 
 							if (activeRequests === 0) {
-								$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
+								$('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
 								$('#content-loader').hide();
 								$('#content-loader-2').hide();
 							}
@@ -490,7 +495,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 			// setTimeout(() => {
 			// 	$('#content-loader').hide();
 			// 	$('#content-loader-2').hide();
-			// 	$('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
+			// 	$('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
 			// }, 300);
 		}
 
@@ -514,6 +519,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		startAutoSave();
 
 		$('#saveDraft').click(function() {
+			autoSaveDraft(false);
+		});
+
+		$('#step1SaveDraft').click(function() {
 			autoSaveDraft(false);
 		});
 	});
@@ -545,12 +554,24 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 					if (seriesFirst || seriesFirst == 'true') {
 						storyCategory.disabled = true;
+						document.getElementById("titleInfo").classList.remove("d-none");
+						document.getElementById("titleEpisodeInfo").classList.add("d-none");
+
+						for (let i = 0; i < storyCategory.options.length; i++) {
+							if (storyCategory.options[i].text.trim() === "தொடர்கதை") {
+								storyCategory.selectedIndex = i;
+								break;
+							}
+						}
 					} else {
+						document.getElementById("titleInfo").classList.add("d-none");
+						document.getElementById("titleEpisodeInfo").classList.remove("d-none");
 						document.getElementById("descriptionSection").classList.add("d-none");
 						document.getElementById("categoryDropdown").classList.add("d-none");
 						document.getElementById("divisionDropdown").classList.add("d-none");
 						document.getElementById("imageSection").classList.add("d-none");
 						document.getElementById("step1Submit").classList.add("d-none");
+						document.getElementById("step1SaveDraft").classList.add("d-none");
 						document.getElementById("next-step").classList.remove("d-none");
 					}
 					
@@ -627,6 +648,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 				document.getElementById("next-step").classList.add("d-none");
 				document.getElementById("step1Submit").classList.remove("d-none");
+				document.getElementById("step1SaveDraft").classList.remove("d-none");
 				document.getElementById("categoryDropdown").classList.remove("d-none");
 				document.getElementById("divisionDropdown").classList.remove("d-none");
 				document.getElementById("imageSection").classList.remove("d-none");
@@ -654,11 +676,22 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 					const seriesFirst = document.getElementById('seriesFirst').value;
 					if (!seriesFirst || seriesFirst == 'false') {
+						document.getElementById("titleInfo").classList.add("d-none");
+						document.getElementById("titleEpisodeInfo").classList.remove("d-none");
 						var element = document.getElementById("categoryDropdown");
 						element.classList.add("d-none");
 						document.getElementById("imageSection").classList.add("d-none");
 					} else {
 						storyCategory.disabled = true;
+						document.getElementById("titleInfo").classList.remove("d-none");
+						document.getElementById("titleEpisodeInfo").classList.add("d-none");
+
+						for (let i = 0; i < storyCategory.options.length; i++) {
+							if (storyCategory.options[i].text.trim() === "தொடர்கதை") {
+								storyCategory.selectedIndex = i;
+								break;
+							}
+						}
 					}
 				} else {
 					storyCategory.disabled = false;
@@ -681,7 +714,9 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 	document.getElementById('write-story-form').addEventListener('submit', function (e) {
 		e.preventDefault();
 
-		jQuery('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', true);
+		jQuery('.error-message').remove();
+
+		jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
 
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
 		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
@@ -711,6 +746,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 		if (series === '') {
 			errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
+		}
+
+		if ((seriesFirst == true || seriesFirst == 'true') && division == '') {
+			errors.push({ field: 'division', message: 'பிரிவுகள் is required.' });
 		}
 
 		// Show errors
@@ -774,7 +813,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							}
 						}
 
-						jQuery('#saveDraft, .btn[type="submit"], #prev-step').prop('disabled', false);
+						jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
 					}
 				});
 		}
@@ -783,6 +822,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 	// draft save #
 	let autoSaveTimeout;
 	let lastDraftId = null;
+	let currentPostId = null;
 
 	function autoSaveDraft(isAutoSave) {
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
@@ -793,7 +833,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		const division = document.getElementById('story-division')?.value || '';
 		const description   = document.getElementById('story-description')?.value || '';
 		const imageInput = document.getElementById('story-image');
-		const postId = document.getElementById('editPostId').value;
+		let postId = document.getElementById('editPostId').value;
+
+		if (currentPostId) {
+			postId = currentPostId;
+		};
 
 		if (!title && !content) return;
 
@@ -822,6 +866,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		})
 		.then(res => res.json())
 		.then(response => {
+			if (response.success && response.data.post_id) {
+				currentPostId = response.data.post_id;
+			}
+
 			if (response.success && !isAutoSave) {
 				lastDraftId = response.data.post_id;
 				var element = document.getElementById("draftAlert");
@@ -919,15 +967,14 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					if (data.data.division) {
 						document.getElementById('divisionDropdown').classList.remove('d-none'); 
 						document.getElementById('story-division').value = data.data.division;
-					}
-					
-					if (data.data.description) {
+
 						document.getElementById('descriptionSection').classList.remove('d-none'); 
 						document.getElementById('story-description').value = data.data.description;
 						document.getElementById('seriesFirst').value = 'true';
 
 						document.getElementById("next-step").classList.add("d-none");
 						document.getElementById("step1Submit").classList.remove("d-none");
+						document.getElementById("step1SaveDraft").classList.remove("d-none");
 					}
 					
 					if (data.data.image_url) {

@@ -91,14 +91,36 @@
 
                         <nav class="footer-nav">
                             <?php
-                            wp_nav_menu(array(
+                            $footer_menu = wp_nav_menu(array(
                                 'theme_location' => 'footer',
-                                'container' => false,
-                                'menu_class' => 'footer-menu d-flex flex-wrap gap-3 mb-0 ps-0',
-                                'fallback_cb' => false
+                                'container'      => false,
+                                'menu_class'     => 'footer-menu d-flex flex-wrap gap-3 mb-0 ps-0',
+                                'fallback_cb'    => false,
+                                'echo'           => false,
                             ));
+
+                            if (is_user_logged_in()) {
+                                $custom_item = '
+                                    <li class="menu-item nav-item">
+                                        <a href="' . esc_url(wp_logout_url(get_permalink())) . '">
+                                            <span>வெளியேறு (Logout)</span>
+                                        </a>
+                                    </li>';
+                            } else {
+                                $custom_item = '
+                                    <li class="menu-item nav-item">
+                                        <a href="' . site_url('/login') . '">
+                                            <span>உள்நுழைக (Login)</span>
+                                        </a>
+                                    </li>';
+                            }
+
+                            $footer_menu = str_replace('</ul>', $custom_item . '</ul>', $footer_menu);
+
+                            echo $footer_menu;
                             ?>
                         </nav>
+
                     </div>
                 </div>
 
@@ -120,7 +142,7 @@
 <script>
     document.addEventListener('contextmenu', function (e) {
         // Allow right-click inside trumbowyg editor
-        if (e.target.closest('.trumbowyg-editor')) {
+        if (e.target.closest('.trumbowyg-editor') || e.target.closest('.story-title')) {
             return true;
         }
         e.preventDefault();
@@ -128,9 +150,10 @@
 
     document.addEventListener('keydown', function (e) {
         const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
+        const isInAllowedTitle = e.target.closest('.story-title');
 
         if (e.ctrlKey && ['c', 'u', 'p'].includes(e.key.toLowerCase())) {
-            if (!isInAllowedTextarea) {
+            if (!isInAllowedTextarea && !isInAllowedTitle) {
                 e.preventDefault();
             }
         }
@@ -139,7 +162,8 @@
     // Allow paste inside Trumbowyg editor but block elsewhere
     document.addEventListener('paste', function (e) {
         const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
-        if (!isInAllowedTextarea) {
+        const isInAllowedTitle = e.target.closest('.story-title');
+        if (!isInAllowedTextarea && !isInAllowedTitle) {
             e.preventDefault();
         }
     });

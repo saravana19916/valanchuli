@@ -31,7 +31,7 @@ function send_contact_mail() {
         wp_send_json_error($errors);
     }
 
-    $admin_email = get_option('admin_email');
+    $admin_email = 'Contact@valanchuli.com';
 
     $headers = [
         'Content-Type: text/html; charset=UTF-8',

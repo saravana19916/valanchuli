@@ -32,7 +32,8 @@
                 <div id="searchDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
                     style="min-width: 250px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
                     <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
-                        <input type="text" name="s" class="form-control" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
+                        <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
+						<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
                     </form>
                 </div>
             </div>

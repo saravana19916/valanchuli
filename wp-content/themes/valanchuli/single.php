@@ -30,7 +30,7 @@
                 }
             ?>
 
-            <p class="text-muted fs-13px text-center">
+            <p class="text-muted fs-16px text-center">
                 <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>" 
                 class="text-primary-color text-decoration-underline">
                     <?php echo esc_html($author_name); ?>
@@ -47,11 +47,12 @@
             </p>
 
             <div class="<?= esc_attr($cardClass); ?>">
-                <div class="card-body p-0">
+                <div class="card-body p-0 fs-16px">
                     <div class="card-text">
                         <?php
 
-                            if (!empty($description)) {
+                            $division = get_post_meta($post_id, 'division', true);
+                            if (!empty($description) || !empty($division)) {
                                 $terms = get_the_terms(get_the_ID(), 'series');
 
                                 if (!empty($terms) && !is_wp_error($terms)) {
@@ -235,9 +236,9 @@
                                                 'class' => 'img-fluid d-inline-block rounded post-image-size',
                                             ]); ?>
                                         <?php else : ?>
-                                            <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                                            <!-- <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
                                                 class="img-fluid d-inline-block rounded post-image-size"
-                                                alt="Default Image">
+                                                alt="Default Image"> -->
                                         <?php endif; ?>
                                     </div>
                                 </div>
