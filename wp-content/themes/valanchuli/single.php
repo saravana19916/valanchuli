@@ -179,8 +179,16 @@
                                                                                 <i class="fa-solid fa-pen-to-square fa-lg"></i>
                                                                             </a>
 
-                                                                            <a 
-                                                                                href="<?php echo get_delete_post_link($post_id); ?>" 
+                                                                            <?php 
+                                                                                $nonce = wp_create_nonce('frontend_delete_post_' . $post_id);
+                                                                                $delete_url = add_query_arg([
+                                                                                    'action'   => 'frontend_delete_post',
+                                                                                    'post_id'  => $post_id,
+                                                                                    'nonce'    => $nonce,
+                                                                                ], admin_url('admin-post.php'));
+                                                                            ?>
+
+                                                                            <a href="<?php echo esc_url($delete_url); ?>"
                                                                                 class="p-1" 
                                                                                 title="Delete" 
                                                                                 onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீக்க விரும்புகிறீர்களா?');">
@@ -204,14 +212,26 @@
                                             <?php $count++; endwhile; ?>
                                         </div>
 
-                                        <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
-                                            <p class="mb-2">
-                                                அடுத்த பாகம் சேர்க்க கீழே உள்ள லிங்கை கிளிக் செய்யுங்கள்
-                                            </p>
-                                            <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block">
-                                                படைப்பை சேர்க்க
-                                            </a>
-                                        </div>
+                                        <?php
+                                            if ( is_user_logged_in() ) {
+                                                $post_id = get_the_ID();
+                                                $current_user_id = get_current_user_id();
+                                                $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                                if ( $current_user_id === $post_author_id ) :
+                                                    ?>
+                                                    <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
+                                                        <p class="mb-2">
+                                                            அடுத்த பாகம் சேர்க்க கீழே உள்ள லிங்கை கிளிக் செய்யுங்கள்
+                                                        </p>
+                                                        <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                            படைப்பை சேர்க்க
+                                                        </a>
+                                                    </div>
+                                                    <?php
+                                                endif;
+                                            }
+                                        ?>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
                                         <div class="col-12 text-center mt-4">

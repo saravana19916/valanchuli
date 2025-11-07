@@ -100,12 +100,19 @@
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
-                                    <a 
-                                        href="<?php echo get_delete_post_link(get_the_ID()); ?>" 
+                                    <?php 
+                                        $nonce = wp_create_nonce('frontend_delete_post_' . get_the_ID());
+                                        $delete_url = add_query_arg([
+                                            'action'   => 'frontend_delete_post',
+                                            'post_id'  => get_the_ID(),
+                                            'nonce'    => $nonce,
+                                        ], admin_url('admin-post.php'));
+                                    ?>
+
+                                    <a href="<?php echo esc_url($delete_url); ?>"
                                         class="btn btn-danger btn-sm p-1" 
                                         title="Delete" 
-                                        onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீ க்க
-விரும் புகிறீர்களா?');">
+                                        onclick="return confirm('தொடர்கதையில் இருந்து இந்த பாகத்தை நீக்க விரும்புகிறீர்களா?');">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                 </div>
