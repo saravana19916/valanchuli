@@ -56,44 +56,37 @@ function enqueue_trumbowyg() {
     null,
     true
 );
-     wp_enqueue_script(
-        'trumbowyg-upload',
-        'https://cdn.jsdelivr.net/npm/trumbowyg@2.27.3/dist/plugins/upload/trumbowyg.upload.min.js',
-        array('jquery', 'trumbowyg-core'),
-        null,
-        true
-    );
 
 
     // wp_enqueue_script('trumbowyg-emoji', 'https://cdn.jsdelivr.net/npm/trumbowyg/dist/plugins/emoji/trumbowyg.emoji.min.js', array('jquery'), null, true);
 
-    wp_localize_script('trumbowyg-init', 'my_ajax_object', [
+    wp_localize_script('trumbowyg-core', 'my_ajax_object', [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce'    => wp_create_nonce('trumbowyg_upload_nonce'),
     ]);
 }
 add_action('wp_enqueue_scripts', 'enqueue_trumbowyg');
 
-add_action('wp_ajax_trumbowyg_image_upload', 'trumbowyg_image_upload_callback');
-add_action('wp_ajax_nopriv_trumbowyg_image_upload', 'trumbowyg_image_upload_callback');
+add_action('wp_ajax_trumbowyg_upload', 'trumbowyg_upload_callback');
+add_action('wp_ajax_nopriv_trumbowyg_upload', 'trumbowyg_upload_callback');
 
-function trumbowyg_image_upload_callback() {
-    check_ajax_referer('trumbowyg_upload_nonce');
-
-    if (!function_exists('wp_handle_upload')) {
-        require_once(ABSPATH . 'wp-admin/includes/file.php');
+function trumbowyg_upload_callback() {
+    if (empty($_FILES['file'])) {
+        wp_send_json_error(['message' => 'No file uploaded']);
     }
 
-    $file = $_FILES['image'];
-    $uploaded = wp_handle_upload($file, ['test_form' => false]);
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+
+    $uploaded = wp_handle_upload($_FILES['file'], ['test_form' => false]);
 
     if (isset($uploaded['url'])) {
-        wp_send_json(['success' => true, 'file' => $uploaded['url']]);
+        wp_send_json_success(['url' => $uploaded['url']]);
     } else {
-        wp_send_json(['success' => false, 'message' => 'Upload failed']);
+        wp_send_json_error(['message' => 'Upload failed', 'error' => $uploaded]);
     }
-}
 
+    wp_die();
+}
 
 function enqueue_swiper_slider() {
     wp_enqueue_style('swiper-css', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');

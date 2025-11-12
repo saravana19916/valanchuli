@@ -248,6 +248,8 @@
                                     <?php 
                                 }
                             } else { ?>
+                                <?php increase_story_view_count(); ?>
+
                                 <div class="row col-12 mb-3 mx-auto">
                                     <!-- Image Section -->
                                     <div class="col-12 text-center mb-3">
@@ -263,7 +265,7 @@
                                     </div>
                                 </div>
 
-                                <div class="py-2">
+                                <div class="py-2 single-page-content">
                                     <?php
                                         the_content();
                                     ?>

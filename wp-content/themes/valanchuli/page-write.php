@@ -281,12 +281,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 <?php get_footer(); ?>
 
 <script>
-    var my_ajax_object = {
-        ajax_url: '<?php echo admin_url('admin-ajax.php'); ?>',
-        nonce: '<?php echo wp_create_nonce('trumbowyg_upload_nonce'); ?>'
-    };
-</script>
-<script>
 
 	jQuery(document).ready(function ($) {
 		$('#next-step').on('click', function () {
@@ -337,27 +331,41 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							["bold", "italic", "underline"],
 							['justifyLeft', 'justifyCenter', 'justifyRight'],
 							['unorderedList', 'orderedList'],
-							["insertImage", "upload"],
-							["emoji"]
+							["emoji"],
+							['uploadImage']
 						],
-						autogrow: true,
-						plugins: {
-        upload: {
-            serverPath: '/wp-admin/admin-ajax.php',
-            fileFieldName: 'file',
-            data: { action: 'trumbowyg_upload' },
-            urlPropertyName: 'url', // JSON response property with file URL
-            success: function(data) {
-                // optional: editor-ku manual insert panna
-                if (data && data.url) {
-                    $('#story-content').trumbowyg('execCmd', {
-                        cmd: 'insertImage',
-                        param: data.url
-                    });
-                }
-            }
-        }
-    }
+						btnsDef: {
+							uploadImage: {
+								fn: function() {
+									const fileInput = $('<input type="file" accept="image/*">');
+									fileInput.on('change', function() {
+										const file = this.files[0];
+										const formData = new FormData();
+										formData.append('file', file);
+										formData.append('action', 'trumbowyg_upload');
+
+										$.ajax({
+											url: my_ajax_object.ajax_url,
+											type: 'POST',
+											data: formData,
+											processData: false,
+											contentType: false,
+											success: function(response) {
+												if (response.success && response.data && response.data.url) {
+													$('#story-content').trumbowyg('execCmd', {
+														cmd: 'insertHTML',
+														param: `<img src="${response.data.url}" alt="">`
+													});
+												}
+											}
+										});
+									});
+									fileInput.trigger('click');
+								},
+								title: 'Upload Image',
+								ico: 'insertImage'
+							}
+						}
 					}).on('tbwchange tbwinit', updateWordCount);
 
 					const suggestionBox = $('#tanglishSuggestions');
@@ -714,10 +722,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 	document.getElementById('write-story-form').addEventListener('submit', function (e) {
 		e.preventDefault();
 
-		jQuery('.error-message').remove();
-
-		jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
-
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
 		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
 		const seriesFirst = document.getElementById('seriesFirst').value;
@@ -729,6 +733,33 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		const content = document.getElementById('story-content').value;
 		const imageInput = document.getElementById('story-image');
 		const postId = document.getElementById('editPostId').value;
+
+		const text = document.getElementById('story-content').value.trim();
+		const wordCount = jQuery('#word-count').text();
+
+		if (isCompetitionPage || isCompetitionPage == 'true') {
+			const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+			const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+
+			if (wordCount < minWords || wordCount > maxWords) {
+				e.preventDefault();
+				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+				return;
+			}
+		} else {
+			const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+			const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+
+			if (wordCount < minWords || wordCount > maxWords) {
+				e.preventDefault();
+				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+				return;
+			}
+		}
+
+		jQuery('.error-message').remove();
+
+		jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
 
 		let errors = [];
 
@@ -826,6 +857,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 	function autoSaveDraft(isAutoSave) {
 		const storyCompetition = document.getElementById('story-competition')?.value || '';
+		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
 		const title    = document.getElementById('story-title').value;
 		const content  = document.getElementById('story-content').value;
 		const category = document.getElementById('story-category')?.value || '';
@@ -834,6 +866,29 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		const description   = document.getElementById('story-description')?.value || '';
 		const imageInput = document.getElementById('story-image');
 		let postId = document.getElementById('editPostId').value;
+
+		const text = document.getElementById('story-content').value.trim();
+		const wordCount = jQuery('#word-count').text();
+
+		if (isCompetitionPage || isCompetitionPage == 'true') {
+			const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+			const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+
+			if (wordCount < minWords || wordCount > maxWords) {
+				e.preventDefault();
+				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+				return;
+			}
+		} else {
+			const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+			const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+
+			if (wordCount < minWords || wordCount > maxWords) {
+				e.preventDefault();
+				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+				return;
+			}
+		}
 
 		if (currentPostId) {
 			postId = currentPostId;

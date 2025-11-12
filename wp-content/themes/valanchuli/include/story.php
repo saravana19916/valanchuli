@@ -26,7 +26,6 @@ function register_division_taxonomy() {
 }
 add_action('init', 'register_division_taxonomy');
 
-
 function register_story_series_taxonomy() {
     register_taxonomy('series', 'post', [
         'label' => 'Series',
@@ -38,6 +37,82 @@ function register_story_series_taxonomy() {
     ]);
 }
 add_action('init', 'register_story_series_taxonomy');
+
+// Add fields for word count range
+add_action('admin_init', function() {
+
+    // Series word count control
+    add_settings_section(
+        'series_wordcount_section',
+        'Series Word Count Control',
+        function() {
+            echo '<p>Set the minimum and maximum allowed word count for story submissions.</p>';
+        },
+        'reading'
+    );
+
+    add_settings_field(
+        'series_min_words',
+        'Minimum Word Count',
+        function() {
+            $value = get_option('series_min_words', 1000);
+            echo '<input type="number" min="1" name="series_min_words" value="' . esc_attr($value) . '" />';
+        },
+        'reading',
+        'series_wordcount_section'
+    );
+
+    add_settings_field(
+        'series_max_words',
+        'Maximum Word Count',
+        function() {
+            $value = get_option('series_max_words', 2000);
+            echo '<input type="number" min="1" name="series_max_words" value="' . esc_attr($value) . '" />';
+        },
+        'reading',
+        'series_wordcount_section'
+    );
+
+    register_setting('reading', 'series_min_words');
+    register_setting('reading', 'series_max_words');
+
+    // competition word count control
+    add_settings_section(
+        'competition_wordcount_section',
+        'Competition Word Count Control',
+        function() {
+            echo '<p>Set the minimum and maximum allowed word count for story submissions.</p>';
+        },
+        'reading'
+    );
+
+    add_settings_field(
+        'competition_min_words',
+        'Minimum Word Count',
+        function() {
+            $value = get_option('competition_min_words', 1000);
+            echo '<input type="number" min="1" name="competition_min_words" value="' . esc_attr($value) . '" />';
+        },
+        'reading',
+        'competition_wordcount_section'
+    );
+
+    add_settings_field(
+        'competition_max_words',
+        'Maximum Word Count',
+        function() {
+            $value = get_option('competition_max_words', 2000);
+            echo '<input type="number" min="1" name="competition_max_words" value="' . esc_attr($value) . '" />';
+        },
+        'reading',
+        'competition_wordcount_section'
+    );
+
+    register_setting('reading', 'competition_min_words');
+    register_setting('reading', 'competition_max_words');
+});
+
+
 
 add_action('wp_ajax_save_story', 'save_story_ajax');
 add_action('wp_ajax_nopriv_save_story', 'save_story_ajax');

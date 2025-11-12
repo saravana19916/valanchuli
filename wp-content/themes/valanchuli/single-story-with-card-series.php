@@ -142,7 +142,8 @@
                                     <?php 
                                 }
                             } else { ?>
-                                <div class="text-primary-color">
+                                <?php increase_story_view_count(); ?>
+                                <div class="text-primary-color single-page-content">
                                     <?php
                                         the_content();
                                     ?>

@@ -82,22 +82,24 @@
         $a_series = get_the_terms($a_id, 'series');
         $a_series_id = ($a_series && !is_wp_error($a_series)) ? $a_series[0]->term_id : 0;
         $a_desc = get_post_meta($a_id, 'description', true);
+        $a_division = get_post_meta($a_id, 'division', true);
         $a_series_name = ($a_series && !is_wp_error($a_series)) ? $a_series[0]->name : '';
         $a_views = 0;
         if ($a_series_name === 'தொடர்கதை அல்ல') {
             $a_views = get_custom_post_views($a_id);
-        } elseif (!empty($a_desc)) {
+        } elseif (!empty($a_desc) || !empty($a_division)) {
             $a_views = get_average_series_views($a_id, $a_series_id);
         }
     
         $b_series = get_the_terms($b_id, 'series');
         $b_series_id = ($b_series && !is_wp_error($b_series)) ? $b_series[0]->term_id : 0;
         $b_desc = get_post_meta($b_id, 'description', true);
+        $b_division = get_post_meta($b_id, 'division', true);
         $b_series_name = ($b_series && !is_wp_error($b_series)) ? $b_series[0]->name : '';
         $b_views = 0;
         if ($b_series_name === 'தொடர்கதை அல்ல') {
             $b_views = get_custom_post_views($b_id);
-        } elseif (!empty($b_desc)) {
+        } elseif (!empty($b_desc) || !empty($b_division)) {
             $b_views = get_average_series_views($b_id, $b_series_id);
         }
     

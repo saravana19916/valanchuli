@@ -114,13 +114,24 @@ function get_custom_average_rating($post_id, $series_id = '') {
     return $avg_rating ? $avg_rating : 0;
 }
 
-function increase_story_view_count() {
-    global $post;
-    $count = get_post_meta($post->ID, 'story_view_count', true);
-    $count = $count ? $count + 1 : 1;
-    update_post_meta($post->ID, 'story_view_count', $count);
+function increase_story_view_count($post_id = null) {
+    if (!$post_id && is_singular('post')) {
+        $post_id = get_the_ID();
+    }
+
+    if ($post_id) {
+        $count = (int) get_post_meta($post_id, 'story_view_count', true);
+        update_post_meta($post_id, 'story_view_count', $count + 1);
+    }
 }
-add_action('wp_head', 'increase_story_view_count');
+
+// function increase_story_view_count() {
+//     global $post;
+//     $count = get_post_meta($post->ID, 'story_view_count', true);
+//     $count = $count ? $count + 1 : 1;
+//     update_post_meta($post->ID, 'story_view_count', $count);
+// }
+// add_action('wp_head', 'increase_story_view_count');
 
 function get_average_series_views($post_id, $term_id) {
     $args = [

@@ -3,86 +3,77 @@
         'post_type'      => ['post'],
         'posts_per_page' => -1,
         'post_status'    => 'publish',
-        'date_query'     => [
-            [
-                'after'     => '7 days ago',
-                'inclusive' => true,
-            ],
-        ],
         'orderby'        => 'date',
         'order'          => 'DESC',
     ]);
 
     $shown_series = [];
     $main_stories = [];
-    $other_stories = [];
+    $today_cutoff = strtotime('-7 days');
 
-    // First pass: select one story per series with description
     while ($stories->have_posts()) {
         $stories->the_post();
         $post_id = get_the_ID();
-        $description = get_post_meta($post_id, 'description', true);
-        $series_terms = wp_get_post_terms($post_id, 'series');
-        $series_id = (!empty($series_terms) && !is_wp_error($series_terms)) ? $series_terms[0]->term_id : 0;
+        $published_time = get_the_time('U');
+            
+        $series = get_the_terms($post_id, 'series');
+        $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
 
-        $division = get_post_meta($post_id, 'division', true);
-        if (!empty($description) || !empty($division)) {
-            if ($series_id && !isset($shown_series[$series_id])) {
-                $shown_series[$series_id] = true;
-                $main_stories[] = get_post();
-            } elseif (!$series_id) {
-                $main_stories[] = get_post(); // standalone story with description
-            }
-        }
-    }
-    wp_reset_postdata();
+        if (!empty($series) && !is_wp_error($series)) {
 
-    // Second pass: collect remaining stories
-    if ($stories->have_posts()) {
-        while ($stories->have_posts()) {
-            $stories->the_post();
-            $series_terms = wp_get_post_terms(get_the_ID(), 'series');
-            $series_id = (!empty($series_terms) && !is_wp_error($series_terms)) ? $series_terms[0]->term_id : 0;
-
-            if ($series_id && isset($shown_series[$series_id])) {
+            // Skip already included series
+            if (isset($shown_series[$series_id])) {
                 continue;
             }
 
-            $other_stories[] = get_post();
+            $episode_count = 0;
+            if ($series_id) {
+                $series_posts = get_posts([
+                    'post_type'      => 'post',
+                    'posts_per_page' => -1,
+                    'post_status'    => 'publish',
+                    'orderby'        => 'date',
+                    'order'          => 'ASC',
+                    'fields'         => 'ids',
+                    'post__not_in'   => [$post_id],
+                    'tax_query'      => [
+                        [
+                            'taxonomy' => 'series',
+                            'field'    => 'term_id',
+                            'terms'    => [$series_id],
+                        ],
+                    ],
+                ]);
+
+                $episode_count = count($series_posts);
+            }
+
+            // If no episodes, skip
+            if ($episode_count == 0) {
+                continue;
+            }
+
+            // 🔹 Check first episode publish date
+            $first_episode_id = $series_posts[0];
+            $first_episode_date = get_the_time('U', $first_episode_id);
+
+            // ✅ Only include the series if first episode is within last 7 days
+            if ($first_episode_date >= $today_cutoff) {
+                $shown_series[$series_id] = true;
+
+                // Add the *first story* of that series to the list
+                $main_stories[] = get_post($first_episode_id);
+            }
+        } else {
+            // 🔹 Non-series standalone story
+            if ($published_time >= $today_cutoff) {
+                $main_stories[] = get_post($post_id);
+            }
         }
     }
     wp_reset_postdata();
 
-    $all_stories = array_merge($main_stories, $other_stories);
-
-    usort($all_stories, function ($a, $b) {
-        $a_id = $a->ID;
-        $b_id = $b->ID;
-    
-        $a_series = get_the_terms($a_id, 'series');
-        $a_series_id = ($a_series && !is_wp_error($a_series)) ? $a_series[0]->term_id : 0;
-        $a_desc = get_post_meta($a_id, 'description', true);
-        $a_series_name = ($a_series && !is_wp_error($a_series)) ? $a_series[0]->name : '';
-        $a_views = 0;
-        if ($a_series_name === 'தொடர்கதை அல்ல') {
-            $a_views = get_custom_post_views($a_id);
-        } elseif (!empty($a_desc)) {
-            $a_views = get_average_series_views($a_id, $a_series_id);
-        }
-    
-        $b_series = get_the_terms($b_id, 'series');
-        $b_series_id = ($b_series && !is_wp_error($b_series)) ? $b_series[0]->term_id : 0;
-        $b_desc = get_post_meta($b_id, 'description', true);
-        $b_series_name = ($b_series && !is_wp_error($b_series)) ? $b_series[0]->name : '';
-        $b_views = 0;
-        if ($b_series_name === 'தொடர்கதை அல்ல') {
-            $b_views = get_custom_post_views($b_id);
-        } elseif (!empty($b_desc)) {
-            $b_views = get_average_series_views($b_id, $b_series_id);
-        }
-    
-        return $b_views <=> $a_views;
-    });
+    $all_stories = array_values($main_stories);
 ?>
 
 <?php $trendingUrl = get_permalink(get_page_by_path('latest-stories')); ?>

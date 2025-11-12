@@ -22,6 +22,8 @@ $image_ids = is_array($image_ids) ? $image_ids : [];
                 <h4 class="text-primary-color fw-bold"> Product Details </h4>
             </div>
 
+            <?php increase_story_view_count(); ?>
+
             <div class="row g-5 align-items-start">
                 <!-- Left: Image -->
                 <div class="col-md-5 text-center">
