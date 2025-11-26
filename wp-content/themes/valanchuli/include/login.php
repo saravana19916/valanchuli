@@ -31,17 +31,16 @@ function ajax_login_handler() {
         }
 
         wp_send_json($response);
+    } else {
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID, true);
+
+        $response['status'] = 'success';
+        $response['message'] = 'Login successful!';
+        $response['redirect_url'] = !empty($_POST['redirect_to']) ? esc_url_raw($_POST['redirect_to']) : home_url();
+
+        wp_send_json($response);
     }
-
-    wp_clear_auth_cookie();
-    wp_set_current_user($user->ID);
-    wp_set_auth_cookie($user->ID, true);
-
-    $response['status'] = 'success';
-    $response['message'] = 'Login successful!';
-    $response['redirect_url'] = !empty($_POST['redirect_to']) ? esc_url_raw($_POST['redirect_to']) : home_url();
-
-    wp_send_json($response);
 }
 
 add_action('wp_ajax_nopriv_ajax_login', 'ajax_login_handler');

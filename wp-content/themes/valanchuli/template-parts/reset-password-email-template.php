@@ -18,7 +18,7 @@
                 <p>We received a request to reset the password for your Valanchuli account.</p>
                 <p>
                     To reset your password, click the link below:
-                    <a href="<?php echo esc_url($reset_url); ?>">
+                    <a href="<?php echo $reset_url; ?>">
                         Reset Password
                     </a>
                 </p>

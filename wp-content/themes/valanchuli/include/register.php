@@ -1,9 +1,40 @@
 <?php
+add_action('init', function () {
+    add_filter('sanitize_user', 'allow_tamil_usernames', 10, 3);
+});
+
+function allow_tamil_usernames($username, $raw_username, $strict) {
+    if ( defined('XMLRPC_REQUEST') || ( isset($_POST['action']) && $_POST['action'] === 'login' ) ) {
+        return $raw_username;
+    }
+
+    $username = wp_strip_all_tags($raw_username);
+    $username = preg_replace('/[\r\n\t ]+/', '', $username);
+    return $username;
+}
+
+add_filter('pre_user_nicename', function($nicename) {
+    // Fix slug length & block re-encoding issues
+    $nicename = wp_strip_all_tags($nicename);
+    $nicename = preg_replace('/[\s]+/', '', $nicename);
+
+    // Trim safely
+    if (function_exists('mb_substr')) {
+        $nicename = mb_substr($nicename, 0, 20); // force short slug
+    } else {
+        $nicename = substr($nicename, 0, 20);
+    }
+
+    return $nicename;
+});
+
+
 add_action('wp_ajax_register_user', 'ajax_register_user');
 add_action('wp_ajax_nopriv_register_user', 'ajax_register_user');
 
 function ajax_register_user() {
-    $username = sanitize_user($_POST['username']);
+    $username = wp_strip_all_tags($_POST['username']);
+    $username = preg_replace('/[\s]+/', '', $username);
     $password = $_POST['password'];
     $email = sanitize_text_field($_POST['email']);
     $firstname = sanitize_text_field($_POST['firstname']);
@@ -44,7 +75,6 @@ function ajax_register_user() {
    $user_id = wp_insert_user([
         'user_login'    => $username,
         'user_pass'     => $password,
-        'user_nicename' => $username,
         'user_email'    => $email,
         'display_name'  => $firstname . ' ' . $lastname,
         'first_name'    => $firstname,

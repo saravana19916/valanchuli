@@ -41,8 +41,10 @@
 
                 if ($division_id) {
                     $division = get_term($division_id, 'division');
-                    if (!is_wp_error($division) && $division) { ?>
-                        | Division: <?php echo esc_html($division->name); ?>
+                    if (!is_wp_error($division) && $division) {
+                        $division_link = site_url('/division/' . $division->slug . '/');
+                        ?>
+                        | Division: <a href="<?php echo esc_url($division_link); ?>"><?php echo esc_html($division->name); ?></a>
                     <?php } } ?>
             </p>
 
@@ -113,6 +115,8 @@
                                         </div>
                                     </div>
 
+                                    <?php $series_id = get_the_ID(); ?>
+
                                     <h4 class="mt-5 fw-bold">பாகங்கள் (<?php echo $related_stories->found_posts; ?>)</h4>
 
                                     <?php if ($related_stories->have_posts()) { ?>
@@ -122,6 +126,7 @@
                                                 <div class="col-12 col-md-6 col-xl-4 my-3">
                                                     <div class="w-100 p-4 shadow rounded">
                                                         <?php
+                                                            $episode_id = get_the_ID();
                                                             $average_rating = get_custom_average_rating(get_the_ID());
                                                             $total_views = get_custom_post_views(get_the_ID());
                                                         ?>
@@ -129,7 +134,22 @@
                                                             <div class="d-flex justify-content-between align-items-center">
                                                                 <h6 class="mb-0 fw-bold">
                                                                     <?php echo sprintf("%2d", $count + 1); ?>.&nbsp;
-                                                                    <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                    <?php
+                                                                        $lock_status = get_episode_lock_status($series_id, $episode_id, $count + 1);
+                                                                        $locked = $lock_status['locked'];
+                                                                        $lock_type = $lock_status['type'];
+                                                                        if ($locked):
+                                                                    ?>
+                                                                        <a href="javascript:void(0);" 
+                                                                            class="locked-episode" 
+                                                                            data-lock-type="<?php echo esc_attr($lock_type); ?>"
+                                                                            onclick="showLockPopup('<?php echo esc_js($lock_type); ?>')">
+                                                                            <?php echo esc_html(get_the_title()); ?>
+                                                                            <i class="fa-solid fa-lock text-danger ms-2"></i>
+                                                                        </a>
+                                                                    <?php else: ?>
+                                                                        <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                    <?php endif; ?>
                                                                 </h6>
 
                                                                 <?php 
@@ -224,9 +244,15 @@
                                                         <p class="mb-2">
                                                             அடுத்த பாகம் சேர்க்க கீழே உள்ள லிங்கை கிளிக் செய்யுங்கள்
                                                         </p>
-                                                        <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
-                                                            படைப்பை சேர்க்க
-                                                        </a>
+                                                        <?php if ($competitionParam) { ?>
+                                                            <a href="<?php echo esc_url( home_url('/write?id=' . $post_id . $competitionParam) ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                                படைப்பை சேர்க்க
+                                                            </a>
+                                                        <?php } else { ?>
+                                                            <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                                படைப்பை சேர்க்க
+                                                            </a>
+                                                        <?php } ?>
                                                     </div>
                                                     <?php
                                                 endif;
@@ -234,16 +260,39 @@
                                         ?>
                                         <?php wp_reset_postdata(); ?>
                                     <?php } else { ?>
-                                        <div class="col-12 text-center mt-4">
-                                            <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
-                                                <p class="mb-2">
-                                                    இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை. தொடர்கதை உருவாக்க கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
-                                                </p>
-                                                <a href="<?php echo site_url('/write'); ?>" class="text-decoration-underline fw-bold d-inline-block">
-                                                    படைப்பை சேர்க்க
-                                                </a>
+                                        <?php
+                                            if ( is_user_logged_in() ) {
+                                                $post_id = get_the_ID();
+                                                $current_user_id = get_current_user_id();
+                                                $post_author_id = (int) get_post_field('post_author', $post_id);
+
+                                                if ( $current_user_id === $post_author_id ) :
+                                        ?>
+                                            <div class="col-12 text-center mt-4">
+                                                <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
+                                                    <p class="mb-2">
+                                                        இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை. தொடர்கதை உருவாக்க கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
+                                                    </p>
+                                                    <?php if ($competitionParam) { ?>
+                                                        <a href="<?php echo esc_url( home_url('/write?id=' . $post_id . $competitionParam) ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                            படைப்பை சேர்க்க
+                                                        </a>
+                                                    <?php } else { ?>
+                                                        <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                            படைப்பை சேர்க்க
+                                                        </a>
+                                                    <?php } ?>
+                                                </div>
                                             </div>
-                                        </div>
+                                        <?php else : ?>
+                                            <div class="col-12 text-center mt-4">
+                                                <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
+                                                    <p class="mb-2">
+                                                        இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        <?php endif; } ?>
                                     <?php } ?>
                                     <?php 
                                 }
@@ -345,6 +394,23 @@
                                         </div>
                                         <p>No votes so far! Be the first to rate this post.</p>
                                 </div>
+
+                                    <?php
+    $message  = "திகிலும் ருசிக்கும் ஒரு தொடர்கதை....\n\n";
+    $message .= "கதையை பிரதிலிபி செயலியில் வாசியுங்கள்\n\n";
+    $message .= get_the_title() . "\n";
+    $message .= get_permalink() . "\n\n";
+    $message .= "வாசிக்க கதையின் மேல் க்ளிக் செய்யவும் 👆";
+
+    $whatsapp_link = "https://wa.me/?text=" . rawurlencode($message);
+    ?>
+
+    <a href="<?php echo $whatsapp_link; ?>" 
+    class="btn btn-success whatsapp-popup">
+        <i class="fa-brands fa-whatsapp"></i> Share on WhatsApp1
+    </a>
+
+
                                 
                                 <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredLabel" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
@@ -385,6 +451,14 @@
 <?php get_footer(); ?>
 
 <script>
+    function openSharePopup(url) {
+    window.open(
+        url,
+        'whatsappShareWindow',
+        'width=600,height=600,top=100,left=200'
+    );
+    return false; // prevent normal link navigation
+}
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.read-more-toggle').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -399,4 +473,38 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function showLockPopup(type) {
+    let msg = '';
+    switch (type) {
+        case 'ads':
+            msg = 'இந்த பாகம் Ads Lock ஆகும் — விளம்பரம் பார்க்க வேண்டும்.';
+            break;
+        case 'coin':
+            msg = 'இந்த பாகம் Coin Lock ஆகும் — நாணயங்கள் தேவை.';
+            break;
+        case 'default':
+            msg = 'இது இயல்புநிலை பூட்டு (Default Lock) ஆகும்.';
+            break;
+        default:
+            msg = 'இந்த பாகம் பூட்டப்பட்டுள்ளது.';
+    }
+
+    // Simple popup (you can replace with Bootstrap modal if needed)
+    const popup = document.createElement('div');
+    popup.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;">
+            <div style="background: white; padding: 20px 30px; border-radius: 8px; text-align:center; max-width:400px;">
+                <p>${msg}</p>
+                <button onclick="this.closest('div').parentNode.remove()" style="margin-top:10px;" class="btn btn-primary">சரி</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(popup);
+}
 </script>

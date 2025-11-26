@@ -1,4 +1,159 @@
 <?php
+
+add_action('wp_head', function() {
+    ob_start();
+}, 1);
+
+/* ---------- 2) End buffering late, process buffer ---------- */
+add_action('wp_head', function() {
+    // Get buffer and stop buffering
+    $buffer = (string) ob_get_clean();
+
+    // Only operate for singular post-like pages
+    if (!is_singular()) {
+        echo $buffer;
+        return;
+    }
+
+    global $post;
+    if ( ! $post ) {
+        echo $buffer;
+        return;
+    }
+
+    // Only target your episode pages:
+    // Change 'post' to your episode CPT slug if episodes are not 'post'
+    if ( $post->post_type !== 'post' ) {
+        echo $buffer;
+        return;
+    }
+
+    $parent_story = get_parent_story_by_episode($post->ID);
+
+    if ($parent_story) {
+        $parent_id = $parent_story->ID;
+
+        $description = get_post_meta($parent_id, 'description', true);
+        $division    = get_post_meta($parent_id, 'division', true);
+
+        if (!empty($description) || !empty($division)) {
+            $img = get_series_featured_image_url($parent_id); // your series image
+
+            if ( ! $img ) {
+                echo $buffer;
+                return;
+            }
+
+            // ------------- remove existing og:image / twitter:image tags from buffer -------------
+            $buffer = preg_replace(
+                '/<meta[^>]+(property|name)=([\'"])(og:image|twitter:image)\2[^>]*>\s*/i',
+                '',
+                $buffer
+            );
+
+            // ------------- prepare our tags to inject -------------
+            // $our_meta  = "\n<!-- Custom OG Image injected by episode_series_og_image -->\n";
+            // $our_meta .= '<meta property="og:image" content="' . esc_url( $img ) . '">' . "\n";
+            // $our_meta .= '<meta property="og:image:secure_url" content="' . esc_url($img) . '">' . "\n";
+            // $our_meta .= '<meta property="og:image:width" content="1200">' . "\n";
+            // $our_meta .= '<meta property="og:image:height" content="630">' . "\n";
+            // $our_meta .= '<meta property="og:type" content="article">' . "\n";
+            // $our_meta .= '<meta name="twitter:image" content="' . esc_url( $img ) . '">' . "\n";
+
+            $our_meta  = "\n<!-- Custom OG Image injected by episode_series_og_image -->\n";
+            $our_meta .= '<meta property="og:image" content="' . esc_url($img) . '">' . "\n";
+            $our_meta .= '<meta property="og:image:secure_url" content="' . esc_url($img) . '">' . "\n";
+            $our_meta .= '<meta property="og:image:width" content="1024">' . "\n";
+            $our_meta .= '<meta property="og:image:height" content="1536">' . "\n";
+            $our_meta .= '<meta property="og:image:alt" content="test">' . "\n";
+            $our_meta .= '<meta property="og:image:type" content="image/jpeg">' . "\n";
+
+
+            // ------------- inject before closing head if present, otherwise append -------------
+            if ( stripos( $buffer, '</head>' ) !== false ) {
+                // insert our tags just before </head>
+                $buffer = preg_replace( '/<\/head>/i', $our_meta . '</head>', $buffer, 1 );
+            } else {
+                // fallback: append to buffer
+                $buffer .= $our_meta;
+            }
+
+            // Output the processed buffer
+            echo $buffer;
+        }
+    }
+
+    if ( ! $img ) {
+        echo $buffer;
+        return;
+    }
+}, 999 );
+
+function get_series_featured_image_url($post_id) {
+    // Get the series term for current post (episode)
+    $series = get_the_terms($post_id, 'series');
+    if (!$series || is_wp_error($series)) {
+        return false;
+    }
+
+    $series_id = $series[0]->term_id;
+
+    // Query the parent story (first published post in this series)
+    $parent_query = new WP_Query([
+        'post_type'      => 'post',
+        'posts_per_page' => 1,
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+        'tax_query'      => [
+            [
+                'taxonomy' => 'series',
+                'field'    => 'term_id',
+                'terms'    => [$series_id],
+            ],
+        ],
+    ]);
+
+    if ($parent_query->have_posts()) {
+        $parent = $parent_query->posts[0]; // first story in the series
+        if (has_post_thumbnail($parent->ID)) {
+            return get_the_post_thumbnail_url($parent->ID, 'full');
+        }
+    }
+
+    return false;
+}
+
+function get_parent_story_by_episode($episode_id) {
+    // Get the series term of the episode
+    $series = get_the_terms($episode_id, 'series');
+    if (!$series || is_wp_error($series)) return false;
+
+    $series_id = $series[0]->term_id;
+
+    // Query the first post in this series
+    $parent_query = new WP_Query([
+        'post_type'      => 'post',
+        'posts_per_page' => 1,
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+        'tax_query'      => [
+            [
+                'taxonomy' => 'series',
+                'field'    => 'term_id',
+                'terms'    => [$series_id],
+            ],
+        ],
+    ]);
+
+    if ($parent_query->have_posts()) {
+        return $parent_query->posts[0]; // parent story object
+    }
+
+    return false;
+}
+
 // Register 'division' taxonomy
 function register_division_taxonomy() {
     $labels = array(
@@ -25,6 +180,19 @@ function register_division_taxonomy() {
     register_taxonomy('division', array('post'), $args); // attach to 'post' or any custom post type
 }
 add_action('init', 'register_division_taxonomy');
+
+add_action('init', function () {
+    add_rewrite_rule(
+        '^division/([^/]*)/?',
+        'index.php?pagename=division&division_slug=$matches[1]',
+        'top'
+    );
+});
+
+add_filter('query_vars', function ($vars) {
+    $vars[] = 'division_slug';
+    return $vars;
+});
 
 function register_story_series_taxonomy() {
     register_taxonomy('series', 'post', [
@@ -430,5 +598,45 @@ function ajax_get_series_list() {
 
     wp_send_json_success($dynamic_series);
 }
+
+// function custom_social_meta_tags() {
+//     if (is_single()) {
+//         global $post;
+
+//         $title = get_the_title($post);
+//         $description = wp_strip_all_tags(get_the_excerpt($post));
+//         $image = get_the_post_thumbnail_url($post, 'full');
+//         $url = get_permalink($post);
+
+//         echo '
+//         <meta property="og:title" content="'.$title.'" />
+//         <meta property="og:description" content="'.$description.'" />
+//         <meta property="og:image" content="'.$image.'" />
+//         <meta property="og:url" content="'.$url.'" />
+//         <meta property="og:type" content="article" />
+//         <meta name="twitter:card" content="summary_large_image">
+//         ';
+//     }
+// }
+// add_action('wp_head', 'custom_social_meta_tags');
+
+add_action('wp_head', function() {
+    if (is_single()) {
+        $id   = get_the_ID();
+        $img  = get_the_post_thumbnail_url($id, 'full');
+        $url  = get_permalink($id);
+        $title = get_the_title($id);
+        $desc  = wp_trim_words(strip_tags(get_the_content($id)), 25);
+?>
+    <meta property="og:title" content="<?php echo esc_attr($title); ?>">
+    <meta property="og:description" content="<?php echo esc_attr($desc); ?>">
+    <meta property="og:image" content="<?php echo esc_url($img); ?>">
+    <meta property="og:url" content="<?php echo esc_url($url); ?>">
+    <meta property="og:type" content="article">
+<?php
+    }
+});
+
+
 
 

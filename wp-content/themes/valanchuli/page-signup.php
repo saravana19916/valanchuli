@@ -31,8 +31,9 @@
                 <div class="mb-3">
                     <div class="col-sm-12 input-group login-form-group register-username">
                         <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
-                        <input type="text" class="form-control login-input" id="username" name="username" placeholder="Username *">
+                        <input type="text" class="form-control login-input tamil-suggestion-input" id="username" name="username" placeholder="Username *">
                     </div>
+                    <p class="tamil-suggestion-box mt-2" data-suggestion-for="username" style="display:none;"></p>
                 </div>
 
                 <div class="mb-3">
@@ -57,15 +58,17 @@
                 <div class="mb-3">
                     <div class="col-sm-12 input-group login-form-group register-firstname">
                         <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
-                        <input type="text" class="form-control login-input" id="firstname" name="firstname" placeholder="First Name *">
+                        <input type="text" class="form-control login-input tamil-suggestion-input" id="firstname" name="firstname" placeholder="First Name *">
                     </div>
+                    <p class="tamil-suggestion-box mt-2" data-suggestion-for="firstname" style="display:none;"></p>
                 </div>
 
                 <div class="mb-4">
                     <div class="col-sm-12 input-group login-form-group register-lastname">
                         <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
-                        <input type="text" class="form-control login-input" id="lastname" name="lastname" placeholder="Last Name *">
+                        <input type="text" class="form-control login-input tamil-suggestion-input" id="lastname" name="lastname" placeholder="Last Name *">
                     </div>
+                    <p class="tamil-suggestion-box mt-2" data-suggestion-for="lastname" style="display:none;"></p>
                 </div>
 
                 <div class="mb-4">
@@ -86,6 +89,8 @@
                         <a href="<?php echo site_url('/login'); ?>" class="text-primary-color"><span class="fs-14px fw-bold">Login</span></a>
                     </p>
                 </div>
+
+                <div id="canvasContainer"></div>
             </form>
         </div>
     </div>
@@ -109,4 +114,67 @@
             togglePasswordIcon.classList.toggle("fa-eye-slash");
         });
     });
+</script>
+
+<script>
+function renderStoryAsImage(text) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext("2d");
+
+    // Canvas width
+    const maxWidth = 780;
+    const lineHeight = 26;
+    const fontStyle = "20px Arial";
+
+    // Setup temporary font for measuring
+    ctx.font = fontStyle;
+
+    const words = text.split(" ");
+    let line = "";
+    let y = 10;
+
+    // 1️⃣ Calculate height FIRST
+    for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + " ";
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth) {
+            line = words[i] + " ";
+            y += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    y += lineHeight;
+
+    // 2️⃣ Now set proper canvas size
+    canvas.width = 800;
+    canvas.height = y + 10;
+
+    // 3️⃣ Set font again (important)
+    ctx.font = fontStyle;
+    ctx.fillStyle = "#000";
+    ctx.textBaseline = "top";
+
+    // 4️⃣ Draw text again
+    let line2 = "";
+    let y2 = 10;
+    for (let i = 0; i < words.length; i++) {
+        const testLine = line2 + words[i] + " ";
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth) {
+            ctx.fillText(line2, 10, y2);
+            line2 = words[i] + " ";
+            y2 += lineHeight;
+        } else {
+            line2 = testLine;
+        }
+    }
+    ctx.fillText(line2, 10, y2);
+
+    document.getElementById("canvasContainer").innerHTML = "";
+    document.getElementById("canvasContainer").appendChild(canvas);
+}
+
+// Example text
+renderStoryAsImage("இது ஒரு சிறுகதை. இது பிறரால் நகலெடுக்க முடியாது ஏனெனில் இது படம் வடிவத்தில் காட்டப்படுகிறது.");
 </script>

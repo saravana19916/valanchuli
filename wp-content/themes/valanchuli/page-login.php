@@ -29,8 +29,9 @@
                 <div class="mb-3">
                     <div class="input-group login-form-group login-username">
                         <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
-                        <input type="text" id="username" name="username" class="form-control login-input" placeholder="Username *">
+                        <input type="text" id="username" name="username" class="form-control login-input tamil-suggestion-input" placeholder="Username *">
                     </div>
+                    <p class="tamil-suggestion-box mt-2" data-suggestion-for="username" style="display:none;"></p>
                 </div>
 
                 <div class="mb-4">

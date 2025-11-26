@@ -250,18 +250,42 @@
                 
                 $series = get_the_terms(get_the_ID(), 'series');
                 $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-                $average_rating = get_custom_average_rating($post_id, $series_id);
-    
+
                 $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
-    
+
                 $total_views = 0;
+                $average_rating = 0;
                 if ($series_name == 'தொடர்கதை அல்ல') {
                     $total_views = get_custom_post_views($post_id);
+                    $average_rating = get_custom_average_rating($post_id);
                 }
                 
                 $division = get_post_meta($post_id, 'division', true);
                 if (!empty($description) || !empty($division)) {
                     $total_views = get_average_series_views($post_id, $series_id);
+                    $average_rating = get_custom_average_rating($post_id, $series_id);
+
+                    $episode_count = 0;
+
+                    if ($series_id) {
+                        $related_stories = new WP_Query([
+                            'post_type'      => 'post',
+                            'posts_per_page' => -1,
+                            'post_status'    => 'publish',
+                            'orderby'        => 'date',
+                            'order'          => 'ASC',
+                            'post__not_in'   => [$post_id],
+                            'tax_query'      => [
+                                [
+                                    'taxonomy' => 'series',
+                                    'field'    => 'term_id',
+                                    'terms'    => [$series_id],
+                                ],
+                            ],
+                        ]);
+
+                        $episode_count = $related_stories->found_posts;
+                    }
                 }
             ?>
             <div class="swiper-slide" style="width: 180px;">
@@ -300,6 +324,16 @@
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
                             <?php endif; ?>
+                        </div>
+                    <?php } ?>
+
+                    <?php $division = get_post_meta($post_id, 'division', true);
+                    if (!empty($description) || !empty($division)) { ?>
+                        <div class="position-absolute bottom-0 start-0 w-100">
+                            <div class="d-flex align-items-center text-white gap-2" style="background: rgba(0, 0, 0, 0.5); border-radius: 0.25rem; padding: 4px 8px;">
+                                <i class="fas fa-book"></i>
+                                <span><?php echo $episode_count; ?> பாகங்கள்</span>
+                            </div>
                         </div>
                     <?php } ?>
                 </div>

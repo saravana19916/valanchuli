@@ -12,6 +12,7 @@ require_once get_template_directory() . '/include/comment.php';
 require_once get_template_directory() . '/include/product.php';
 require_once get_template_directory() . '/include/story-single.php';
 require_once get_template_directory() . '/include/profile.php';
+require_once get_template_directory() . '/include/lock.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -307,33 +308,43 @@ function handle_frontend_post_delete() {
         // Check if user can delete this post
         if ( $current_user_id === $post_author_id) {
 
-            $series_terms = wp_get_post_terms( $post_id, 'series', ['fields' => 'all'] );
+            $description = get_post_meta($post_id, 'description', true);
+            $division    = get_post_meta($post_id, 'division', true);
 
-            // Delete the post
-            wp_delete_post( $post_id, true ); // true = force delete, false = move to trash
+            if ( ! empty($description) || ! empty($division) ) {
+                $series_terms = get_the_terms($post_id, 'series');
 
-            // 🔹 Delete the series term(s) if no other posts use them
-            if ( ! empty( $series_terms ) ) {
-                foreach ( $series_terms as $term ) {
-                    $term_posts = get_posts([
-                        'post_type'      => 'post',
-                        'post_status'    => 'any',
-                        'tax_query'      => [
-                            [
-                                'taxonomy' => 'series',
-                                'field'    => 'term_id',
-                                'terms'    => $term->term_id,
+                if ( ! empty($series_terms) ) {
+                    foreach ( $series_terms as $term ) {
+                        $term_posts = get_posts([
+                            'post_type'      => 'post',
+                            'post_status'    => 'any',
+                            'tax_query'      => [
+                                [
+                                    'taxonomy' => 'series',
+                                    'field'    => 'term_id',
+                                    'terms'    => $term->term_id,
+                                ],
                             ],
-                        ],
-                        'fields'         => 'ids',
-                        'posts_per_page' => 1,
-                    ]);
+                            'fields'         => 'ids',
+                            'posts_per_page' => -1,
+                        ]);
 
-                    // Delete term only if no other post uses it
-                    if ( empty( $term_posts ) ) {
-                        wp_delete_term( $term->term_id, 'series' );
+                        // Delete all posts assigned to this term
+                        if ( ! empty( $term_posts ) ) {
+                            foreach ( $term_posts as $eid ) {
+                                wp_delete_post( $eid, true );
+                            }
+                        }
+
+                        // Delete term only if no other post uses it
+                        if ( empty( $term_posts ) ) {
+                            wp_delete_term( $term->term_id, 'series' );
+                        }
                     }
                 }
+            } else {
+                wp_delete_post( $post_id, true );
             }
 
             // Redirect after deletion
@@ -364,8 +375,6 @@ function search_by_title_only( $search, $wp_query ) {
     return $search;
 }
 add_filter( 'posts_search', 'search_by_title_only', 10, 2 );
-
-
 
 
 ?>

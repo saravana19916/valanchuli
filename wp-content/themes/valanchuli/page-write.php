@@ -105,7 +105,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 									return false;
 								}
 
-								$query = new WP_Query([
+								$args = [
 									'post_type'      => 'post',
 									'posts_per_page' => 1,
 									'post_status'    => 'publish',
@@ -117,7 +117,22 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 											'terms'    => $term->term_id,
 										],
 									],
-								]);
+								];
+
+								if ( isset($_GET['from']) && $_GET['from'] === 'competition' ) {
+									$args['meta_query'][] = [
+										'key'     => 'competition',
+										'compare' => 'EXISTS',
+									];
+
+								} else {
+									$args['meta_query'][] = [
+										'key'     => 'competition',
+										'compare' => 'NOT EXISTS',
+									];
+								}
+
+								$query = new WP_Query($args);
 
 								return $query->have_posts();
 							});
@@ -221,7 +236,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						<input type="text" class="form-control mb-2 d-none" id="seriesFirst">
 						<div class="mb-4 d-none" id="descriptionSection">
 							<label class="form-label">Description</label>
-							<textarea class="form-control text-primary-color login-form-group tamil-suggestion-input" id="story-description" name="story-description" rows="4" placeholder="Short description"></textarea>
+							<textarea class="form-control text-primary-color login-form-group tamil-suggestion-input story-description" id="story-description" name="story-description" rows="4" placeholder="Short description"></textarea>
 							<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-description" style="display:none;"></p>
 						</div>
 
@@ -734,29 +749,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		const imageInput = document.getElementById('story-image');
 		const postId = document.getElementById('editPostId').value;
 
-		const text = document.getElementById('story-content').value.trim();
-		const wordCount = jQuery('#word-count').text();
-
-		if (isCompetitionPage || isCompetitionPage == 'true') {
-			const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
-			const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
-
-			if (wordCount < minWords || wordCount > maxWords) {
-				e.preventDefault();
-				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-				return;
-			}
-		} else {
-			const minWords = <?php echo (int) get_option('series_min_words'); ?>;
-			const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
-
-			if (wordCount < minWords || wordCount > maxWords) {
-				e.preventDefault();
-				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-				return;
-			}
-		}
-
 		jQuery('.error-message').remove();
 
 		jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
@@ -791,6 +783,30 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		});
 
 		if (errors.length == 0) {
+			const wordCount = jQuery('#word-count').text();
+
+			if (series != "தொடர்கதை அல்ல" && (!seriesFirst || seriesFirst != 'true')) {
+				if (isCompetitionPage || isCompetitionPage == 'true') {
+					const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+					const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+
+					if (wordCount < minWords || wordCount > maxWords) {
+						e.preventDefault();
+						alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+						return;
+					}
+				} else {
+					const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+					const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+
+					if (wordCount < minWords || wordCount > maxWords) {
+						e.preventDefault();
+						alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+						return;
+					}
+				}
+			}
+
 			const formData = new FormData();
 			formData.append('action', 'save_story');
 			formData.append('competition', storyCompetition);
@@ -864,37 +880,37 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		const series   = document.getElementById('story-series')?.value || '';
 		const division = document.getElementById('story-division')?.value || '';
 		const description   = document.getElementById('story-description')?.value || '';
+		const seriesFirst = document.getElementById('seriesFirst').value;
 		const imageInput = document.getElementById('story-image');
 		let postId = document.getElementById('editPostId').value;
-
-		const text = document.getElementById('story-content').value.trim();
-		const wordCount = jQuery('#word-count').text();
-
-		if (isCompetitionPage || isCompetitionPage == 'true') {
-			const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
-			const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
-
-			if (wordCount < minWords || wordCount > maxWords) {
-				e.preventDefault();
-				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-				return;
-			}
-		} else {
-			const minWords = <?php echo (int) get_option('series_min_words'); ?>;
-			const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
-
-			if (wordCount < minWords || wordCount > maxWords) {
-				e.preventDefault();
-				alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-				return;
-			}
-		}
 
 		if (currentPostId) {
 			postId = currentPostId;
 		};
 
 		if (!title && !content) return;
+
+		const wordCount = jQuery('#word-count').text();
+
+		if (series != "தொடர்கதை அல்ல" && (!seriesFirst || seriesFirst != 'true')) {
+			if (isCompetitionPage || isCompetitionPage == 'true') {
+				const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+				const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+
+				if (wordCount < minWords || wordCount > maxWords) {
+					console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+					return;
+				}
+			} else {
+				const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+				const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+
+				if (wordCount < minWords || wordCount > maxWords) {
+					console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+					return;
+				}
+			}
+		}
 
 		const formData = new FormData();
 		formData.append('action', 'save_draft');
@@ -923,6 +939,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		.then(response => {
 			if (response.success && response.data.post_id) {
 				currentPostId = response.data.post_id;
+				document.getElementById('editPostId').value = response.data.post_id;
 			}
 
 			if (response.success && !isAutoSave) {

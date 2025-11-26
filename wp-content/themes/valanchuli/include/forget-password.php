@@ -34,7 +34,7 @@ function wp_bootstrap_forgot_password_form() {
             if ($user) {
                 $reset_key = get_password_reset_key($user);
                 if (!is_wp_error($reset_key)) {
-                    $reset_url = site_url("/reset-password?key=$reset_key&login=" . rawurlencode($user->user_login));
+                    $reset_url = home_url("/reset-password?key={$reset_key}&login=" . rawurlencode($user->user_login));
 
                     ob_start();
                     $template_path = locate_template('template-parts/reset-password-email-template.php');
@@ -80,8 +80,9 @@ function wp_bootstrap_forgot_password_form() {
         <div class="mb-3">
             <div class="input-group login-form-group login-username">
                 <span class="input-group-text login-group-text"><i class="fas fa-user text-primary-color"></i></span>
-                <input type="text" id="fp_user_login" name="fp_user_login" class="form-control login-input" placeholder="Username *">
+                <input type="text" id="fp_user_login" name="fp_user_login" class="form-control login-input tamil-suggestion-input" placeholder="Username *">
             </div>
+            <p class="tamil-suggestion-box mt-2" data-suggestion-for="fp_user_login" style="display:none;"></p>
 
             <?php if ($required_message === 'Username is required.'): ?>
                 <div class="text-danger mt-1"><?php echo esc_html($required_message); ?></div>

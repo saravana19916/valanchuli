@@ -140,32 +140,26 @@
 </html>
 
 <script>
-    document.addEventListener('contextmenu', function (e) {
-        // Allow right-click inside trumbowyg editor
-        if (e.target.closest('.trumbowyg-editor') || e.target.closest('.story-title')) {
-            return true;
-        }
-        e.preventDefault();
+    // Check if the target is allowed
+    function isAllowedTarget(t) {
+        return t.closest('.trumbowyg-editor, .story-title, .story-description, .login-input');
+    }
+
+    // Block right-click except allowed places
+    document.addEventListener('contextmenu', e => {
+        if (!isAllowedTarget(e.target)) e.preventDefault();
     });
 
-    document.addEventListener('keydown', function (e) {
-        const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
-        const isInAllowedTitle = e.target.closest('.story-title');
-
-        if (e.ctrlKey && ['c', 'u', 'p'].includes(e.key.toLowerCase())) {
-            if (!isInAllowedTextarea && !isInAllowedTitle) {
-                e.preventDefault();
-            }
-        }
-    });
-
-    // Allow paste inside Trumbowyg editor but block elsewhere
-    document.addEventListener('paste', function (e) {
-        const isInAllowedTextarea = e.target.closest('.trumbowyg-editor');
-        const isInAllowedTitle = e.target.closest('.story-title');
-        if (!isInAllowedTextarea && !isInAllowedTitle) {
+    // Block copy, inspect, print except allowed places
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && ['c','u','p'].includes(e.key.toLowerCase()) && !isAllowedTarget(e.target)) {
             e.preventDefault();
         }
+    });
+
+    // Block paste except allowed places
+    document.addEventListener('paste', e => {
+        if (!isAllowedTarget(e.target)) e.preventDefault();
     });
 
     document.addEventListener("keydown", function (e) {
