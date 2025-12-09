@@ -19,7 +19,7 @@
         $series = get_the_terms($post_id, 'series');
         $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
 
-        if (!empty($series) && !is_wp_error($series)) {
+        if (!empty($series) && !is_wp_error($series) && $series[0]->name != 'தொடர்கதை அல்ல') {
 
             // Skip already included series
             if (isset($shown_series[$series_id])) {

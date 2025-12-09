@@ -12,11 +12,6 @@
         while ($trending_query->have_posts()) {
             $trending_query->the_post();
             $post_id = get_the_ID();
-            $description = get_post_meta($post_id, 'description', true);
-            $division = get_post_meta($post_id, 'division', true);
-            if (!empty($description) || !empty($division)) {
-                continue;
-            }
             $series = get_the_terms($post_id, 'series');
             $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
             $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';

@@ -245,11 +245,11 @@
                                                             அடுத்த பாகம் சேர்க்க கீழே உள்ள லிங்கை கிளிக் செய்யுங்கள்
                                                         </p>
                                                         <?php if ($competitionParam) { ?>
-                                                            <a href="<?php echo esc_url( home_url('/write?id=' . $post_id . $competitionParam) ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                            <a href="<?php echo esc_url( home_url('/write?postId=' . $post_id . $competitionParam . '&create=episode') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
                                                                 படைப்பை சேர்க்க
                                                             </a>
                                                         <?php } else { ?>
-                                                            <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                            <a href="<?php echo esc_url( site_url('/write?postId=' . $post_id . '&create=episode') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
                                                                 படைப்பை சேர்க்க
                                                             </a>
                                                         <?php } ?>
@@ -274,11 +274,11 @@
                                                         இந்தப் படைப்பிற்கு இன்னும் தொடர்கதை உருவாக்கப் படவில்லை. தொடர்கதை உருவாக்க கீழே உள்ள  லிங்கை கிளிக் செய்யுங்கள்!
                                                     </p>
                                                     <?php if ($competitionParam) { ?>
-                                                        <a href="<?php echo esc_url( home_url('/write?id=' . $post_id . $competitionParam) ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                        <a href="<?php echo esc_url( home_url('/write?postId=' . $post_id . $competitionParam . '&create=episode') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
                                                             படைப்பை சேர்க்க
                                                         </a>
                                                     <?php } else { ?>
-                                                        <a href="<?php echo esc_url( site_url('/write') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
+                                                        <a href="<?php echo esc_url( site_url('/write?postId=' . $post_id . '&create=episode') ); ?>" class="text-decoration-underline fw-bold d-inline-block">
                                                             படைப்பை சேர்க்க
                                                         </a>
                                                     <?php } ?>
@@ -405,10 +405,10 @@
     $whatsapp_link = "https://wa.me/?text=" . rawurlencode($message);
     ?>
 
-    <a href="<?php echo $whatsapp_link; ?>" 
+    <!-- <a href="<?php echo $whatsapp_link; ?>" 
     class="btn btn-success whatsapp-popup">
         <i class="fa-brands fa-whatsapp"></i> Share on WhatsApp1
-    </a>
+    </a> -->
 
 
                                 

@@ -286,9 +286,11 @@ add_action('wp_ajax_save_story', 'save_story_ajax');
 add_action('wp_ajax_nopriv_save_story', 'save_story_ajax');
 function save_story_ajax() {
     $competition = sanitize_text_field($_POST['competition']);
+    $storyType = sanitize_text_field($_POST['storyType']);
+    $storySubType = sanitize_text_field($_POST['storySubType']);
     $title = sanitize_text_field($_POST['title']);
     $category_id = intval($_POST['category']);
-    $series_input = sanitize_text_field($_POST['series']);
+    $series = sanitize_text_field($_POST['series']);
     $content = wp_kses_post($_POST['content']);
     $division = sanitize_text_field($_POST['division']);
     $description = sanitize_text_field($_POST['description']);
@@ -300,31 +302,30 @@ function save_story_ajax() {
         $errors['title'] = 'தலைப்பு is required.';
     }
 
-    if (empty($series_input)) {
-        $errors['series_input'] = 'தொடர்கதை is required.';
+    $postExists = new WP_Query([
+        'post_type'   => 'post',
+        'post_status' => ['publish', 'draft'],
+        'title'       => $title,
+        'fields'      => 'ids',
+        'posts_per_page' => 1,
+        'post__not_in'   => [$post_id],
+    ]);
+
+    if ($postExists->have_posts()) {
+        $errors['title'] = 'இந்த தலைப்பு ஏற்கனவே உள்ளது. வேறு தலைப்பை உள்ளிடவும்.';
     }
 
-    $category = '';
-    if (!empty($category_id)) {
-        $category = get_category($category_id)->name;
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
+        $category_id = get_category_by_slug('அத்தியாயம்')->term_id;
     }
 
-    if ($category != 'தொடர்கதை' && empty($content)) {
+    if ($storySubType != 'series' && empty($content)) {
         $errors['content'] = 'படைப்பு is required.';
     }
 
     if (!empty($errors)) {
         wp_send_json_error($errors);
     }
-
-    // $post_id = wp_insert_post([
-    //     'post_type' => 'story',
-    //     'post_title' => $title,
-    //     'post_content' => $content,
-    //     'post_status' => 'publish',
-    //     'post_category' => [$category],
-    //     'post_author' => get_current_user_id(),
-    // ]);
 
     $post_data = [
         'post_title'   => $title,
@@ -370,11 +371,17 @@ function save_story_ajax() {
         update_post_meta($post_id, 'description', $description);
     }
 
-    // if ($series_id) {
-    //     wp_set_post_terms($post_id, [$series_id], 'series');
-    // }
+    if ($storyType == 'தொடர்கதை அல்ல') {
+        wp_set_post_terms($post_id, ['தொடர்கதை அல்ல'], 'series');
+    }
 
-    wp_set_post_terms($post_id, [$series_input], 'series');
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'series') {
+        wp_set_post_terms($post_id, [$title], 'series');
+    }
+
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
+        wp_set_post_terms($post_id, [$series], 'series');
+    }
 
     wp_send_json_success('Story saved successfully');
 }
@@ -382,22 +389,36 @@ function save_story_ajax() {
 // Draft save
 add_action('wp_ajax_save_draft', 'handle_save_draft');
 function handle_save_draft() {
-    $competition        = sanitize_text_field($_POST['competition']);
-    $title        = sanitize_text_field($_POST['title']);
-    $category_id     = intval($_POST['category']);
-    $series_input = sanitize_text_field($_POST['series']);
-    $content      = wp_kses_post($_POST['content']);
-    $division     = sanitize_text_field($_POST['division']);
-    $description     = sanitize_text_field($_POST['description']);
+    $competition = sanitize_text_field($_POST['competition']);
+    $storyType = sanitize_text_field($_POST['storyType']);
+    $storySubType = sanitize_text_field($_POST['storySubType']);
+    $title = sanitize_text_field($_POST['title']);
+    $category_id = intval($_POST['category']);
+    $series = sanitize_text_field($_POST['series']);
+    $content = wp_kses_post($_POST['content']);
+    $division = sanitize_text_field($_POST['division']);
+    $description = sanitize_text_field($_POST['description']);
     $post_status  = in_array($_POST['status'], ['draft', 'publish']) ? $_POST['status'] : 'draft';
 
-    $category = '';
-    if (!empty($category_id)) {
-        $category = get_category($category_id)->name;
+    if (!$title || ($storySubType != 'series' && !$content)) {
+        wp_send_json_error('Title and Content are required');
     }
 
-    if (!$title || ($category != 'தொடர்கதை' && !$content)) {
-        wp_send_json_error('Title and Content are required');
+    $postExists = new WP_Query([
+        'post_type'   => 'post',
+        'post_status' => ['publish', 'draft'],
+        'title'       => $title,
+        'fields'      => 'ids',
+        'posts_per_page' => 1,
+        'post__not_in'   => [$_POST['post_id']],
+    ]);
+
+    if ($postExists->have_posts()) {
+        wp_send_json_error('இந்த தலைப்பு ஏற்கனவே உள்ளது. வேறு தலைப்பை உள்ளிடவும்.');
+    }
+
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
+        $category_id = get_category_by_slug('அத்தியாயம்')->term_id;
     }
 
     $post_data = [
@@ -454,8 +475,16 @@ function handle_save_draft() {
     }
 
     // Save series taxonomy
-    if ($series_input) {
-        wp_set_post_terms($post_id, [$series_input], 'series');
+    if ($storyType == 'தொடர்கதை அல்ல') {
+        wp_set_post_terms($post_id, ['தொடர்கதை அல்ல'], 'series');
+    }
+
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'series') {
+        wp_set_post_terms($post_id, [$title], 'series');
+    }
+
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
+        wp_set_post_terms($post_id, [$series], 'series');
     }
 
     wp_send_json_success([
@@ -523,7 +552,11 @@ function get_story_by_id()
     if (!$post || $post->post_author != get_current_user_id()) {
         wp_send_json_error('Not authorized or not found');
     }
+
+    $division = get_post_meta($post->ID, 'division', true);
+
     $series_terms = wp_get_post_terms($post->ID, 'series');
+
     $series_name = !empty($series_terms) ? $series_terms[0]->name : '';
   
     wp_send_json_success([

@@ -87,12 +87,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 						<?php
 
-							if (isset($_GET['from']) && $_GET['from'] === 'competition') {
-								$static_series = [];
-							} else {
-								$static_series = ['தொடர்கதை அல்ல'];
-							}
-
 							$current_user_id = get_current_user_id();
 
 							$series_terms = get_terms([
@@ -107,7 +101,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 								$args = [
 									'post_type'      => 'post',
-									'posts_per_page' => 1,
+									'posts_per_page' => -1,
 									'post_status'    => 'publish',
 									'author'         => $current_user_id,
 									'tax_query'      => [
@@ -137,28 +131,40 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								return $query->have_posts();
 							});
 
-							$dynamic_series = [];
-							foreach ($filtered_series as $term) {
-								$dynamic_series[] = $term->name;
-							}
-
 						?>
+                        <div class="mb-4">
+                            <label class="form-label">கதையின் வகை <span style="color: red;">*</span></label>
+							<select class="form-select login-form-group story-type" id="story-type">
+								<option value="தொடர்கதை அல்ல">தொடர்கதை அல்ல</option>
+                                <option value="தொடர்கதை">தொடர்கதை</option>
+							</select>
+                            <p class="my-2 fs-12px" style="color: gray;"><i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக  இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i></p>
+                        </div>
 
-						<div class="mb-4 dropdown">
-							<label for="category_dropdown_input" class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
+                        <div class="mb-4 d-none story-sub-type" id="story-sub-type">
+                            <label class="form-label">கதையின் வகையை தேர்வுசெய்க <span style="color: red;">*</span></label>
 
-							<input type="text" readonly class="form-control dropdown-toggle form-select login-form-group story-series_input" id="story-series"
-								name="story-series" data-bs-toggle="dropdown">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="storySubType" id="seriesStory" value="series">
+                                <label class="form-check-label" for="seriesStory">புதிய தொடர்கதை</label>
+                            </div>
 
-							<ul class="dropdown-menu w-100 p-2" id="category_dropdown">
-								<li>
-									<input type="text" class="form-control mb-2 tamil-suggestion-input" id="series_input"
-										placeholder="Type to create or search...">
-								</li>
-								<div id="category_list"></div>
-							</ul>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="storySubType" id="episodeStory" value="episode">
+                                <label class="form-check-label" for="episodeStory">அத்தியாயம்</label>
+                            </div>
+                        </div>
 
-							<p class="my-2 fs-12px" style="color: gray;"><i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக  இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i></p>
+                        <div class="mb-4 d-none" id="existingSeries">
+							<label class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
+							<select class="form-select login-form-group story-series" id="my-series">
+								<option value="">-- select --</option>
+								<?php
+								foreach ($filtered_series as $series) {
+        							echo '<option value="' . esc_attr($series->name) . '">' . esc_html($series->name) . '</option>';
+								}
+								?>
+							</select>
 						</div>
 
 						<div class="mb-4">
@@ -169,29 +175,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							<p class="my-2 fs-12px d-none" style="color: gray;" id="titleEpisodeInfo"><i>இங்கு உங்கள் கதையின் எந்த எபிசோடை பதிவிட விரும்புகிறீர்களோ அந்த எபிசோட் எண்ணை டைப் செய்யுங்கள்(உதாரணம் -  எபிசோட் 1, எபிசோட் 2)</i></p>
 						</div>
 
-						<!-- <div class="mb-4 dropdown">
-    <label for="category_dropdown_input" class="form-label">தொடர்கதை <span style="color: red;">*</span></label>
-
-    <input type="text" readonly class="form-control dropdown-toggle form-select login-form-group story-series_input" id="story-series"
-        name="story-series" data-bs-toggle="dropdown" value="தொடர்கதை அல்ல">
-
-    <ul class="dropdown-menu w-100 p-2" id="category_dropdown" style="display: none;">
-        <li>
-            <input type="text" class="form-control mb-2 tamil-suggestion-input" id="series_input"
-                placeholder="Type to create or search...">
-        </li>
-        <div id="category_list"></div>
-    </ul>
-
-    <div id="tamil_suggestion_popup" class="tamil-suggestion-popup" style="display: none; position: absolute; background: white; border: 1px solid #ccc; padding: 10px; width: 300px; z-index: 1000; border-radius: 5px;">
-        <div id="suggestion_list"></div>
-    </div>
-
-    <p class="my-2 fs-12px" style="color: gray;">
-        <i>உங்கள் படைப்பு ஏதேனும் தொடர்கதையாக இருந்தால் மட்டும் தேர்ந்தெடுக்கவும்.</i>
-    </p>
-</div> -->
-
 
 						<div class="mb-4" id="categoryDropdown">
 							<label class="form-label">வகை <span style="color: red;">*</span></label>
@@ -201,7 +184,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								$categories = get_categories([
 									'taxonomy' => 'category',
 									'hide_empty' => false,
-									'exclude' => get_cat_ID('Uncategorized'),
+									'exclude'    => [
+										get_cat_ID('Uncategorized'),
+										get_cat_ID('அத்தியாயம்')
+									],
 								]);
 								foreach ($categories as $cat) {
 									$disabled = ($cat->name === 'தொடர்கதை') ? 'disabled' : '';
@@ -216,12 +202,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							<?php
 								$divisions = get_terms(array(
 									'taxonomy'   => 'division',
-									'hide_empty' => false, // show even if no posts are assigned
+									'hide_empty' => false,
 								));
 
 								if (!empty($divisions) && !is_wp_error($divisions)) :
 							?>
-									<select class="form-select login-form-group story-division" id="story-division" name="sotry-division">
+									<select class="form-select login-form-group story-division" id="story-division" name="story-division">
 										<option value="">Select Division</option>
 										<?php foreach ($divisions as $division) : ?>
 											<option value="<?php echo esc_attr($division->term_id); ?>">
@@ -233,7 +219,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							<p class="my-2 fs-12px" style="color: gray;"><i>இந்த படைப்பு எந்த வகையை சேர்ந்தது என்பதை தேர்ந்தெடுக்கவும் (உதாரணம்: காதல், குடும்பம், நகைச்சுவை, தொடர்கதை)</i></p>
 						</div>
 
-						<input type="text" class="form-control mb-2 d-none" id="seriesFirst">
 						<div class="mb-4 d-none" id="descriptionSection">
 							<label class="form-label">Description</label>
 							<textarea class="form-control text-primary-color login-form-group tamil-suggestion-input story-description" id="story-description" name="story-description" rows="4" placeholder="Short description"></textarea>
@@ -296,18 +281,243 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 <?php get_footer(); ?>
 
 <script>
+    jQuery(document).ready(function () {
+        function toggleStorySections() {
+			jQuery('.error-message').remove();
 
-	jQuery(document).ready(function ($) {
-		$('#next-step').on('click', function () {
+            let storyType = jQuery("#story-type").val();
+			jQuery("#story-category").val('');
+			jQuery("#story-division").val('');
+			jQuery("#story-description").val('');
+			jQuery("#story-image").val('');
+
+            if (storyType === "தொடர்கதை") {
+                jQuery("#story-sub-type").removeClass("d-none");
+
+                if (jQuery("#episodeStory").is(":checked")) {
+                    jQuery("#existingSeries").removeClass("d-none");
+                    jQuery("#categoryDropdown").addClass("d-none");
+                    jQuery("#divisionDropdown").addClass("d-none");
+                    jQuery("#descriptionSection").addClass("d-none");
+                    jQuery("#imageSection").addClass("d-none");
+                    jQuery("#next-step").removeClass("d-none");
+                    jQuery("#step1Submit").addClass("d-none");
+                    jQuery("#step1SaveDraft").addClass("d-none");
+					jQuery("#existingSeries").val('');
+                } else {
+                    jQuery("#existingSeries").addClass("d-none");
+                    jQuery("#categoryDropdown").removeClass("d-none");
+                    jQuery("#divisionDropdown").removeClass("d-none");
+                    jQuery("#descriptionSection").removeClass("d-none");
+                    jQuery("#imageSection").removeClass("d-none");
+                    jQuery("#next-step").addClass("d-none");
+                    jQuery("#step1Submit").removeClass("d-none");
+                    jQuery("#step1SaveDraft").removeClass("d-none");
+
+					const storyCategory = document.getElementById('story-category');
+					storyCategory.disabled = true;
+					for (let i = 0; i < storyCategory.options.length; i++) {
+						if (storyCategory.options[i].text.trim() === "தொடர்கதை") {
+							storyCategory.selectedIndex = i;
+							break;
+						}
+					}
+                }
+
+            } else {
+				document.getElementById('story-category').disabled = false;
+				document.getElementById('episodeStory').checked = false;
+				document.getElementById('seriesStory').checked = false;
+				jQuery("#existingSeries").addClass("d-none");
+                jQuery("#story-sub-type").addClass("d-none");
+                jQuery("#divisionDropdown").addClass("d-none");
+                jQuery("#descriptionSection").addClass("d-none");
+				jQuery("#categoryDropdown").removeClass("d-none");
+				jQuery("#imageSection").removeClass("d-none");
+				jQuery("#next-step").removeClass("d-none");
+				jQuery("#step1Submit").addClass("d-none");
+				jQuery("#step1SaveDraft").addClass("d-none");
+            }
+        }
+
+        jQuery("#story-type").on("change", toggleStorySections);
+        jQuery("#episodeStory, #seriesStory").on("change", toggleStorySections);
+
+        toggleStorySections();
+
+
+		// competition change event start
+		function competitionChange() {
+			const competitionSelect = document.getElementById('story-competition');
+			
+			if (competitionSelect) {
+				competitionSelect.addEventListener('change', function () {
+					const competitionId = this.value;
+
+					document.getElementById('story-type').value = 'தொடர்கதை அல்ல';
+					document.getElementById('story-type').disabled = false;
+
+					document.getElementById('story-category').value = '';
+					document.getElementById('story-category').disabled = false;
+
+					if (!competitionId) {
+						jQuery("#story-type").trigger("change");
+						return;
+					}
+
+					fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+						method: 'POST',
+						headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+						body: new URLSearchParams({
+							action: 'get_competition_details',
+							competition_id: competitionId
+						})
+					})
+					.then(res => res.json())
+					.then(data => {
+						if (data.success) {
+							const details = data.data;
+							console.log("details", details);
+
+							if (details) {
+								// const urlParams = new URLSearchParams(window.location.search);
+								// const postId = urlParams.get('id');
+								// if (postId) {
+								// 	storySeries.disabled = true;
+								// } else {
+								// 	if (details.series == 'தொடர்கதை') {
+								// 		storySeries.value = '';
+								// 		removeNonSeriesOption();
+								// 	} else {
+								// 		storySeries.value = details.series;
+								// 		storySeries.disabled = true;
+								// 		addNonSeriesOption();
+								// 	}
+								// }
+
+								document.getElementById('story-type').value = details.series;
+								document.getElementById('story-type').disabled = true;
+								jQuery("#story-type").trigger("change");
+								document.getElementById('story-category').value = details.category_id;
+								document.getElementById('story-category').disabled = true;
+							}
+						} else {
+							alert('Failed to fetch competition data');
+						}
+					});
+				});
+			}
+		}
+
+		competitionChange();
+		// competition change event end
+
+		// write page edit start
+		function fetchStory() {
+			const urlParams = new URLSearchParams(window.location.search);
+			let postId = urlParams.get('id');
+			const isCompetitionPage = document.getElementById('story-from-competition')?.value;
+			const createAction = urlParams.get('create');
+
+			if (createAction == 'episode') {
+				postId = urlParams.get('postId');
+			}
+
+			if (postId) {
+				fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
+					method:'POST',
+					headers:{'Content-Type': 'application/x-www-form-urlencoded'},
+					body:'action=get_story_by_id&post_id=' + postId
+				})
+				.then(response => response.json()) 
+				.then(data => {
+					if (data.success && data.data) {
+						if (isCompetitionPage == 'true' && data.data?.competition) {
+							const competitionSelect = document.getElementById('story-competition');
+							if (competitionSelect) {
+								competitionSelect.value = data.data.competition;
+								competitionSelect.disabled = true;
+
+								competitionSelect.dispatchEvent(new Event('change'));
+							}
+						}
+
+						console.log("createAction", createAction);
+
+						if (createAction == 'episode') {
+							document.getElementById('story-type').value = 'தொடர்கதை';
+							jQuery("#story-type").trigger("change");
+							document.getElementById('story-type').disabled = true;
+
+							document.getElementById('episodeStory').checked = true;
+							jQuery("#episodeStory").trigger("change");
+							document.getElementById('seriesStory').disabled = true;
+							document.getElementById('episodeStory').disabled = true;
+							document.getElementById('my-series').value = data.data.series;
+							document.getElementById('my-series').disabled = true;
+						} else {
+							if (data.data?.series) {
+								if (data.data?.series == 'தொடர்கதை அல்ல') {
+									document.getElementById('story-type').value = 'தொடர்கதை அல்ல';
+								} else {
+									document.getElementById('story-type').value = 'தொடர்கதை';
+								}
+
+								jQuery("#story-type").trigger("change");
+								document.getElementById('story-type').disabled = true;
+
+								if (data.data?.division || data.data?.series == 'தொடர்கதை') {
+									document.getElementById('seriesStory').checked = true;
+									jQuery("#seriesStory").trigger("change");
+								} else if (data.data?.series != 'தொடர்கதை அல்ல') {
+									document.getElementById('episodeStory').checked = true;
+									jQuery("#episodeStory").trigger("change");
+									document.getElementById('my-series').value = data.data.series;
+									document.getElementById('my-series').disabled = true;
+								}
+
+								document.getElementById('seriesStory').disabled = true;
+								document.getElementById('episodeStory').disabled = true;
+							}
+
+
+							document.getElementById('story-title').value = data.data.title;
+							document.getElementById('story-content').value = data.data.content;
+
+							if (data.data.category) {
+								document.getElementById('story-category').value = data.data.category;
+								document.getElementById('story-category').disabled = true;
+							}
+
+							if (data.data.division) {
+								setTimeout(() => {
+									document.getElementById('story-division').value = data.data.division;
+									document.getElementById('story-description').value = data.data.description;
+								}, 600);
+							}
+						}
+					}
+				})
+				.catch(err => console.error(err)); 
+			}
+		}
+
+		fetchStory()
+		// write page edit end
+
+		jQuery('#next-step').on('click', function () {
 			const storyCompetition = document.getElementById('story-competition')?.value;
 			const isCompetitionPage = document.getElementById('story-from-competition')?.value;
+
+			const storyType = document.getElementById('story-type')?.value;
+			const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
+
 			const title = document.getElementById('story-title').value;
 			const category = document.getElementById('story-category').value;
-			const series = document.getElementById('story-series').value;
+			const series = document.getElementById('my-series').value;
 
-			$('.error-message').remove();
+			jQuery('.error-message').remove();
 
-			// Initialize empty array
 			let errors = [];
 
 			// Validation checks
@@ -315,31 +525,39 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				errors.push({ field: 'competition', message: 'போட்டிகள் is required.' });
 			}
 
+			if (storyType === '') {
+				errors.push({ field: 'type', message: 'கதையின் வகை is required.' });
+			}
+
+			if (storyType && storyType == 'தொடர்கதை' && (!storySubType || storySubType == '')) {
+				errors.push({ field: 'sub-type', message: 'கதையின் வகையை தேர்வுசெய்க is required.' });
+			}
+
 			if (title === '') {
-			errors.push({ field: 'title', message: 'தலைப்பு is required.' });
+				errors.push({ field: 'title', message: 'தலைப்பு is required.' });
 			}
 
 			if (!document.getElementById('categoryDropdown').classList.contains('d-none') && category === '') {
-			errors.push({ field: 'category', message: 'வகை is required.' });
+				errors.push({ field: 'category', message: 'வகை is required.' });
 			}
 
-			if (series === '') {
-			errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
+			if (storyType == 'தொடர்கதை' && storySubType == 'episode' && series === '') {
+				errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
 			}
 
 			// Show errors
-			$.each(errors, function (index, error) {
-				$('.story-' + error.field).after(
+			jQuery.each(errors, function (index, error) {
+				jQuery('.story-' + error.field).after(
 					'<p class="text-danger error-message mt-2 small">' + error.message + '</p>'
 				);
 			});
 
 			if (errors.length == 0) {
-				$('#step-1').hide();
-				$('#step-2').show();
+				jQuery('#step-1').hide();
+				jQuery('#step-2').show();
 
-				if (!$('#story-content').data('trumbowyg')) {
-					$("#story-content").trumbowyg({
+				if (!jQuery('#story-content').data('trumbowyg')) {
+					jQuery("#story-content").trumbowyg({
 						btns: [
 							['formatting'],
 							['fontsize'],
@@ -352,14 +570,14 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						btnsDef: {
 							uploadImage: {
 								fn: function() {
-									const fileInput = $('<input type="file" accept="image/*">');
+									const fileInput = jQuery('<input type="file" accept="image/*">');
 									fileInput.on('change', function() {
 										const file = this.files[0];
 										const formData = new FormData();
 										formData.append('file', file);
 										formData.append('action', 'trumbowyg_upload');
 
-										$.ajax({
+										jQuery.ajax({
 											url: my_ajax_object.ajax_url,
 											type: 'POST',
 											data: formData,
@@ -367,7 +585,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 											contentType: false,
 											success: function(response) {
 												if (response.success && response.data && response.data.url) {
-													$('#story-content').trumbowyg('execCmd', {
+													jQuery('#story-content').trumbowyg('execCmd', {
 														cmd: 'insertHTML',
 														param: `<img src="${response.data.url}" alt="">`
 													});
@@ -383,8 +601,8 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						}
 					}).on('tbwchange tbwinit', updateWordCount);
 
-					const suggestionBox = $('#tanglishSuggestions');
-					let editor = $('#story-content').next('.trumbowyg-box').find('.trumbowyg-editor')[0];
+					const suggestionBox = jQuery('#tanglishSuggestions');
+					let editor = jQuery('#story-content').next('.trumbowyg-box').find('.trumbowyg-editor')[0];
 
 					if (!editor) {
 						editor = document.querySelector('.trumbowyg-editor');
@@ -400,14 +618,14 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					editor.addEventListener('input', () => {
 						const sel = window.getSelection();
 						if (!sel.rangeCount) {
-						suggestionBox.hide();
-						return;
+							suggestionBox.hide();
+							return;
 						}
 
 						const range = sel.getRangeAt(0);
 						if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-						suggestionBox.hide();
-						return;
+							suggestionBox.hide();
+							return;
 						}
 
 						const text = range.startContainer.textContent;
@@ -421,10 +639,10 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							return;
 						}
 
-						$('#content-loader').show();
-						$('#content-loader-2').show();
+						jQuery('#content-loader').show();
+						jQuery('#content-loader-2').show();
 
-						$('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
+						jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
 
 						activeRequests++;
 
@@ -443,9 +661,9 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							activeRequests--;
 
 							if (activeRequests === 0) {
-								$('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
-								$('#content-loader').hide();
-								$('#content-loader-2').hide();
+								jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
+								jQuery('#content-loader').hide();
+								jQuery('#content-loader-2').hide();
 							}
 						});
 					});
@@ -454,7 +672,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						suggestionBox.empty();
 
 						suggestions.forEach(s => {
-						$('<li>')
+						jQuery('<li>')
 							.text(s)
 							.css({'padding': '6px 10px', 'cursor': 'pointer'})
 							.on('click', () => {
@@ -502,7 +720,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				}
 
 				// Optional: Adjust editor height
-				$('.trumbowyg-editor').css({
+				jQuery('.trumbowyg-editor').css({
 					height: '35rem',
 					overflow: 'auto'
 				});
@@ -510,29 +728,180 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		});
 
 		function updateWordCount() {
-			const content = $('#story-content').trumbowyg('html');
-			const textOnly = $('<div>').html(content).text();
+			const content = jQuery('#story-content').trumbowyg('html');
+			const textOnly = jQuery('<div>').html(content).text();
 			const wordCount = textOnly.trim().split(/\s+/).filter(word => word.length > 0).length;
-			$('#word-count').text(wordCount);
-
-			// setTimeout(() => {
-			// 	$('#content-loader').hide();
-			// 	$('#content-loader-2').hide();
-			// 	$('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
-			// }, 300);
+			jQuery('#word-count').text(wordCount);
 		}
 
-		$('#prev-step').on('click', function () {
-			$('#step-2').hide();
-			$('#step-1').show();
+		jQuery('#prev-step').on('click', function () {
+			jQuery('#step-2').hide();
+			jQuery('#step-1').show();
 		});
 
-		$('#story-content').on('tbwchange', function () {
+		// form save start
+		document.getElementById('write-story-form').addEventListener('submit', function (e) {
+			e.preventDefault();
+
+			const storyCompetition = document.getElementById('story-competition')?.value || '';
+			const isCompetitionPage = document.getElementById('story-from-competition')?.value;
+
+			const storyType = document.getElementById('story-type')?.value;
+			const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
+			
+			const title = document.getElementById('story-title').value;
+			const category = document.getElementById('story-category').value;
+			const series = document.getElementById('my-series').value;
+			const division = (storySubType == "series") ? document.getElementById('story-division').value : '';
+			const description = (storySubType == "series") ? document.getElementById('story-description').value : '';
+			const content = document.getElementById('story-content').value;
+			const imageInput = document.getElementById('story-image');
+			const postId = document.getElementById('editPostId').value;
+
+			jQuery('.error-message').remove();
+
+			jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
+
+			let errors = [];
+
+			if (isCompetitionPage == 'true' && storyCompetition === '') {
+				errors.push({ field: 'competition', message: 'போட்டிகள் is required.' });
+			}
+
+			if (storyType === '') {
+				errors.push({ field: 'type', message: 'கதையின் வகை is required.' });
+			}
+
+			if (storyType && storyType == 'தொடர்கதை' && (storySubType == '' || !storySubType)) {
+				errors.push({ field: 'sub-type', message: 'கதையின் வகையை தேர்வுசெய்க is required.' });
+			}
+
+			if (title === '') {
+				errors.push({ field: 'title', message: 'தலைப்பு is required.' });
+			}
+
+			if (!document.getElementById('categoryDropdown').classList.contains('d-none') && category === '') {
+				errors.push({ field: 'category', message: 'வகை is required.' });
+			}
+
+			if (storyType == 'தொடர்கதை' && storySubType == 'episode' && series === '') {
+				errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
+			}
+
+			if (storyType == 'தொடர்கதை' && storySubType == 'series' && division == '') {
+				errors.push({ field: 'division', message: 'பிரிவுகள் is required.' });
+			}
+
+			// Show errors
+			jQuery.each(errors, function (index, error) {
+				jQuery('.story-' + error.field).after(
+					'<p class="text-danger error-message mt-2 small">' + error.message + '</p>'
+				);
+			});
+
+			if (errors.length == 0) {
+
+				if (storySubType == "episode") {
+					const wordCount = jQuery('#word-count').text();
+					if (isCompetitionPage || isCompetitionPage == 'true') {
+						const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+						const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+
+						if (wordCount < minWords || wordCount > maxWords) {
+							e.preventDefault();
+							alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+							return;
+						}
+					} else {
+						const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+						const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+
+						if (wordCount < minWords || wordCount > maxWords) {
+							e.preventDefault();
+							alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+							return;
+						}
+					}
+				}
+
+				const formData = new FormData();
+				formData.append('action', 'save_story');
+				formData.append('competition', storyCompetition);
+				formData.append('storyType', storyType);
+				formData.append('storySubType', storySubType);
+				formData.append('title', title);
+				formData.append('category', category);
+				formData.append('series', series);
+				formData.append('division', division);
+				formData.append('description', description);
+				formData.append('content', content);
+
+				if (postId) {
+					formData.append('post_id', postId);
+				}
+
+				if (imageInput.files.length > 0) {
+					formData.append('story_image', imageInput.files[0]);
+				}
+
+				fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+					method: 'POST',
+					body: formData
+				})
+					.then(res => res.json())
+					.then(response => {
+						if (typeof response.data === 'object' && response.data.title) {
+							jQuery('.story-title').after(
+								'<p class="text-danger error-message mt-2 small">' + response.data.title + '</p>'
+							);
+						}
+
+						if (typeof response.data === 'object' && response.data.content) {
+							const elements = document.getElementsByClassName('trumbowyg-box');
+							if (elements.length > 0) {
+								const target = elements[0];
+								const error = document.createElement('p');
+								error.className = 'text-danger error-message mt-2 small';
+								error.textContent = response.data.content;
+								target.parentNode.insertBefore(error, target.nextSibling);
+							}
+						}
+
+						if (response.success) {
+							var element = document.getElementById("draftAlert");
+							element.classList.add("d-none");
+
+							document.getElementById('save-result').innerHTML = response.success
+								? `<div class="alert alert-success">${response.data}</div>`
+								: `<div class="alert alert-danger">${response.data}</div>`;
+
+							if (postId) {
+								window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
+							} else {
+								if (storySubType == "series") {
+									window.location.href = "<?php echo esc_url( site_url('/story-success/?status=series') ); ?>";
+								} else {
+									window.location.href = "<?php echo esc_url( site_url('/story-success/?status=other') ); ?>";
+								}
+							}
+
+							jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
+						} else {
+							jQuery('#step-2').hide();
+							jQuery('#step-1').show();
+							jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
+						}
+					});
+			}
+		});
+		// form save end
+
+		// draft save start
+		jQuery('#story-content').on('tbwchange', function () {
 			startAutoSave();
 		});
 
 		let autoSaveInterval = null;
-
 		function startAutoSave() {
 			autoSaveInterval = setInterval(function () {
 				autoSaveDraft(true);
@@ -541,258 +910,49 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 		startAutoSave();
 
-		$('#saveDraft').click(function() {
+		jQuery('#saveDraft').click(function() {
 			autoSaveDraft(false);
 		});
 
-		$('#step1SaveDraft').click(function() {
+		jQuery('#step1SaveDraft').click(function() {
 			autoSaveDraft(false);
 		});
-	});
 
-	function updateList(filter = '') {
-		const categoryInput = document.getElementById('series_input');
-		const categoryList = document.getElementById('category_list');
+		let autoSaveTimeout;
+		let lastDraftId = null;
+		let currentPostId = null;
 
-		const staticSeries = <?php echo json_encode($static_series, JSON_UNESCAPED_UNICODE); ?>;
-		const dynamicSeries = <?php echo json_encode($dynamic_series, JSON_UNESCAPED_UNICODE); ?>;
+		function autoSaveDraft(isAutoSave) {
+			const storyCompetition = document.getElementById('story-competition')?.value || '';
+			const isCompetitionPage = document.getElementById('story-from-competition')?.value;
 
-		const labelMap = {
-			...staticSeries,
-			...dynamicSeries
-		};
+			const storyType = document.getElementById('story-type')?.value;
+			const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
 
-		const categories = Object.values(staticSeries).concat(Object.values(dynamicSeries));
+			const title    = document.getElementById('story-title').value;
+			const content  = document.getElementById('story-content').value;
+			const category = document.getElementById('story-category')?.value || '';
+			const series = document.getElementById('my-series').value;
+			const division = (storySubType == "series") ? document.getElementById('story-division').value : '';
+			const description = (storySubType == "series") ? document.getElementById('story-description').value : '';
+			const imageInput = document.getElementById('story-image');
+			let postId = document.getElementById('editPostId').value;
 
-			const selectedInput = document.getElementById('story-series');
+			if (currentPostId) {
+				postId = currentPostId;
+			};
 
-			categoryList.innerHTML = '';
-			const filtered = categories.filter(cat => cat.toLowerCase().includes(filter.toLowerCase()));
-			
-			if (filtered.length > 0) {
-				const storyCategory = document.getElementById('story-category');
+			if (!title && !content) return;
 
-				if (selectedInput.value != 'தொடர்கதை அல்ல') {
-					const seriesFirst = document.getElementById("seriesFirst").value;
-
-					if (seriesFirst || seriesFirst == 'true') {
-						storyCategory.disabled = true;
-						document.getElementById("titleInfo").classList.remove("d-none");
-						document.getElementById("titleEpisodeInfo").classList.add("d-none");
-
-						for (let i = 0; i < storyCategory.options.length; i++) {
-							if (storyCategory.options[i].text.trim() === "தொடர்கதை") {
-								storyCategory.selectedIndex = i;
-								break;
-							}
-						}
-					} else {
-						document.getElementById("titleInfo").classList.add("d-none");
-						document.getElementById("titleEpisodeInfo").classList.remove("d-none");
-						document.getElementById("descriptionSection").classList.add("d-none");
-						document.getElementById("categoryDropdown").classList.add("d-none");
-						document.getElementById("divisionDropdown").classList.add("d-none");
-						document.getElementById("imageSection").classList.add("d-none");
-						document.getElementById("step1Submit").classList.add("d-none");
-						document.getElementById("step1SaveDraft").classList.add("d-none");
-						document.getElementById("next-step").classList.remove("d-none");
-					}
-					
-				} else {
-					storyCategory.disabled = false;
-				}
-
-				filtered.forEach(cat => {
-					const item = document.createElement('li');
-					item.innerHTML = `<a href="#" class="dropdown-item">${cat}</a>`;
-					item.querySelector('a').addEventListener('click', function (e) {
-						e.preventDefault();
-						selectedInput.value = cat;
-						categoryInput.value = '';
-						selectedInput.focus();
-					});
-					categoryList.appendChild(item);
-				});
-			} else {
-				const item = document.createElement('li');
-				item.innerHTML = `<a href="#" class="dropdown-item text-primary">Add "${filter}"</a>`;
-
-				const suggestionP = document.createElement('p');
-				suggestionP.className = 'tamil-suggestion-box mt-2';
-				suggestionP.dataset.suggestionFor = 'series_input';
-				suggestionP.style.display = 'none';
-				item.appendChild(suggestionP);
-
-				item.querySelector('a').addEventListener('click', function (e) {
-					e.preventDefault();
-					selectedInput.value = filter;
-					categoryInput.value = '';
-					selectedInput.focus();
-					const dropdownMenu = document.getElementById('category_dropdown');
-    				dropdownMenu.classList.remove('show');
-				});
-
-				categoryList.appendChild(item);
-
-				if (filter.length > 1) {
-					fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(filter)}&itc=ta-t-i0-und&num=3`)
-						.then(res => res.json())
-						.then(data => {
-							if (data[0] === 'SUCCESS') {
-								const suggestions = data[1][0][1];
-								suggestionP.innerHTML = '';
-								suggestions.forEach(s => {
-									const span = document.createElement('span');
-									span.textContent = s;
-									span.style.marginRight = '10px';
-									span.style.cursor = 'pointer';
-									span.style.color = '#005d67';
-									span.style.textDecoration = 'underline';
-
-									span.addEventListener('click', (e) => {
-										e.stopPropagation();
-										categoryInput.value = s;
-										suggestionP.style.display = 'none';
-										categoryInput.focus();
-										updateList(s);
-									});
-									suggestionP.appendChild(span);
-								});
-								suggestionP.style.display = 'block';
-							}
-						})
-						.catch(() => {
-							suggestionP.style.display = 'none';
-						});
-				}
-
-				document.getElementById("seriesFirst").value = 'true';
-				document.getElementById("descriptionSection").classList.remove("d-none");
-
-				document.getElementById("next-step").classList.add("d-none");
-				document.getElementById("step1Submit").classList.remove("d-none");
-				document.getElementById("step1SaveDraft").classList.remove("d-none");
-				document.getElementById("categoryDropdown").classList.remove("d-none");
-				document.getElementById("divisionDropdown").classList.remove("d-none");
-				document.getElementById("imageSection").classList.remove("d-none");
-					// element.classList.remove("d-none");
-			}
-		}
-
-	document.addEventListener('DOMContentLoaded', function () {
-		const categoryInput = document.getElementById('series_input');
-		const selectedInput = document.getElementById('story-series');
-
-		categoryInput.addEventListener('input', function () {
-			updateList(this.value);
-		});
-
-		selectedInput.addEventListener('click', function () {
-			const dropdown = document.getElementById('category_dropdown');
-			dropdown.addEventListener('click', function (e) {
-				const selectedValue = e.target.textContent.trim();
-				const storyCategory = document.getElementById('story-category');
-
-				if (selectedValue !== "தொடர்கதை அல்ல") {
-					// var element = document.getElementById("divisionDropdown");
-					// element.classList.remove("d-none");
-
-					const seriesFirst = document.getElementById('seriesFirst').value;
-					if (!seriesFirst || seriesFirst == 'false') {
-						document.getElementById("titleInfo").classList.add("d-none");
-						document.getElementById("titleEpisodeInfo").classList.remove("d-none");
-						var element = document.getElementById("categoryDropdown");
-						element.classList.add("d-none");
-						document.getElementById("imageSection").classList.add("d-none");
-					} else {
-						storyCategory.disabled = true;
-						document.getElementById("titleInfo").classList.remove("d-none");
-						document.getElementById("titleEpisodeInfo").classList.add("d-none");
-
-						for (let i = 0; i < storyCategory.options.length; i++) {
-							if (storyCategory.options[i].text.trim() === "தொடர்கதை") {
-								storyCategory.selectedIndex = i;
-								break;
-							}
-						}
-					}
-				} else {
-					storyCategory.disabled = false;
-					var element = document.getElementById("divisionDropdown");
-					element.classList.add("d-none");
-
-					var element = document.getElementById("categoryDropdown");
-					element.classList.remove("d-none");
-					document.getElementById("imageSection").classList.remove("d-none");
-				}
-			});
-
-			setTimeout(() => {
-				categoryInput.focus();
-				updateList('');
-			}, 150);
-		});
-	});
-
-	document.getElementById('write-story-form').addEventListener('submit', function (e) {
-		e.preventDefault();
-
-		const storyCompetition = document.getElementById('story-competition')?.value || '';
-		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
-		const seriesFirst = document.getElementById('seriesFirst').value;
-		const title = document.getElementById('story-title').value;
-		const category = document.getElementById('story-category').value;
-		const series = document.getElementById('story-series').value;
-		const division = (series != "தொடர்கதை அல்ல") ? document.getElementById('story-division').value : '';
-		const description = (series != "தொடர்கதை அல்ல" && seriesFirst == 'true') ? document.getElementById('story-description').value : '';
-		const content = document.getElementById('story-content').value;
-		const imageInput = document.getElementById('story-image');
-		const postId = document.getElementById('editPostId').value;
-
-		jQuery('.error-message').remove();
-
-		jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', true);
-
-		let errors = [];
-
-		if (isCompetitionPage == 'true' && storyCompetition === '') {
-			errors.push({ field: 'competition', message: 'போட்டிகள் is required.' });
-		}
-
-		if (title === '') {
-			errors.push({ field: 'title', message: 'தலைப்பு is required.' });
-		}
-
-		if (!document.getElementById('categoryDropdown').classList.contains('d-none') && category === '') {
-			errors.push({ field: 'category', message: 'வகை is required.' });
-		}
-
-		if (series === '') {
-			errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
-		}
-
-		if ((seriesFirst == true || seriesFirst == 'true') && division == '') {
-			errors.push({ field: 'division', message: 'பிரிவுகள் is required.' });
-		}
-
-		// Show errors
-		jQuery.each(errors, function (index, error) {
-			jQuery('.story-' + error.field).after(
-				'<p class="text-danger error-message mt-2 small">' + error.message + '</p>'
-			);
-		});
-
-		if (errors.length == 0) {
 			const wordCount = jQuery('#word-count').text();
 
-			if (series != "தொடர்கதை அல்ல" && (!seriesFirst || seriesFirst != 'true')) {
+			if (storySubType == "episode") {
 				if (isCompetitionPage || isCompetitionPage == 'true') {
 					const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
 					const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
 
 					if (wordCount < minWords || wordCount > maxWords) {
-						e.preventDefault();
-						alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+						console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
 						return;
 					}
 				} else {
@@ -800,28 +960,30 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
 
 					if (wordCount < minWords || wordCount > maxWords) {
-						e.preventDefault();
-						alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+						console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
 						return;
 					}
 				}
 			}
 
 			const formData = new FormData();
-			formData.append('action', 'save_story');
+			formData.append('action', 'save_draft');
 			formData.append('competition', storyCompetition);
+			formData.append('storyType', storyType);
+			formData.append('storySubType', storySubType);
 			formData.append('title', title);
+			formData.append('content', content);
 			formData.append('category', category);
 			formData.append('series', series);
 			formData.append('division', division);
 			formData.append('description', description);
-			formData.append('content', content);
+			formData.append('status', 'draft');
 
 			if (postId) {
 				formData.append('post_id', postId);
 			}
 
-			if (imageInput.files.length > 0) {
+			if (imageInput && imageInput.files.length > 0) {
 				formData.append('story_image', imageInput.files[0]);
 			}
 
@@ -829,323 +991,33 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				method: 'POST',
 				body: formData
 			})
-				.then(res => res.json())
-				.then(response => {
-					if (typeof response.data === 'object' && response.data.content) {
-						const elements = document.getElementsByClassName('trumbowyg-box');
-						if (elements.length > 0) {
-							const target = elements[0];
-							const error = document.createElement('p');
-							error.className = 'text-danger error-message mt-2 small';
-							error.textContent = response.data.content;
-							target.parentNode.insertBefore(error, target.nextSibling);
-						}
-					}
-
-					if (response.success) {
-						var element = document.getElementById("draftAlert");
-						element.classList.add("d-none");
-
-						document.getElementById('save-result').innerHTML = response.success
-							? `<div class="alert alert-success">${response.data}</div>`
-							: `<div class="alert alert-danger">${response.data}</div>`;
-
-						if (postId) {
-							window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
-						} else {
-							if ((series != "தொடர்கதை அல்ல" && seriesFirst == 'true')) {
-								window.location.href = "<?php echo esc_url( site_url('/story-success/?status=series') ); ?>";
-							} else {
-								window.location.href = "<?php echo esc_url( site_url('/story-success/?status=other') ); ?>";
-							}
-						}
-
-						jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
-					}
-				});
-		}
-	});
-
-	// draft save #
-	let autoSaveTimeout;
-	let lastDraftId = null;
-	let currentPostId = null;
-
-	function autoSaveDraft(isAutoSave) {
-		const storyCompetition = document.getElementById('story-competition')?.value || '';
-		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
-		const title    = document.getElementById('story-title').value;
-		const content  = document.getElementById('story-content').value;
-		const category = document.getElementById('story-category')?.value || '';
-		const series   = document.getElementById('story-series')?.value || '';
-		const division = document.getElementById('story-division')?.value || '';
-		const description   = document.getElementById('story-description')?.value || '';
-		const seriesFirst = document.getElementById('seriesFirst').value;
-		const imageInput = document.getElementById('story-image');
-		let postId = document.getElementById('editPostId').value;
-
-		if (currentPostId) {
-			postId = currentPostId;
-		};
-
-		if (!title && !content) return;
-
-		const wordCount = jQuery('#word-count').text();
-
-		if (series != "தொடர்கதை அல்ல" && (!seriesFirst || seriesFirst != 'true')) {
-			if (isCompetitionPage || isCompetitionPage == 'true') {
-				const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
-				const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
-
-				if (wordCount < minWords || wordCount > maxWords) {
-					console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-					return;
+			.then(res => res.json())
+			.then(response => {
+				if (response.success && response.data.post_id) {
+					currentPostId = response.data.post_id;
+					document.getElementById('editPostId').value = response.data.post_id;
 				}
-			} else {
-				const minWords = <?php echo (int) get_option('series_min_words'); ?>;
-				const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
 
-				if (wordCount < minWords || wordCount > maxWords) {
-					console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-					return;
-				}
-			}
-		}
+				if (response.success && !isAutoSave) {
+					lastDraftId = response.data.post_id;
+					var element = document.getElementById("draftAlert");
+					element.classList.remove("d-none");
 
-		const formData = new FormData();
-		formData.append('action', 'save_draft');
-		formData.append('competition', storyCompetition);
-		formData.append('title', title);
-		formData.append('content', content);
-		formData.append('category', category);
-		formData.append('series', series);
-		formData.append('division', division);
-		formData.append('description', description);
-		formData.append('status', 'draft');
-
-		if (postId) {
-			formData.append('post_id', postId);
-		}
-
-		if (imageInput && imageInput.files.length > 0) {
-			formData.append('story_image', imageInput.files[0]);
-		}
-
-		fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-			method: 'POST',
-			body: formData
-		})
-		.then(res => res.json())
-		.then(response => {
-			if (response.success && response.data.post_id) {
-				currentPostId = response.data.post_id;
-				document.getElementById('editPostId').value = response.data.post_id;
-			}
-
-			if (response.success && !isAutoSave) {
-				lastDraftId = response.data.post_id;
-				var element = document.getElementById("draftAlert");
-				element.classList.remove("d-none");
-
-				if (postId) {
-					window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
-				} else {
-					// location.reload();
-					window.location.href = "<?php echo esc_url( site_url('/story-success/?status=draft') ); ?>";
-				}
-			}
-		});
-	}
-
-	// fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>?action=get_last_draft_story')
-	// 	.then(res => res.json())
-	// 	.then(response => {
-	// 		if (response.success && response.data) {
-	// 			const data = response.data;
-
-	// 			lastDraftId = data.draft_id;
-	// 			document.getElementById('story-title').value = data.title || '';
-	// 			document.getElementById('story-content').value = data.content || '';
-	// 			if (data.category) {
-	// 				document.getElementById('story-category').value = data.category;
-	// 			}
-	// 			if (data.series) {
-	// 				document.getElementById('story-series').value = data.series;
-	// 			}
-	// 			if (data.series && data.series !== 'தொடர்கதை அல்ல') {
-	// 				document.getElementById('divisionDropdown').classList.remove('d-none');
-	// 				document.getElementById('story-division').value = data.division || '';
-	// 			}
-
-	// 			if (data.description) {
-	// 				document.getElementById('descriptionSection').classList.remove('d-none');
-	// 				document.getElementById('story-description').value = data.description || '';
-	// 			}
-
-	// 			if (data.image_url) {
-	// 				const imgPreview = document.createElement('img');
-	// 				imgPreview.src = data.image_url;
-	// 				imgPreview.alt = "Uploaded Image Preview";
-	// 				imgPreview.style.maxWidth = "100px";
-	// 				document.getElementById('story-image').parentElement.appendChild(imgPreview);
-	// 			}
-
-	// 			var element = document.getElementById("draftAlert");
-	// 			element.classList.remove("d-none");
-	// 		}
-	// 	});
-
-	document.addEventListener('DOMContentLoaded', () => {
-		// Get postId from URL
-		const urlParams = new URLSearchParams(window.location.search);
-		const postId = urlParams.get('id');
-		const isCompetitionPage = document.getElementById('story-from-competition')?.value;
-
-		if (postId) {
-			fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
-				method:'POST',
-				headers:{'Content-Type': 'application/x-www-form-urlencoded'},
-				body:'action=get_story_by_id&post_id=' + postId
-			})
-			.then(response => response.json()) 
-			.then(data => {
-				if (data.success && data.data) {
-					// populate form fields here
-					if (isCompetitionPage == 'true' && data.data?.competition) {
-						// document.getElementById('story-competition').value = data.data.competition;
-
-						const competitionSelect = document.getElementById('story-competition');
-						if (competitionSelect) {
-							competitionSelect.value = data.data.competition;
-							competitionSelect.disabled = true;
-
-							competitionSelect.dispatchEvent(new Event('change'));
-						}
-					}
-					document.getElementById('story-title').value = data.data.title;
-					document.getElementById('story-content').value = data.data.content;
-
-					if (data.data.category) {
-						document.getElementById('story-category').value = data.data.category;
+					if (postId) {
+						window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
 					} else {
-						document.getElementById("categoryDropdown").classList.add("d-none");
-						document.getElementById("imageSection").classList.add("d-none");
+						// location.reload();
+						window.location.href = "<?php echo esc_url( site_url('/story-success/?status=draft') ); ?>";
 					}
-					
-					if (data.data.series) {
-						document.getElementById('story-series').value = data.data.series;
-					}
-					
-					if (data.data.division) {
-						document.getElementById('divisionDropdown').classList.remove('d-none'); 
-						document.getElementById('story-division').value = data.data.division;
-
-						document.getElementById('descriptionSection').classList.remove('d-none'); 
-						document.getElementById('story-description').value = data.data.description;
-						document.getElementById('seriesFirst').value = 'true';
-
-						document.getElementById("next-step").classList.add("d-none");
-						document.getElementById("step1Submit").classList.remove("d-none");
-						document.getElementById("step1SaveDraft").classList.remove("d-none");
-					}
-					
-					if (data.data.image_url) {
-						const imgPreview = document.createElement('img');
-						imgPreview.src = data.data.image_url;
-						imgPreview.alt = "Uploaded Image Preview";
-						imgPreview.style.maxWidth = "100px";
-						document.getElementById('story-image').parentElement.appendChild(imgPreview);
-					}
-
-					updateList();
 				}
-			})
-			.catch(err => console.error(err)); 
-		} else {
-			document.getElementById('story-series').value = 'தொடர்கதை அல்ல';
-			updateList();
-		}
-	});
 
-	document.addEventListener('DOMContentLoaded', function () {
-		const categoryList = document.getElementById('category_list');
-		const storySeries = document.getElementById('story-series');
-
-		// Function to remove the specific list item
-		function removeNonSeriesOption() {
-			const items = categoryList.querySelectorAll('.dropdown-item');
-			items.forEach(item => {
-				if (item.textContent.trim() === 'தொடர்கதை அல்ல') {
-					item.parentElement.remove(); // remove <li>
+				if (!response.success) {
+					jQuery('#step-2').hide();
+					jQuery('#step-1').show();
+					jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
 				}
 			});
 		}
-
-		// Function to add the specific list item if not exists
-		function addNonSeriesOption() {
-			const exists = Array.from(categoryList.querySelectorAll('.dropdown-item')).some(item => 
-				item.textContent.trim() === 'தொடர்கதை அல்ல'
-			);
-
-			if (!exists) {
-				const li = document.createElement('li');
-				const a = document.createElement('a');
-				a.href = '#';
-				a.className = 'dropdown-item';
-				a.textContent = 'தொடர்கதை அல்ல';
-				li.appendChild(a);
-				categoryList.prepend(li);
-			}
-		}
-
-
-		const competitionSelect = document.getElementById('story-competition');
-		
-		if (competitionSelect) {
-			competitionSelect.addEventListener('change', function () {
-				const competitionId = this.value;
-
-				if (!competitionId) return;
-
-				fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-					method: 'POST',
-					headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-					body: new URLSearchParams({
-						action: 'get_competition_details',
-						competition_id: competitionId
-					})
-				})
-				.then(res => res.json())
-				.then(data => {
-					if (data.success) {
-						const details = data.data;
-
-						if (details) {
-							const urlParams = new URLSearchParams(window.location.search);
-							const postId = urlParams.get('id');
-							if (postId) {
-								storySeries.disabled = true;
-							} else {
-								storySeries.disabled = false;
-								if (details.series == 'தொடர்கதை') {
-									storySeries.value = '';
-									removeNonSeriesOption();
-								} else {
-									storySeries.value = details.series;
-									storySeries.disabled = true;
-									addNonSeriesOption();
-								}
-							}
-
-							document.getElementById('story-category').value = details.category_id;
-							document.getElementById('story-category').disabled = true;
-						}
-					} else {
-						alert('Failed to fetch competition data');
-					}
-				});
-			});
-		}
-	});
-
+		// draft save end
+    });
 </script>

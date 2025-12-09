@@ -71,6 +71,8 @@
             $average_rating = get_custom_average_rating($post_id, $series_id);
 
             $episode_count = 0;
+            
+            $is_competition = get_post_meta($post_id, 'competition', true);
 
             if ($series_id) {
                 $related_stories = new WP_Query([
@@ -114,12 +116,21 @@
 
                     <?php if ($context === 'my-creations') { ?>
                         <div class="position-absolute bottom-0 end-0 px-2 py-2 mb-4 d-flex gap-2">
-                            <a 
-                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
-                                class="btn btn-warning btn-sm p-1" 
-                                title="Edit">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
+                            <?php if ($is_competition) { ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php } else { ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php } ?>
 
                             <?php
                                 if ( is_user_logged_in() ) {
@@ -202,6 +213,8 @@
 
                 $episode_count = 0;
 
+                $is_competition = get_post_meta($post_id, 'competition', true);
+
                 if ($series_id) {
                     $related_stories = new WP_Query([
                         'post_type'      => 'post',
@@ -244,12 +257,21 @@
 
                     <?php if ($context === 'my-creations') { ?>
                         <div class="position-absolute bottom-0 end-0 px-2 py-2 me-2 mb-4 d-flex gap-2">
-                            <a 
-                                href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
-                                class="btn btn-warning btn-sm p-1" 
-                                title="Edit">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
+                            <?php if ($is_competition) { ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . "&from=competition") ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php } else { ?>
+                                <a 
+                                    href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID()) ); ?>" 
+                                    class="btn btn-warning btn-sm p-1" 
+                                    title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            <?php } ?>
 
                             <?php
                                 if ( is_user_logged_in() ) {
