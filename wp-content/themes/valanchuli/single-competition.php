@@ -19,6 +19,13 @@
                     <?php echo esc_html($author_name); ?>
                 </a>
                 | <?php echo esc_html($posted_date); ?>
+
+                | <a href="javascript:void(0);" 
+                    class="text-decoration-none text-muted"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shareModal">
+                        <i class="fa-solid fa-share-nodes me-1"></i> Share
+                </a>
             </p>
 
             <?php if (!empty($categories) && isset($categories[0])) { ?>

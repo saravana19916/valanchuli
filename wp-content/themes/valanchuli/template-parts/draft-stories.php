@@ -144,10 +144,11 @@
                 $post_id = $post->ID;
                 $views = $item['views'];
                 $average_rating = get_custom_average_rating($post_id, 0);
+                $isCompetition = get_post_meta($post_id, 'competition', true);
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
-                    <a href="<?php echo the_permalink() . '?from=mycreation'; ?>">
+                    <a href="<?php echo esc_url( home_url( "/write?id=" . get_the_ID() . ($isCompetition ? "&from=competition" : ''))); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
@@ -213,14 +214,6 @@
                             <?php echo esc_html($author_name); ?>
                         </a>
                     </p> -->
-
-                    <!-- <div class="d-flex mt-1">
-                        <div class="d-flex align-items-center top-0 end-0 px-2 py-1 me-1 fw-bold rounded text-primary-color">
-                            <i class="fa-solid fa-eye me-1"></i>
-                            <?php echo format_view_count($total_views); ?>
-                        </div>
-                        <span class="mt-1 fs-13px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
-                    </div> -->
 
                     <div class="d-flex mt-1 align-items-center justify-content-between">
                         <div class="d-flex align-items-center px-2 py-1 me-1 rounded text-story-title-next">

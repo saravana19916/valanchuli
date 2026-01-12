@@ -21,6 +21,83 @@ add_action('wp_head', function() {
         return;
     }
 
+    $competitionOgImage = '';
+    $image_id = get_post_meta($post->ID, '_competition_image_id', true);
+    if ($image_id) {
+        $competitionImage = wp_get_attachment_image_url($image_id, 'full');
+        if ($competitionImage) {
+            $competitionOgImage = $competitionImage;
+        }
+    }
+
+    if (!empty($competitionOgImage)) {
+        // ------------- remove existing og:image / twitter:image tags from buffer -------------
+        $buffer = preg_replace(
+            '/<meta[^>]+(property|name)=([\'"])(og:image|twitter:image)\2[^>]*>\s*/i',
+            '',
+            $buffer
+        );
+
+        // ------------- prepare our tags to inject -------------
+        $our_meta  = "\n<!-- Custom OG Image injected by product_og_image -->\n";
+        $our_meta .= '<meta property="og:image" content="' . esc_url($competitionOgImage) . '">' . "\n";
+        $our_meta .= '<meta property="og:image:secure_url" content="' . esc_url($competitionOgImage) . '">' . "\n";
+        $our_meta .= '<meta property="og:image:width" content="1200">' . "\n";
+        $our_meta .= '<meta property="og:image:height" content="630">' . "\n";
+        $our_meta .= '<meta property="og:type" content="website">' . "\n";
+        $our_meta .= '<meta name="twitter:image" content="' . esc_url($competitionOgImage) . '">' . "\n";
+
+        // ------------- inject before closing head if present, otherwise append -------------
+        if ( stripos( $buffer, '</head>' ) !== false ) {
+            // insert our tags just before </head>
+            $buffer = preg_replace( '/<\/head>/i', $our_meta . '</head>', $buffer, 1 );
+        } else {
+            // fallback: append to buffer
+            $buffer .= $our_meta;
+        }
+    }
+
+    // product og image set start
+    $productOgImage = '';
+
+    // Get product images from post meta
+    $image_ids = get_post_meta($post->ID, 'product_images', true);
+
+    if (is_array($image_ids) && !empty($image_ids)) {
+        $first_image = wp_get_attachment_image_url($image_ids[0], 'full');
+        if ($first_image) {
+            $productOgImage = $first_image;
+        }
+    }
+
+    if (!empty($productOgImage)) {
+        // ------------- remove existing og:image / twitter:image tags from buffer -------------
+        $buffer = preg_replace(
+            '/<meta[^>]+(property|name)=([\'"])(og:image|twitter:image)\2[^>]*>\s*/i',
+            '',
+            $buffer
+        );
+
+        // ------------- prepare our tags to inject -------------
+        $our_meta  = "\n<!-- Custom OG Image injected by product_og_image -->\n";
+        $our_meta .= '<meta property="og:image" content="' . esc_url($productOgImage) . '">' . "\n";
+        $our_meta .= '<meta property="og:image:secure_url" content="' . esc_url($productOgImage) . '">' . "\n";
+        $our_meta .= '<meta property="og:image:width" content="1200">' . "\n";
+        $our_meta .= '<meta property="og:image:height" content="630">' . "\n";
+        $our_meta .= '<meta property="og:type" content="website">' . "\n";
+        $our_meta .= '<meta name="twitter:image" content="' . esc_url($productOgImage) . '">' . "\n";
+
+        // ------------- inject before closing head if present, otherwise append -------------
+        if ( stripos( $buffer, '</head>' ) !== false ) {
+            // insert our tags just before </head>
+            $buffer = preg_replace( '/<\/head>/i', $our_meta . '</head>', $buffer, 1 );
+        } else {
+            // fallback: append to buffer
+            $buffer .= $our_meta;
+        }
+    }
+    // product og image set end
+
     // Only target your episode pages:
     // Change 'post' to your episode CPT slug if episodes are not 'post'
     if ( $post->post_type !== 'post' ) {
@@ -311,7 +388,7 @@ function save_story_ajax() {
         'post__not_in'   => [$post_id],
     ]);
 
-    if ($postExists->have_posts()) {
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'series' && $postExists->have_posts()) {
         $errors['title'] = 'இந்த தலைப்பு ஏற்கனவே உள்ளது. வேறு தலைப்பை உள்ளிடவும்.';
     }
 
@@ -376,7 +453,16 @@ function save_story_ajax() {
     }
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'series') {
-        wp_set_post_terms($post_id, [$title], 'series');
+        $existing_terms = wp_get_post_terms($post_id, 'series');
+        if (!empty($existing_terms)) {
+            $term_id = $existing_terms[0]->term_id;
+            wp_update_term($term_id, 'series', [
+                'name' => $title,
+                'slug' => sanitize_title($title),
+            ]);
+        } else {
+            wp_set_post_terms($post_id, [$title], 'series');
+        }
     }
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
@@ -413,7 +499,7 @@ function handle_save_draft() {
         'post__not_in'   => [$_POST['post_id']],
     ]);
 
-    if ($postExists->have_posts()) {
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'series' && $postExists->have_posts()) {
         wp_send_json_error('இந்த தலைப்பு ஏற்கனவே உள்ளது. வேறு தலைப்பை உள்ளிடவும்.');
     }
 
@@ -480,7 +566,16 @@ function handle_save_draft() {
     }
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'series') {
-        wp_set_post_terms($post_id, [$title], 'series');
+        $existing_terms = wp_get_post_terms($post_id, 'series');
+        if (!empty($existing_terms)) {
+            $term_id = $existing_terms[0]->term_id;
+            wp_update_term($term_id, 'series', [
+                'name' => $title,
+                'slug' => sanitize_title($title),
+            ]);
+        } else {
+            wp_set_post_terms($post_id, [$title], 'series');
+        }
     }
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
@@ -590,6 +685,12 @@ function ajax_get_series_list() {
     $series_terms = get_terms([
         'taxonomy'   => 'series',
         'hide_empty' => false,
+        'meta_query' => [
+            [
+                'key' => 'is_deleted',
+                'compare' => 'NOT EXISTS',
+            ],
+        ],
     ]);
 
     $filtered_series = array_filter($series_terms, function ($term) use ($current_user_id, $competition_id) {

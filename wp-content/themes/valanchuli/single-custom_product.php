@@ -12,7 +12,10 @@ if (have_posts()) :
         // $image_id = get_post_meta(get_the_ID(), 'product_image', true);
         // $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
         $image_ids = get_post_meta(get_the_ID(), 'product_images', true);
-$image_ids = is_array($image_ids) ? $image_ids : [];
+        if (is_array($image_ids) && !empty($image_ids) && !has_post_thumbnail(get_the_ID())) {
+    set_post_thumbnail(get_the_ID(), $image_ids[0]);
+}
+        $image_ids = is_array($image_ids) ? $image_ids : [];
 
         $description = get_post_meta(get_the_ID(), 'product_description', true);
 ?>
@@ -140,6 +143,15 @@ $image_ids = is_array($image_ids) ? $image_ids : [];
                             <i class="fas fa-shopping-cart me-2"></i> Buy Now
                         </a>
                     <?php endif; ?>
+
+                    <p class="mt-3">
+                        <a href="javascript:void(0);" 
+                            class="text-decoration-none fs-16px"
+                            data-bs-toggle="modal"
+                            data-bs-target="#shareModal">
+                                <i class="fa-solid fa-share-nodes me-1"></i> Share
+                        </a>
+                    </p>
 
                     <?php
                         $post_id = get_the_ID();

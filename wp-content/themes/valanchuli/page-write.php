@@ -92,6 +92,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							$series_terms = get_terms([
 								'taxonomy'   => 'series',
 								'hide_empty' => false,
+								'meta_query' => [
+									[
+										'key' => 'is_deleted',
+										'compare' => 'NOT EXISTS',
+									],
+								],
 							]);
 
 							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id) {
@@ -203,6 +209,12 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								$divisions = get_terms(array(
 									'taxonomy'   => 'division',
 									'hide_empty' => false,
+									'meta_query' => [
+										[
+											'key' => 'is_deleted',
+											'compare' => 'NOT EXISTS',
+										],
+									],
 								));
 
 								if (!empty($divisions) && !is_wp_error($divisions)) :
@@ -453,8 +465,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 							jQuery("#episodeStory").trigger("change");
 							document.getElementById('seriesStory').disabled = true;
 							document.getElementById('episodeStory').disabled = true;
-							document.getElementById('my-series').value = data.data.series;
-							document.getElementById('my-series').disabled = true;
+
+							setTimeout(() => {
+								document.getElementById('my-series').value = data.data.series;
+								document.getElementById('my-series').disabled = true;
+							}, 600);
 						} else {
 							if (data.data?.series) {
 								if (data.data?.series == 'தொடர்கதை அல்ல') {
@@ -472,8 +487,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								} else if (data.data?.series != 'தொடர்கதை அல்ல') {
 									document.getElementById('episodeStory').checked = true;
 									jQuery("#episodeStory").trigger("change");
-									document.getElementById('my-series').value = data.data.series;
-									document.getElementById('my-series').disabled = true;
+
+									setTimeout(() => {
+										document.getElementById('my-series').value = data.data.series;
+										document.getElementById('my-series').disabled = true;
+									}, 600);
 								}
 
 								document.getElementById('seriesStory').disabled = true;
@@ -614,8 +632,16 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					}
 
 					let activeRequests = 0;
+					let latestSuggestions = [];
+					let lastRange = null;
+					let skipNextInput = false;
 
 					editor.addEventListener('input', () => {
+						if (skipNextInput) {
+							skipNextInput = false;
+							return;
+						}
+
 						const sel = window.getSelection();
 						if (!sel.rangeCount) {
 							suggestionBox.hide();
@@ -651,8 +677,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						.then(data => {
 							if (data[0] === "SUCCESS") {
 								const suggestions = data[1][0][1];
+								latestSuggestions = suggestions;
+								lastRange = range;
 								showSuggestions(suggestions, range);
 							} else {
+								latestSuggestions = [];
 								suggestionBox.hide();
 							}
 						})
@@ -666,6 +695,32 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								jQuery('#content-loader-2').hide();
 							}
 						});
+					});
+
+					editor.addEventListener('beforeinput', (e) => {
+						const isSpace =
+							e.inputType === 'insertText' && e.data === ' ';
+
+						const isEnter =
+							e.inputType === 'insertLineBreak' ||
+							e.inputType === 'insertParagraph';
+
+						if ((isSpace || isEnter) && latestSuggestions.length > 0) {
+							e.preventDefault();
+
+							// Replace last word
+							replaceLastWord(latestSuggestions[0]);
+
+							// Insert space or newline safely
+							if (isSpace) {
+								document.execCommand('insertText', false, ' ');
+							} else if (isEnter) {
+								document.execCommand('insertHTML', false, '<br>');
+							}
+
+							latestSuggestions = [];
+							suggestionBox.hide();
+						}
 					});
 
 					function showSuggestions(suggestions, range) {
@@ -691,29 +746,36 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 						});
 					}
 
-					function replaceLastWord(newWord) {
+					function replaceLastWord(word) {
 						const sel = window.getSelection();
 						if (!sel.rangeCount) return;
 
 						const range = sel.getRangeAt(0);
 						const node = range.startContainer;
+
+						if (node.nodeType !== Node.TEXT_NODE) return;
+
 						const text = node.textContent;
-						const offset = range.startOffset;
+						const end = range.startOffset;
 
-						const textBeforeCursor = text.slice(0, offset);
-						const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
-						const start = lastSpaceIndex + 1;
+						let start = end;
+						while (start > 0 && !/\s/.test(text[start - 1])) {
+							start--;
+						}
 
-						const newText = text.slice(0, start) + newWord + ' ' + text.slice(offset);
-						node.textContent = newText;
+						const wordRange = document.createRange();
+						wordRange.setStart(node, start);
+						wordRange.setEnd(node, end);
+						wordRange.deleteContents();
 
-						const newOffset = start + newWord.length + 1;
-						const newRange = document.createRange();
-						newRange.setStart(node, newOffset);
-						newRange.collapse(true);
+						const textNode = document.createTextNode(word);
+						wordRange.insertNode(textNode);
+
+						range.setStartAfter(textNode);
+						range.collapse(true);
 
 						sel.removeAllRanges();
-						sel.addRange(newRange);
+						sel.addRange(range);
 
 						editor.focus();
 					}

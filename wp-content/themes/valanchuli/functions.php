@@ -13,6 +13,8 @@ require_once get_template_directory() . '/include/product.php';
 require_once get_template_directory() . '/include/story-single.php';
 require_once get_template_directory() . '/include/profile.php';
 require_once get_template_directory() . '/include/lock.php';
+require_once get_template_directory() . '/include/admin-customisation.php';
+require_once get_template_directory() . '/include/subscription.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -330,21 +332,22 @@ function handle_frontend_post_delete() {
                             'posts_per_page' => -1,
                         ]);
 
-                        // Delete all posts assigned to this term
+                        // Move all posts assigned to this term to Trash
                         if ( ! empty( $term_posts ) ) {
                             foreach ( $term_posts as $eid ) {
-                                wp_delete_post( $eid, true );
+                                wp_delete_post( $eid, false ); // Move to Trash
                             }
                         }
 
                         // Delete term only if no other post uses it
                         if ( empty( $term_posts ) ) {
-                            wp_delete_term( $term->term_id, 'series' );
+                            // wp_delete_term( $term->term_id, 'series' );
+                            update_term_meta( $term->term_id, 'is_deleted', 1 );
                         }
                     }
                 }
             } else {
-                wp_delete_post( $post_id, true );
+                wp_delete_post( $post_id, false ); // Move to Trash
             }
 
             // Redirect after deletion
@@ -375,218 +378,5 @@ function search_by_title_only( $search, $wp_query ) {
     return $search;
 }
 add_filter( 'posts_search', 'search_by_title_only', 10, 2 );
-
-// Add custom action link for resend verification email start
-add_filter('user_row_actions', 'add_resend_verification_link', 10, 2);
-function add_resend_verification_link($actions, $user){
-    $verified = get_user_meta($user->ID, 'email_verified', true);
-    if(!$verified){  
-        $resend_url = wp_nonce_url(
-            admin_url("users.php?action=resend_verification&user_id=" . $user->ID),
-            'resend_email_verification'
-        );
-        $actions['resend_verification'] = "<a href='$resend_url'>Resend Verification Email</a>";
-    }
-    return $actions;
-}
-
-add_action('admin_init', 'process_resend_verification_email');
-function process_resend_verification_email(){
-    if(isset($_GET['action']) && $_GET['action'] === 'resend_verification'){
-        
-        if (! wp_verify_nonce($_GET['_wpnonce'], 'resend_email_verification')){
-            wp_die('Security check failed');
-        }
-
-        $user_id = intval($_GET['user_id']);
-        $user = get_user_by('ID', $user_id);
-
-        if($user){
-            // Check if already verified
-            $verified = get_user_meta($user_id, 'email_verified', true);
-            if($verified == 1){
-                wp_redirect(add_query_arg('verified_already', 1, admin_url('users.php')));
-                exit;
-            }
-
-            // Generate new code
-            $code = wp_generate_password(20, false);
-            update_user_meta($user_id, 'email_verification_code', $code);
-
-            // Email details
-            $firstname = $user->first_name;
-            $verification_url = site_url("?verify_email=$code&user_id=$user_id");
-
-            // Get email template
-            ob_start();
-            $template_path = locate_template('template-parts/email-verification-email-template.php');
-            if($template_path){
-                $args = [
-                    'firstname' => $firstname,
-                    'verification_url' => $verification_url
-                ];
-                extract($args);
-                include $template_path;
-                $message = ob_get_clean();
-            } else {
-                $message = 'Email template not found.';
-            }
-
-            // Set HTML and custom From
-            add_filter('wp_mail_content_type', 'set_html_content_type');
-            add_filter('wp_mail_from', 'custom_wp_mail_from_email');
-            add_filter('wp_mail_from_name', 'custom_wp_mail_from_name');
-
-            wp_mail($user->user_email, 'Verify your email', $message);
-
-            // Remove Filters
-            remove_filter('wp_mail_from', 'custom_wp_mail_from_email');
-            remove_filter('wp_mail_from_name', 'custom_wp_mail_from_name');
-            remove_filter('wp_mail_content_type', 'set_html_content_type');
-
-            wp_redirect(add_query_arg('resend_success', 1, admin_url('users.php')));
-            exit;
-        }
-    }
-}
-
-
-add_action('admin_notices', function(){
-    if(isset($_GET['resend_success'])){
-        echo '<div class="notice notice-success is-dismissible"><p>Verification email resent successfully.</p></div>';
-    }
-    if(isset($_GET['verified_already'])){
-        echo '<div class="notice notice-warning is-dismissible"><p>User already verified.</p></div>';
-    }
-});
-
-// Register bulk action
-add_filter('bulk_actions-users', function($bulk_actions){
-    $bulk_actions['bulk_resend_verification'] = 'Resend Verification Email';
-    return $bulk_actions;
-});
-
-add_filter('handle_bulk_actions-users', function($redirect_url, $action, $user_ids){
-
-    if($action !== 'bulk_resend_verification'){
-        return $redirect_url;
-    }
-
-    $sent = 0;
-    $skipped = 0;
-
-    foreach($user_ids as $user_id){
-
-        $verified = get_user_meta($user_id, 'email_verified', true);
-        if($verified == 1){
-            $skipped++;  
-            continue;
-        }
-
-        // Generate new code
-        $code = wp_generate_password(20, false);
-        update_user_meta($user_id, 'email_verification_code', $code);
-
-        $user = get_user_by('ID', $user_id);
-        if(! $user) continue;
-
-        $firstname = $user->first_name;
-        $verification_url = site_url("?verify_email=$code&user_id=$user_id");
-
-        // Load email template
-        ob_start();
-        $template_path = locate_template('template-parts/email-verification-email-template.php');
-        if($template_path){
-            $args = [
-                'firstname' => $firstname,
-                'verification_url' => $verification_url
-            ];
-            extract($args);
-            include $template_path;
-            $message = ob_get_clean();
-        } else {
-            $message = 'Email template not found.';
-        }
-
-        // Enable HTML & custom From
-        add_filter('wp_mail_content_type', 'set_html_content_type');
-        add_filter('wp_mail_from', 'custom_wp_mail_from_email');
-        add_filter('wp_mail_from_name', 'custom_wp_mail_from_name');
-
-        wp_mail($user->user_email, 'Verify your email', $message);
-
-        // Remove filters
-        remove_filter('wp_mail_content_type', 'set_html_content_type');
-        remove_filter('wp_mail_from', 'custom_wp_mail_from_email');
-        remove_filter('wp_mail_from_name', 'custom_wp_mail_from_name');
-
-        $sent++;
-    }
-
-    // Add results to redirect URL
-    $redirect_url = add_query_arg([
-        'bulk_resend_sent' => $sent,
-        'bulk_resend_skipped' => $skipped
-    ], $redirect_url);
-
-    return $redirect_url;
-
-}, 10, 3);
-
-add_action('admin_notices', function(){
-
-    if(isset($_GET['bulk_resend_sent'])){
-        $sent = intval($_GET['bulk_resend_sent']);
-        $skipped = intval($_GET['bulk_resend_skipped']);
-
-        echo '<div class="notice notice-success is-dismissible"><p>';
-        echo "Verification emails sent: <strong>$sent</strong><br>";
-        echo "Already verified users skipped: <strong>$skipped</strong>";
-        echo '</p></div>';
-    }
-
-});
-// Add custom action link for resend verification email end
-
-// Add column email verification and search filter start
-add_filter('manage_users_columns', function($columns){
-    $columns['email_verified'] = 'Email Verified?';
-    return $columns;
-});
-
-add_filter('manage_users_custom_column', function($value, $column_name, $user_id){
-    if($column_name === 'email_verified'){
-        $verified = get_user_meta($user_id, 'email_verified', true);
-        return $verified == 1
-        ? '<span style="color:green;font-weight:bold;">Verified</span>'
-        : '<span style="color:red;font-weight:bold;">Not Verified</span>';
-    }
-    return $value;
-}, 10, 3);
-
-add_filter('user_search_columns', function($search_columns){
-    $search_columns[] = 'meta_value';
-    return $search_columns;
-});
-
-add_action('pre_get_users', function($query){
-    if (!is_admin()) return;
-
-    $search = isset($_GET['s']) ? trim($_GET['s']) : '';
-
-    if ($search === 'verified' || $search === 'not verified') {
-        $query->set('meta_query', [
-            [
-                'key'   => 'email_verified',
-                'value' => ($search === 'verified') ? '1' : '0'
-            ]
-        ]);
-        $query->set('search', '');
-    }
-});
-// Add column email verification and search filter end
-
-
-
 
 ?>

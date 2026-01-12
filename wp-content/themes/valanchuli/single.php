@@ -37,15 +37,22 @@
                 </a>
                 | <?php echo esc_html($posted_date); ?>
                 <?php 
-                $division_id = get_post_meta($post_id, 'division', true);
+                    $division_id = get_post_meta($post_id, 'division', true);
 
-                if ($division_id) {
-                    $division = get_term($division_id, 'division');
-                    if (!is_wp_error($division) && $division) {
-                        $division_link = site_url('/division/' . $division->slug . '/');
-                        ?>
-                        | Division: <a href="<?php echo esc_url($division_link); ?>"><?php echo esc_html($division->name); ?></a>
-                    <?php } } ?>
+                    if ($division_id) {
+                        $division = get_term($division_id, 'division');
+                        if (!is_wp_error($division) && $division) {
+                            $division_link = site_url('/division/' . $division->slug . '/');
+                            ?>
+                            | Division: <a href="<?php echo esc_url($division_link); ?>"><?php echo esc_html($division->name); ?></a>
+                <?php } } ?>
+
+                | <a href="javascript:void(0);" 
+                    class="text-decoration-none text-muted"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shareModal">
+                        <i class="fa-solid fa-share-nodes me-1"></i> Share
+                </a>
             </p>
 
             <div class="<?= esc_attr($cardClass); ?>">
@@ -349,29 +356,54 @@
 
                                         $prev_episode_id = ($current_index > 1) ? $episode_ids[$current_index - 1] : null;
                                         $next_episode_id = ($current_index < count($episode_ids) - 1) ? $episode_ids[$current_index + 1] : null;
+
+                                        $series_posts = get_posts([
+                                            'post_type'      => 'post',
+                                            'posts_per_page' => 1,
+                                            'orderby'        => 'date',
+                                            'order'          => 'ASC',
+                                            'tax_query'      => [
+                                                [
+                                                    'taxonomy' => 'series',
+                                                    'field'    => 'term_id',
+                                                    'terms'    => $series_id,
+                                                ],
+                                            ],
+                                        ]);
+
+                                        $series_parent_url = !empty($series_posts)
+                                            ? get_permalink($series_posts[0]->ID)
+                                            : home_url();
                                         ?>
 
                                         <div class="episode-navigation row my-4">
                                             <div class="col-6 text-start">
                                                 <?php if ($prev_episode_id): ?>
                                                     <button type="button"
-                                                            class="btn btn-primary"
-                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($prev_episode_id)); ?>'">
+                                                        class="btn btn-primary"
+                                                        onclick="window.location.href='<?php echo esc_url(get_permalink($prev_episode_id)); ?>'">
                                                         ← Previous Episode
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
 
                                             <div class="col-6 text-end">
+                                                <button type="button"
+                                                    class="btn btn-primary"
+                                                    onclick="window.location.href='<?php echo esc_url($series_parent_url); ?>'">
+                                                    ← Back
+                                                </button>
+
                                                 <?php if ($next_episode_id): ?>
                                                     <button type="button"
-                                                            class="btn btn-primary"
-                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($next_episode_id)); ?>'">
+                                                        class="btn btn-primary ms-2"
+                                                        onclick="window.location.href='<?php echo esc_url(get_permalink($next_episode_id)); ?>'">
                                                         Next Episode →
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
+
                                     <?php endif; ?>
 
                                 <div
@@ -394,23 +426,6 @@
                                         </div>
                                         <p>No votes so far! Be the first to rate this post.</p>
                                 </div>
-
-                                    <?php
-    $message  = "திகிலும் ருசிக்கும் ஒரு தொடர்கதை....\n\n";
-    $message .= "கதையை பிரதிலிபி செயலியில் வாசியுங்கள்\n\n";
-    $message .= get_the_title() . "\n";
-    $message .= get_permalink() . "\n\n";
-    $message .= "வாசிக்க கதையின் மேல் க்ளிக் செய்யவும் 👆";
-
-    $whatsapp_link = "https://wa.me/?text=" . rawurlencode($message);
-    ?>
-
-    <!-- <a href="<?php echo $whatsapp_link; ?>" 
-    class="btn btn-success whatsapp-popup">
-        <i class="fa-brands fa-whatsapp"></i> Share on WhatsApp1
-    </a> -->
-
-
                                 
                                 <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredLabel" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
@@ -451,28 +466,20 @@
 <?php get_footer(); ?>
 
 <script>
-    function openSharePopup(url) {
-    window.open(
-        url,
-        'whatsappShareWindow',
-        'width=600,height=600,top=100,left=200'
-    );
-    return false; // prevent normal link navigation
-}
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.read-more-toggle').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            const container = btn.closest('.description-content');
-            const dots = container.querySelector('.dots');
-            const moreText = container.querySelector('.more-text');
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.read-more-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const container = btn.closest('.description-content');
+                const dots = container.querySelector('.dots');
+                const moreText = container.querySelector('.more-text');
 
-            dots.classList.toggle('d-none');
-            moreText.classList.toggle('d-none');
+                dots.classList.toggle('d-none');
+                moreText.classList.toggle('d-none');
 
-            btn.textContent = moreText.classList.contains('d-none') ? 'Read more' : 'Read less';
+                btn.textContent = moreText.classList.contains('d-none') ? 'Read more' : 'Read less';
+            });
         });
     });
-});
 
 function showLockPopup(type) {
     let msg = '';
