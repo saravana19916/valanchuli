@@ -42,6 +42,18 @@ if (!empty($banners)) :
 <?php endif; ?>
 
 <div class="container my-4">
+    <?php 
+        $message1 = get_option('site_message_one');
+        $message2 = get_option('site_message_two');
+        $message3 = get_option('site_message_three');
+    ?>
+    
+    <?php if ($message1): ?>
+        <?php
+            get_template_part('template-parts/site-invite-message', null, ['message' => $message1]);
+        ?>
+    <?php endif; ?>
+
     <!-- Trending stories start -->
     <?php get_template_part('template-parts/trending-stories'); ?>
     <!-- Trending stories end -->
@@ -50,9 +62,19 @@ if (!empty($banners)) :
     <?php get_template_part('template-parts/latest-stories'); ?>
     <!-- Trending stories end -->
 
+    <!-- Premium stories start -->
+    <?php get_template_part('template-parts/premium-stories'); ?>
+    <!-- Premium stories end -->
+
     <!-- நாவல்கள் stories start -->
     <?php get_template_part('template-parts/novel-stories'); ?>
     <!-- நாவல்கள் stories end -->
+
+    <?php if ($message2): ?>
+        <?php
+            get_template_part('template-parts/site-invite-message', null, ['message' => $message2]);
+        ?>
+    <?php endif; ?>
 
     <!-- competition stories start -->
     <?php get_template_part('template-parts/competition-stories'); ?>
@@ -69,6 +91,12 @@ if (!empty($banners)) :
     <!-- katturai stories start -->
     <?php get_template_part('template-parts/category-stories', null, ['categoryKey' => 'katturai', 'categoryValue' => 'கட்டுரை']); ?>
     <!-- katturai stories end -->
+
+    <?php if ($message3): ?>
+        <?php
+            get_template_part('template-parts/site-invite-message', null, ['message' => $message3]);
+        ?>
+    <?php endif; ?>
 </div>
 
 <?php get_footer(); ?>

@@ -1,27 +1,40 @@
 <?php 
-    global $wpdb;
-    $premium_table = $wpdb->prefix . 'premium_story_rules';
+global $wpdb;
 
-    $context = $args['context'] ?? '';
-    $current_user = $args['user_id'] ?? '';
+$context = $args['context'] ?? '';
+$current_user = $args['user_id'] ?? '';
 
+$table = $wpdb->prefix . 'premium_story_rules';
+
+// Get all unique post_ids from the premium_story_rules table
+$post_ids = $wpdb->get_col( "SELECT DISTINCT post_id FROM $table" );
+
+// If context is "my-creations", filter by current user
+if ($current_user) {
+    $author_post_ids = get_posts([
+        'post_type'      => 'post',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'author'         => $current_user,
+        'fields'         => 'ids',
+        'include'        => $post_ids,
+    ]);
+    $post_ids = $author_post_ids;
+}
+
+$premium_stories = [];
+if (!empty($post_ids)) {
     $args = [
-        'post_type'      => ['post'],
+        'post_type'      => 'post',
+        'post__in'       => $post_ids,
         'posts_per_page' => -1,
         'post_status'    => 'publish',
     ];
-    
-    // If context is "my-creations", filter by current user
-    if ($current_user) {
-        $args['author'] = $current_user;
-    }
-    
-    $novel_query = new WP_Query($args);
-    $novel_stories = [];
-    
-    if ($novel_query->have_posts()) {
-        while ($novel_query->have_posts()) {
-            $novel_query->the_post();
+    $query = new WP_Query($args);
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
             $division = get_post_meta($post_id, 'division', true);
@@ -31,8 +44,8 @@
                 $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
 
                 $views = get_average_series_views($post_id, $series_id);
-        
-                $novel_stories[] = [
+
+                $premium_stories[] = [
                     'post' => get_post(),
                     'views' => $views,
                 ];
@@ -40,30 +53,33 @@
         }
         wp_reset_postdata();
     }
+}
 
-    usort($novel_stories, function ($a, $b) {
-        return $b['views'] <=> $a['views'];
-    });
+usort($premium_stories, function ($a, $b) {
+    return $b['views'] <=> $a['views'];
+});
 
-    $total_novel_count = count($novel_stories);
+$total_premium_count = count($premium_stories);
 
-    $novelUrl = add_query_arg([
-        'context' => $context,
-        'user_id'  => $current_user
-    ], get_permalink(get_page_by_path('novels')));
+$premiumUrl = add_query_arg([
+    'context' => $context,
+    'user_id'  => $current_user
+], get_permalink(get_page_by_path('premium-stories')));
+
+// Now use $premium_stories instead of $novel_stories for your display logic
 ?>
 
 <div class="d-flex justify-content-between align-items-center mt-4">
-    <h4 class="py-2 fw-bold m-0">🔥 நாவல்கள்</h4>
-    <?php if (count($novel_stories) > 0) { ?>
-        <a href="<?php echo esc_url($novelUrl); ?>" class="text-primary-color fs-16px">
+    <h4 class="py-2 fw-bold m-0">🔥 Premium Stories</h4>
+    <?php if (count($premium_stories) > 0) { ?>
+        <a href="<?php echo esc_url($premiumUrl); ?>" class="text-primary-color fs-16px">
             மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
         </a>
     <?php } ?>
 </div>
 
 <div class="trending-desktop-container d-none d-lg-flex overflow-auto mt-3" style="gap: 2rem;">
-    <?php foreach ($novel_stories as $index => $item): ?>
+    <?php foreach ($premium_stories as $index => $item): ?>
         <?php
             $post = $item['post'];
             setup_postdata($post);
@@ -96,16 +112,9 @@
 
                 $episode_count = $related_stories->found_posts;
             }
-
-            $is_premium = $wpdb->get_var(
-                $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
-            ) > 0;
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
-                    <?php if ($is_premium): ?>
-                        <span class="premium-tag">PREMIUM</span>
-                    <?php endif; ?>
                     <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
@@ -211,7 +220,7 @@
 <!-- Mobile/Tablet Swiper -->
 <div class="swiper trending-swiper d-lg-none px-2 mt-4">
     <div class="swiper-wrapper">
-        <?php foreach ($novel_stories as $item): ?>
+        <?php foreach ($premium_stories as $item): ?>
             <?php
                 $post = $item['post'];
                 setup_postdata($post);
@@ -244,16 +253,9 @@
 
                     $episode_count = $related_stories->found_posts;
                 }
-
-                $is_premium = $wpdb->get_var(
-                    $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
-                ) > 0;
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
-                    <?php if ($is_premium): ?>
-                        <span class="premium-tag">PREMIUM</span>
-                    <?php endif; ?>
                     <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
@@ -357,7 +359,7 @@
     </div>
 </div>
 
-<?php if (count($novel_stories) == 0) { ?>
+<?php if (count($premium_stories) == 0) { ?>
     <div class="text-center mt-4 fs-14px text-primary-color" role="alert">
         No stories found.
     </div>
@@ -373,20 +375,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
-<style>
-.premium-tag {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: linear-gradient(90deg, #fbb034 0%, #ffdd00 100%);
-    color: #222;
-    font-weight: bold;
-    font-size: 13px;
-    padding: 4px 16px 4px 8px;
-    border-top-left-radius: 8px;
-    border-bottom-right-radius: 16px;
-    z-index: 2;
-    letter-spacing: 1px;
-}
-</style>

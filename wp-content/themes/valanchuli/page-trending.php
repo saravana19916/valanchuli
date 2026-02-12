@@ -2,6 +2,9 @@
 get_header(); ?>
 
 <?php 
+global $wpdb;
+$premium_table = $wpdb->prefix . 'premium_story_rules';
+
     $stories = new WP_Query([
         'post_type' => ['post'],
         'posts_per_page' => -1,
@@ -107,11 +110,16 @@ get_header(); ?>
                     }
                     
                     $division = get_post_meta($post_id, 'division', true);
+                    $is_premium = false;
                     if (!empty($description) || !empty($division)) {
                         $total_views = get_average_series_views($post_id, $series_id);
                         $average_rating = get_custom_average_rating($post_id, $series_id);
 
                         $episode_count = 0;
+
+                        $is_premium = $wpdb->get_var(
+                            $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                        ) > 0;
 
                         if ($series_id) {
                             $related_stories = new WP_Query([
@@ -136,6 +144,10 @@ get_header(); ?>
                 ?>
                 <div style="width: 180px;">
                     <div class="position-relative">
+                        <?php if ($is_premium): ?>
+                            <span class="premium-tag">PREMIUM</span>
+                        <?php endif; ?>
+
                         <a href="<?php the_permalink(); ?>">
                             <?php if (has_post_thumbnail()) : ?>
                                 <?php the_post_thumbnail('medium', [
@@ -200,3 +212,20 @@ get_header(); ?>
 </div>
 
 <?php get_footer(); ?>
+
+<style>
+.premium-tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(90deg, #fbb034 0%, #ffdd00 100%);
+    color: #222;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 4px 16px 4px 8px;
+    border-top-left-radius: 8px;
+    border-bottom-right-radius: 16px;
+    z-index: 2;
+    letter-spacing: 1px;
+}
+</style>

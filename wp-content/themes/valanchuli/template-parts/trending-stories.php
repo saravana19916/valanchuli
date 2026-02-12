@@ -1,4 +1,7 @@
 <?php
+    global $wpdb;
+    $premium_table = $wpdb->prefix . 'premium_story_rules';
+
     $args = [
         'post_type'      => ['post'],
         'posts_per_page' => -1,
@@ -111,11 +114,16 @@
             }
             
             $division = get_post_meta($post_id, 'division', true);
+            $is_premium = false;
             if (!empty($description) || !empty($division)) {
                 $total_views = get_average_series_views($post_id, $series_id);
                 $average_rating = get_custom_average_rating($post_id, $series_id);
 
                 $episode_count = 0;
+
+                $is_premium = $wpdb->get_var(
+                    $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                ) > 0;
 
                 if ($series_id) {
                     $related_stories = new WP_Query([
@@ -140,6 +148,9 @@
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
+                    <?php if ($is_premium): ?>
+                        <span class="premium-tag">PREMIUM</span>
+                    <?php endif; ?>
                     <a href="<?php the_permalink(); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
@@ -249,11 +260,16 @@
             }
             
             $division = get_post_meta($post_id, 'division', true);
+            $is_premium = false;
             if (!empty($description) || !empty($division)) {
                 $total_views = get_average_series_views($post_id, $series_id);
                 $average_rating = get_custom_average_rating($post_id, $series_id);
 
                 $episode_count = 0;
+
+                $is_premium = $wpdb->get_var(
+                    $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                ) > 0;
 
                 if ($series_id) {
                     $related_stories = new WP_Query([
@@ -278,6 +294,9 @@
         ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
+                    <?php if ($is_premium): ?>
+                        <span class="premium-tag">PREMIUM</span>
+                    <?php endif; ?>
                     <a href="<?php the_permalink(); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [

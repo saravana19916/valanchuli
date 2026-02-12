@@ -3,28 +3,41 @@ get_header(); ?>
 
 <?php 
 global $wpdb;
-$premium_table = $wpdb->prefix . 'premium_story_rules';
 
-    $context = $_GET['context'] ?? '';
-    $user_id = $_GET['user_id'] ?? '';
+$context = $args['context'] ?? '';
+$current_user = $args['user_id'] ?? '';
 
+$table = $wpdb->prefix . 'premium_story_rules';
+
+// Get all unique post_ids from the premium_story_rules table
+$post_ids = $wpdb->get_col( "SELECT DISTINCT post_id FROM $table" );
+
+// If context is "my-creations", filter by current user
+if ($current_user) {
+    $author_post_ids = get_posts([
+        'post_type'      => 'post',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'author'         => $current_user,
+        'fields'         => 'ids',
+        'include'        => $post_ids,
+    ]);
+    $post_ids = $author_post_ids;
+}
+
+$premium_stories = [];
+if (!empty($post_ids)) {
     $args = [
-        'post_type'      => ['post'],
+        'post_type'      => 'post',
+        'post__in'       => $post_ids,
         'posts_per_page' => -1,
         'post_status'    => 'publish',
     ];
-    
-    if (!empty($user_id)) {
-        $args['author'] = (int) $user_id;
-    }
-    
-    $novel_query = new WP_Query($args);
-    
-    $novel_stories = [];
-    
-    if ($novel_query->have_posts()) {
-        while ($novel_query->have_posts()) {
-            $novel_query->the_post();
+    $query = new WP_Query($args);
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
             $division = get_post_meta($post_id, 'division', true);
@@ -34,8 +47,8 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
                 $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
 
                 $views = get_average_series_views($post_id, $series_id);
-        
-                $novel_stories[] = [
+
+                $premium_stories[] = [
                     'post' => get_post(),
                     'views' => $views,
                 ];
@@ -43,17 +56,27 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
         }
         wp_reset_postdata();
     }
+}
 
-    usort($novel_stories, function ($a, $b) {
-        return $b['views'] <=> $a['views'];
-    });
+usort($premium_stories, function ($a, $b) {
+    return $b['views'] <=> $a['views'];
+});
+
+$total_premium_count = count($premium_stories);
+
+$premiumUrl = add_query_arg([
+    'context' => $context,
+    'user_id'  => $current_user
+], get_permalink(get_page_by_path('novels')));
+
+// Now use $premium_stories instead of $novel_stories for your display logic
 ?>
 
 <div class="container my-4">
 	<div class="row">
-        <h4 class="py-2 fw-bold m-0">🔥 நாவல்கள்</h4>
+        <h4 class="py-2 fw-bold m-0">🔥 Premium Stories</h4>
         <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-center justify-content-sm-start" style="gap: 2rem;">
-            <?php foreach ($novel_stories as $index => $item): ?>
+            <?php foreach ($premium_stories as $index => $item): ?>
                 <?php
                     $post = $item['post'];
                     setup_postdata($post);
@@ -64,6 +87,8 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
                     $average_rating = get_custom_average_rating($post_id, $series_id);
 
                     $episode_count = 0;
+                    
+                    $is_competition = get_post_meta($post_id, 'competition', true);
 
                     if ($series_id) {
                         $related_stories = new WP_Query([
@@ -84,16 +109,9 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
 
                         $episode_count = $related_stories->found_posts;
                     }
-
-                    $is_premium = $wpdb->get_var(
-                        $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
-                    ) > 0;
                 ?>
                 <div class="page-post-image-size-div">
                         <div class="position-relative">
-                            <?php if ($is_premium): ?>
-                                <span class="premium-tag">PREMIUM</span>
-                            <?php endif; ?>
                             <a href="<?php the_permalink(); ?>">
                                 <?php if (has_post_thumbnail()) : ?>
                                     <?php the_post_thumbnail('medium', [

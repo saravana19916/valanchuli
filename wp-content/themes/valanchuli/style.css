@@ -52,6 +52,10 @@ body, html {
    color: #FFEB00;
 }
 
+.bg-price-color {
+    background-color: #005d6729;
+}
+
 .fs-10px {
     font-size: 10px !important;
 }
@@ -610,4 +614,72 @@ a:hover, .footer-menu li:hover {
 .single-page-content img {
     width: 180px;
     height: 270px;
+}
+
+.premium-tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(90deg, #fbb034 0%, #ffdd00 100%);
+    color: #222;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 4px 16px 4px 8px;
+    border-top-left-radius: 8px;
+    border-bottom-right-radius: 16px;
+    z-index: 2;
+    letter-spacing: 1px;
+}
+
+/* ===== LOCKED BACKDROP EFFECT ===== */
+
+.episode-backdrop {
+    position: relative;
+    background: #cfcfcf;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* Dim + blur only when locked */
+.episode-backdrop.is-locked .episode-content {
+    opacity: 0.35;
+    filter: blur(0.4px);
+    pointer-events: none;
+}
+
+/* Overlay */
+.lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+}
+
+/* Image-based lock */
+.lock-image img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.35));
+}
+
+
+/* Unlock text */
+.unlock-label {
+    position: absolute;
+    margin-top: 18%;
+    font-size: 14px;
+    color: #005d67;
+}
+
+.key-pack-card {
+    width: 130px;
+    height: 150px;
+}
+.key-pack-overlay {
+    pointer-events: none;
 }

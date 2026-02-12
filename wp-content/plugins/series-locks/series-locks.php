@@ -36,6 +36,10 @@ add_action('admin_init', function () {
         'common_episode_lock_group',
         'common_episode_lock'
     );
+    register_setting(
+        'common_episode_lock_group',
+        'common_coin_unlock'
+    );
 });
 
 function render_common_episode_lock_page() {
@@ -59,7 +63,20 @@ function render_common_episode_lock_page() {
                                name="common_episode_lock"
                                value="<?php echo esc_attr(get_option('common_episode_lock')); ?>"
                                class="regular-text"
-                               placeholder="Enter episode lock message">
+                               placeholder="Enter episode lock from">
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        Key to Unlock
+                    </th>
+                    <td>
+                        <input type="text"
+                               name="common_coin_unlock"
+                               value="<?php echo esc_attr(get_option('common_coin_unlock')); ?>"
+                               class="regular-text"
+                               placeholder="Enter key to unlock">
                     </td>
                 </tr>
             </table>
@@ -298,7 +315,7 @@ function render_series_lock_form($post_ids) {
                 <td>
                     <select name="lock_type[]">
                         <option value="ads" '.selected($lock['type'],'ads',false).'>Ads Lock</option>
-                        <option value="coin" '.selected($lock['type'],'coin',false).'>Coin Lock</option>
+                        <option value="coin" '.selected($lock['type'],'coin',false).'>Key Lock</option>
                     </select>
                 </td>
                 <td><input type="number" name="lock_from[]" value="'.esc_attr($lock['from']).'" min="1"></td>
@@ -320,7 +337,7 @@ document.getElementById('add-lock').addEventListener('click', function() {
         <td>
             <select name="lock_type[]">
                 <option value="ads">Ads Lock</option>
-                <option value="coin">Coin Lock</option>
+                <option value="coin">Key Lock</option>
             </select>
         </td>
         <td><input type="number" name="lock_from[]" min="1"></td>

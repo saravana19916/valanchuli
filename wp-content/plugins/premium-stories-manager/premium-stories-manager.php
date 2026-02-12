@@ -22,9 +22,8 @@ function psm_create_table() {
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         post_id BIGINT NOT NULL,
         episode_from INT NULL,
-        episode_to INT NULL,
-        price DECIMAL(10,2) NOT NULL,
-        offer_price DECIMAL(10,2) DEFAULT NULL,
+        coin INT NOT NULL,
+        offer_coin INT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
 
@@ -64,7 +63,6 @@ function psm_admin_page() {
     if (isset($_POST['psm_save'])) {
 
         $episode_from = ($_POST['episode_from'] !== '') ? intval($_POST['episode_from']) : null;
-        $episode_to   = ($_POST['episode_to'] !== '') ? intval($_POST['episode_to']) : null;
 
         if (!empty($_POST['rule_id'])) {
 
@@ -72,13 +70,11 @@ function psm_admin_page() {
                 $table,
                 [
                     'episode_from' => $episode_from,
-                    'episode_to'   => $episode_to,
-                    'price'        => floatval($_POST['price']),
-                    'offer_price'  => floatval($_POST['offer_price']),
+                    'coin'         => intval($_POST['coin']),
+                    'offer_coin'   => ($_POST['offer_coin'] !== '') ? intval($_POST['offer_coin']) : null,
                 ],
                 ['id' => intval($_POST['rule_id'])],
-                ['%d','%d','%f','%f'],
-                ['%d']
+                ['%d','%d','%d']
             );
 
             echo '<div class="updated notice"><p>Premium rule updated successfully.</p></div>';
@@ -99,11 +95,10 @@ function psm_admin_page() {
                     [
                         'post_id'      => intval($story_id),
                         'episode_from' => $episode_from,
-                        'episode_to'   => $episode_to,
-                        'price'        => floatval($_POST['price']),
-                        'offer_price'  => floatval($_POST['offer_price']),
+                        'coin'         => intval($_POST['coin']),
+                        'offer_coin'   => ($_POST['offer_coin'] !== '') ? intval($_POST['offer_coin']) : null,
                     ],
-                    ['%d','%d','%d','%f','%f']
+                    ['%d','%d','%d','%d']
                 );
             }
 
@@ -111,24 +106,34 @@ function psm_admin_page() {
         }
     }
 
+    // Handle delete action
+    if (isset($_GET['delete'])) {
+        $delete_id = intval($_GET['delete']);
+        $wpdb->delete($table, ['id' => $delete_id]);
+        echo '<div class="updated notice"><p>Premium rule deleted successfully.</p></div>';
+        // Optionally, redirect to avoid resubmission on refresh
+        echo '<script>location.href="' . admin_url('admin.php?page=premium-stories') . '";</script>';
+        return;
+    }
+
     $selected_series = isset($_GET['series']) ? sanitize_text_field($_GET['series']) : '';
 
-    $series_list = $wpdb->get_col("
-        SELECT DISTINCT meta_value
-        FROM {$wpdb->postmeta}
-        WHERE meta_key = 'division'
-        AND meta_value != ''
+    $series_list = $wpdb->get_results("
+        SELECT DISTINCT
+            p.ID,
+            p.post_title
+        FROM {$table} t
+        INNER JOIN {$wpdb->posts} p 
+            ON p.ID = t.post_id
+        WHERE p.post_status = 'publish'
     ");
 
     $where = '';
     if ($selected_series) {
-        $where = $wpdb->prepare("
-            AND post_id IN (
-                SELECT post_id FROM {$wpdb->postmeta}
-                WHERE meta_key = 'division'
-                AND meta_value = %s
-            )
-        ", $selected_series);
+        $where = $wpdb->prepare(
+            " AND post_id = %d",
+            $selected_series
+        );
     }
 
     $rules = $wpdb->get_results("
@@ -149,6 +154,27 @@ function psm_admin_page() {
 
     <div class="wrap">
         <h1>Premium Stories</h1>
+
+        <?php
+        // Save unlock duration setting
+        if (isset($_POST['psm_unlock_duration_save'])) {
+            update_option('psm_unlock_duration_years', intval($_POST['unlock_duration_years']));
+            echo '<div class="updated notice"><p>Unlock duration saved.</p></div>';
+        }
+        $unlock_duration_years = get_option('psm_unlock_duration_years', 1);
+        ?>
+
+        <div class="wrap" style="margin-bottom: 24px;">
+            <h2>Premium Story Unlock Settings</h2>
+            <form method="post" style="margin-bottom: 0; margin-top: 10px;">
+                <label for="unlock_duration_years"><strong>Unlock Duration (years):</strong></label>
+                <input type="number" name="unlock_duration_years" id="unlock_duration_years"
+                    value="<?php echo esc_attr($unlock_duration_years); ?>" style="width: 60px;">
+                <button type="submit" name="psm_unlock_duration_save" class="button button-secondary">Save</button>
+            </form>
+        </div>
+
+        <hr/>
 
         <form method="post">
             <?php if ($edit_rule): ?>
@@ -175,29 +201,26 @@ function psm_admin_page() {
                 </tr>
 
                 <tr>
-                    <th>Episode Range (Optional)</th>
+                    <th>Episode Range</th>
                     <td>
                         From <input type="number" name="episode_from" style="width:80px;"
                             value="<?= $edit_rule ? esc_attr($edit_rule->episode_from) : ''; ?>">
-                        To <input type="number" name="episode_to" style="width:80px;"
-                            value="<?= $edit_rule ? esc_attr($edit_rule->episode_to) : ''; ?>">
-                        <p class="description">Leave empty to make entire story premium</p>
                     </td>
                 </tr>
 
                 <tr>
-                    <th>Price (₹)</th>
+                    <th>Key</th>
                     <td>
-                        <input type="number" name="price" step="0.01" required
-                               value="<?= $edit_rule ? esc_attr($edit_rule->price) : ''; ?>">
+                        <input type="number" name="coin" required
+                               value="<?= $edit_rule ? esc_attr($edit_rule->coin) : ''; ?>">
                     </td>
                 </tr>
 
                 <tr>
-                    <th>Offer Price (₹)</th>
+                    <th>Offer Key</th>
                     <td>
-                        <input type="number" name="offer_price" step="0.01"
-                               value="<?= $edit_rule ? esc_attr($edit_rule->offer_price) : ''; ?>">
+                        <input type="number" name="offer_coin"
+                               value="<?= $edit_rule ? esc_attr($edit_rule->offer_coin) : ''; ?>">
                     </td>
                 </tr>
 
@@ -214,15 +237,18 @@ function psm_admin_page() {
 
         <form method="get" style="margin-bottom:15px;">
             <input type="hidden" name="page" value="premium-stories">
+
             <select name="series">
                 <option value="">All Series</option>
+
                 <?php foreach ($series_list as $series): ?>
-                    <option value="<?= esc_attr($series); ?>"
-                        <?= selected($selected_series, $series, false); ?>>
-                        <?= esc_html($series); ?>
+                    <option value="<?= esc_attr($series->ID); ?>"
+                        <?= selected($selected_series, $series->ID, false); ?>>
+                        <?= esc_html($series->post_title); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+
             <button class="button">Filter</button>
         </form>
 
@@ -231,8 +257,8 @@ function psm_admin_page() {
                 <tr>
                     <th>Story</th>
                     <th>Episodes</th>
-                    <th>Price</th>
-                    <th>Offer Price</th>
+                    <th>Key</th>
+                    <th>Offer Key</th>
                     <th>Created</th>
                     <th>Action</th>
                 </tr>
@@ -241,13 +267,18 @@ function psm_admin_page() {
                 <?php if ($rules): foreach ($rules as $rule): ?>
                     <tr>
                         <td><?= esc_html(get_the_title($rule->post_id)); ?></td>
-                        <td><?= is_null($rule->episode_from) ? 'All Episodes' : esc_html($rule->episode_from . ' – ' . $rule->episode_to); ?></td>
-                        <td>₹<?= esc_html($rule->price); ?></td>
-                        <td><?= $rule->offer_price ? '₹' . esc_html($rule->offer_price) : '-'; ?></td>
+                        <td><?= esc_html($rule->episode_from); ?></td>
+                        <td><?= esc_html($rule->coin); ?></td>
+                        <td><?= esc_html($rule->offer_coin); ?></td>
                         <td><?= esc_html($rule->created_at); ?></td>
                         <td>
                             <a href="<?= admin_url('admin.php?page=premium-stories&edit=' . $rule->id); ?>">
                                 Edit
+                            </a>
+                            |
+                            <a href="<?= admin_url('admin.php?page=premium-stories&delete=' . $rule->id); ?>"
+                               onclick="return confirm('Are you sure you want to delete this premium rule?');">
+                                Delete
                             </a>
                         </td>
                     </tr>

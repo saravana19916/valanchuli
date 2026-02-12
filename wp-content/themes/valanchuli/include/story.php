@@ -21,7 +21,7 @@ add_action('wp_head', function() {
         return;
     }
 
-    $competitionOgImage = '';
+    // $competitionOgImage = '';
     $image_id = get_post_meta($post->ID, '_competition_image_id', true);
     if ($image_id) {
         $competitionImage = wp_get_attachment_image_url($image_id, 'full');
@@ -31,14 +31,12 @@ add_action('wp_head', function() {
     }
 
     if (!empty($competitionOgImage)) {
-        // ------------- remove existing og:image / twitter:image tags from buffer -------------
         $buffer = preg_replace(
             '/<meta[^>]+(property|name)=([\'"])(og:image|twitter:image)\2[^>]*>\s*/i',
             '',
             $buffer
         );
 
-        // ------------- prepare our tags to inject -------------
         $our_meta  = "\n<!-- Custom OG Image injected by product_og_image -->\n";
         $our_meta .= '<meta property="og:image" content="' . esc_url($competitionOgImage) . '">' . "\n";
         $our_meta .= '<meta property="og:image:secure_url" content="' . esc_url($competitionOgImage) . '">' . "\n";
@@ -47,12 +45,9 @@ add_action('wp_head', function() {
         $our_meta .= '<meta property="og:type" content="website">' . "\n";
         $our_meta .= '<meta name="twitter:image" content="' . esc_url($competitionOgImage) . '">' . "\n";
 
-        // ------------- inject before closing head if present, otherwise append -------------
         if ( stripos( $buffer, '</head>' ) !== false ) {
-            // insert our tags just before </head>
             $buffer = preg_replace( '/<\/head>/i', $our_meta . '</head>', $buffer, 1 );
         } else {
-            // fallback: append to buffer
             $buffer .= $our_meta;
         }
     }
@@ -467,9 +462,50 @@ function save_story_ajax() {
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
         wp_set_post_terms($post_id, [$series], 'series');
+        addEpisodeNumber($storyType, $storySubType, $series, $post_id);
     }
 
     wp_send_json_success('Story saved successfully');
+}
+
+function addEpisodeNumber($storyType, $storySubType, $series, $post_id) {
+    if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
+        $series_term = get_term_by('name', $series, 'series');
+        $episode_number = 1;
+
+        if ($series_term) {
+            $args = [
+                'post_type'      => 'post',
+                'posts_per_page' => 1,
+                'post_status'    => ['publish', 'draft'],
+                'orderby'        => 'meta_value_num',
+                'order'          => 'DESC',
+                'tax_query'      => [
+                    [
+                        'taxonomy' => 'series',
+                        'field'    => 'term_id',
+                        'terms'    => $series_term->term_id,
+                    ],
+                ],
+                'meta_query' => [
+                    [
+                        'key' => 'episode_number',
+                        'compare' => 'EXISTS',
+                    ],
+                ],
+                'fields' => 'ids',
+            ];
+            $query = new WP_Query($args);
+            if ($query->have_posts()) {
+                $last_post_id = $query->posts[0];
+                $last_episode_number = get_post_meta($last_post_id, 'episode_number', true);
+                $episode_number = intval($last_episode_number) + 1;
+            }
+        }
+
+        // Now store the new episode number
+        update_post_meta($post_id, 'episode_number', $episode_number);
+    }
 }
 
 // Draft save
@@ -580,6 +616,7 @@ function handle_save_draft() {
 
     if ($storyType == 'தொடர்கதை' && $storySubType == 'episode') {
         wp_set_post_terms($post_id, [$series], 'series');
+        addEpisodeNumber($storyType, $storySubType, $series, $post_id);
     }
 
     wp_send_json_success([

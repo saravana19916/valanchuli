@@ -14,7 +14,16 @@ require_once get_template_directory() . '/include/story-single.php';
 require_once get_template_directory() . '/include/profile.php';
 require_once get_template_directory() . '/include/lock.php';
 require_once get_template_directory() . '/include/admin-customisation.php';
+require_once get_template_directory() . '/include/site-message.php';
+require_once get_template_directory() . '/include/coin-pack-settings.php';
+require_once get_template_directory() . '/include/unlock.php';
+// require_once get_template_directory() . '/include/ad-lock-settings.php';
+// require_once get_template_directory() . '/include/revenue-settings.php';
 require_once get_template_directory() . '/include/subscription.php';
+require_once get_template_directory() . '/include/payment.php';
+// require_once get_template_directory() . '/include/add-subscription-transaction.php';
+// require_once get_template_directory() . '/include/add-coin-transaction.php';
+// require_once get_template_directory() . '/include/active-subscription-list.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -69,6 +78,15 @@ function enqueue_trumbowyg() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'enqueue_trumbowyg');
+
+add_action('pre_get_users', function ($query) {
+    if (
+        is_admin()
+    ) {
+        $query->set('orderby', 'user_registered');
+        $query->set('order', 'DESC');
+    }
+});
 
 add_action('wp_ajax_trumbowyg_upload', 'trumbowyg_upload_callback');
 add_action('wp_ajax_nopriv_trumbowyg_upload', 'trumbowyg_upload_callback');
@@ -378,5 +396,55 @@ function search_by_title_only( $search, $wp_query ) {
     return $search;
 }
 add_filter( 'posts_search', 'search_by_title_only', 10, 2 );
+
+// add episode number
+function assign_episode_number_to_series() {
+    $series = get_posts([
+        'post_type'  => 'post',
+        'numberposts' => -1,
+        'meta_query' => [[
+            'key'     => 'division',
+            'compare' => 'EXISTS'
+        ]],
+    ]);
+
+    foreach ($series as $post) {
+        update_post_meta($post->ID, 'is_series', true);
+        $episode_number = 1;
+        $postId = $post->ID;
+
+        $terms = get_the_terms($postId, 'series');
+
+        $series_term = $terms[0];
+
+        $query = new WP_Query([
+            'post_type'      => 'post',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'orderby'        => 'date',
+            'order'          => 'ASC',
+            'post__not_in'   => [$postId],
+            'tax_query'      => [
+                [
+                    'taxonomy' => 'series',
+                    'field'    => 'term_id',
+                    'terms'    => [$series_term->term_id],
+                ],
+            ],
+        ]);
+        $episodes = $query->posts;
+
+        foreach ($episodes as $episode) {
+            update_post_meta($episode->ID, 'episode_number', $episode_number);
+            $episode_number++;
+        }
+    }
+
+    // Reset post data after custom query
+    wp_reset_postdata();
+}
+
+// Hook the function to run when WordPress initializes
+// add_action('init', 'assign_episode_number_to_series');
 
 ?>

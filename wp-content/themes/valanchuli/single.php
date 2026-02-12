@@ -84,7 +84,7 @@
                                     ]);
                                     ?>
 
-                                    <div class="row col-12 p-2 mb-4 border border-2 border-primary rounded mx-auto">
+                                    <div class="row col-12 p-2 border border-2 border-primary rounded mx-auto">
                                         <!-- Image Section -->
                                         <div class="col-12 text-center mb-3">
                                             <?php if (has_post_thumbnail()) : ?>
@@ -122,40 +122,133 @@
                                         </div>
                                     </div>
 
+                                    <?php
+                                        global $wpdb;
+                                        $premium_table = $wpdb->prefix . 'premium_story_rules';
+
+                                        $premium_rule = $wpdb->get_row(
+                                            $wpdb->prepare("SELECT * FROM $premium_table WHERE post_id = %d", $post_id)
+                                        );
+
+                                        // Check if unlocked for this user
+                                        $is_unlocked = false;
+                                        if ($premium_rule && is_user_logged_in()) {
+                                            $user_id = get_current_user_id();
+                                            $unlock_table = $wpdb->prefix . 'premium_story_unlocks';
+                                            $unlock = $wpdb->get_row($wpdb->prepare(
+                                                "SELECT * FROM $unlock_table WHERE user_id = %d AND series_id = %d AND unlock_until >= %s ORDER BY unlock_until DESC LIMIT 1",
+                                                $user_id, $post_id, current_time('mysql')
+                                            ));
+                                            if ($unlock) {
+                                                $is_unlocked = true;
+                                            }
+                                        }
+
+                                        if ($premium_rule && !$is_unlocked) {
+                                    ?>
+                                        <div style="background:#004d4d;color:#fff;padding:10px;border-radius:0 0 10px 10px;margin-top:-4px;" class="text-center">
+                                            <div style="font-size:1.1rem;">
+                                                முழுகதையும் படிக்க இப்பொழுதே unlock செய்யுங்கள்
+                                            </div>
+                                            <div style="font-size:1.1rem;" class="mt-2">
+                                                UnLock full story:
+                                                <?php if (!empty($premium_rule->offer_coin) && $premium_rule->offer_coin > 0): ?>
+                                                    <span style="text-decoration:line-through;color:#ffd600;">
+                                                        <?php echo esc_html($premium_rule->coin); ?>
+                                                    </span>
+                                                    <span style="color:#ffd600;font-weight:bold;font-size:1.3rem;">
+                                                        <?php echo esc_html($premium_rule->offer_coin); ?> Key
+                                                    </span>
+                                                    <div style="font-size:1.1rem;margin-top:6px;">
+                                                        One Day Offer: <span style="color:#ffd600;font-weight:bold;"><?php echo esc_html($premium_rule->offer_coin); ?> Key</span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span style="color:#ffd600;font-weight:bold;font-size:1.3rem;">
+                                                        <?php echo esc_html($premium_rule->coin); ?> Key
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="my-2">
+                                                <button
+                                                    type="button" class="btn btn-warning fw-bold lock-episode"
+                                                    data-lock-type="premium"
+                                                    data-coin="<?php echo esc_attr($premium_rule->coin); ?>"
+                                                    data-offer-coin="<?php echo esc_attr($premium_rule->offer_coin); ?>"
+                                                >
+                                                    Unlock Now
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <?php } ?>
+
                                     <?php $series_id = get_the_ID(); ?>
 
                                     <h4 class="mt-5 fw-bold">பாகங்கள் (<?php echo $related_stories->found_posts; ?>)</h4>
 
                                     <?php if ($related_stories->have_posts()) { ?>
                                         <div class="row mt-2">
-                                            <?php $count = 0; ?>
+                                            <?php
+                                                $count = 0;
+                                                $episode_map_for_Key = [];
+                                                $episode_map_for_All = [];
+                                                $episodeIdToLockType = [];
+                                            ?>
                                             <?php while ($related_stories->have_posts()) : $related_stories->the_post(); ?>
                                                 <div class="col-12 col-md-6 col-xl-4 my-3">
-                                                    <div class="w-100 p-4 shadow rounded">
-                                                        <?php
-                                                            $episode_id = get_the_ID();
-                                                            $average_rating = get_custom_average_rating(get_the_ID());
-                                                            $total_views = get_custom_post_views(get_the_ID());
-                                                        ?>
+                                                    <?php
+                                                        $episode_id = get_the_ID();
+                                                        $episodeNumber = get_post_meta($episode_id, 'episode_number', true);
+                                                        $average_rating = get_custom_average_rating(get_the_ID());
+                                                        $total_views = get_custom_post_views(get_the_ID());
+
+                                                        $lock_status = get_episode_lock_status($series_id, $episode_id, $count + 1);
+                                                        $locked = $lock_status['locked'];
+                                                        $lock_type = $lock_status['type'];
+                                                    ?>
+
+                                                    <div class="w-100 p-4 shadow rounded <?php echo $locked ? 'episode-backdrop is-locked' : ''; ?>">
                                                         <div>
                                                             <div class="d-flex justify-content-between align-items-center">
                                                                 <h6 class="mb-0 fw-bold">
                                                                     <?php echo sprintf("%2d", $count + 1); ?>.&nbsp;
                                                                     <?php
-                                                                        $lock_status = get_episode_lock_status($series_id, $episode_id, $count + 1);
-                                                                        $locked = $lock_status['locked'];
-                                                                        $lock_type = $lock_status['type'];
                                                                         if ($locked):
+                                                                            if (
+                                                                                (is_array($lock_type) && in_array('coin', $lock_type)) ||
+                                                                                $lock_type === 'coin'
+                                                                            ) {
+                                                                                $episode_map_for_Key[$episodeNumber] = $episode_id;
+                                                                            }
+                                                                            $episode_map_for_All[$episodeNumber] = $episode_id;
+                                                                            $episodeIdToLockType[$episode_id] = is_array($lock_type) ? $lock_type : [$lock_type];
                                                                     ?>
-                                                                        <a href="javascript:void(0);" 
-                                                                            class="locked-episode" 
-                                                                            data-lock-type="<?php echo esc_attr($lock_type); ?>"
-                                                                            onclick="showLockPopup('<?php echo esc_js($lock_type); ?>')">
-                                                                            <?php echo esc_html(get_the_title()); ?>
-                                                                            <i class="fa-solid fa-lock text-danger ms-2"></i>
-                                                                        </a>
+                                                                        <?php echo esc_html(get_the_title()); ?>
+
+                                                                        <div class="lock-overlay lock-episode"
+                                                                            data-episode-id="<?php echo $episode_id; ?>"
+                                                                            data-parent-id="<?php echo $series_id; ?>"
+                                                                            data-episode-number="<?php echo $episodeNumber; ?>"
+                                                                            data-lock-type="<?php echo is_array($lock_type) ? implode(',', $lock_type) : $lock_type; ?>"
+                                                                            <?php if ($lock_type === 'premium'): ?>
+                                                                                data-coin="<?php echo esc_attr($lock_status['coin']); ?>"
+                                                                                data-offer-coin="<?php echo esc_attr($lock_status['offer_coin']); ?>"
+                                                                            <?php endif; ?>
+                                                                            >
+
+                                                                            <div class="lock-image">
+                                                                                <img 
+                                                                                    src="<?php echo esc_url(get_stylesheet_directory_uri() . '/images/lock-coin.png'); ?>" 
+                                                                                    alt="Locked Episode">
+                                                                            </div>
+
+                                                                            <!-- <div class="unlock-label">
+                                                                                Unlock with 50 Coins
+                                                                            </div> -->
+                                                                        </div>
                                                                     <?php else: ?>
-                                                                        <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                        <div class="unlocked" data-episode-number="<?php echo $episodeNumber; ?>">
+                                                                            <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                        </div>
                                                                     <?php endif; ?>
                                                                 </h6>
 
@@ -304,154 +397,203 @@
                                     <?php 
                                 }
                             } else { ?>
-                                <?php increase_story_view_count(); ?>
-
-                                <div class="row col-12 mb-3 mx-auto">
-                                    <!-- Image Section -->
-                                    <div class="col-12 text-center mb-3">
-                                        <?php if (has_post_thumbnail()) : ?>
-                                            <?php the_post_thumbnail('medium', [
-                                                'class' => 'img-fluid d-inline-block rounded post-image-size',
-                                            ]); ?>
-                                        <?php else : ?>
-                                            <!-- <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                                class="img-fluid d-inline-block rounded post-image-size"
-                                                alt="Default Image"> -->
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-
-                                <div class="py-2 single-page-content">
-                                    <?php
-                                        the_content();
-                                    ?>
-                                </div>
-
                                 <?php
-                                    $series = get_the_terms(get_the_ID(), 'series');
-                                    $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
-                                    $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
-                                    $is_parent = $series_name == 'தொடர்கதை அல்ல' ? false : true;
-                                ?>
+                                    global $wpdb;
+                                    $post_id = get_the_ID();
+                                    $user_id = get_current_user_id();
 
-                                <?php
-                                    if ($is_parent && $series_id) :
-                                        // Get all posts from the same series ordered by date
-                                        $episodes = get_posts([
-                                            'post_type'      => 'post',
-                                            'posts_per_page' => -1,
-                                            'orderby'        => 'date',
-                                            'order'          => 'ASC',
-                                            'tax_query'      => [
-                                                [
-                                                    'taxonomy' => 'series',
-                                                    'field'    => 'term_id',
-                                                    'terms'    => $series_id,
-                                                ],
+                                    // Get series info
+                                    $terms = get_the_terms($post_id, 'series');
+                                    $series_id = ($terms && !is_wp_error($terms)) ? $terms[0]->term_id : 0;
+
+                                    $series_posts = get_posts([
+                                        'post_type'      => 'post',
+                                        'posts_per_page' => 1,
+                                        'orderby'        => 'date',
+                                        'order'          => 'ASC',
+                                        'tax_query'      => [
+                                            [
+                                                'taxonomy' => 'series',
+                                                'field'    => 'term_id',
+                                                'terms'    => $series_id,
                                             ],
-                                        ]);
+                                        ],
+                                    ]);
 
-                                        $episode_ids = wp_list_pluck($episodes, 'ID');
-                                        $current_index = array_search(get_the_ID(), $episode_ids);
+                                    $parent_post_id = !empty($series_posts) ? $series_posts[0]->ID : 0;
 
-                                        $prev_episode_id = ($current_index > 1) ? $episode_ids[$current_index - 1] : null;
-                                        $next_episode_id = ($current_index < count($episode_ids) - 1) ? $episode_ids[$current_index + 1] : null;
+                                    // Get episode number (adjust if your meta key is different)
+                                    $episode_number = get_post_meta($post_id, 'episode_number', true);
 
-                                        $series_posts = get_posts([
-                                            'post_type'      => 'post',
-                                            'posts_per_page' => 1,
-                                            'orderby'        => 'date',
-                                            'order'          => 'ASC',
-                                            'tax_query'      => [
-                                                [
-                                                    'taxonomy' => 'series',
-                                                    'field'    => 'term_id',
-                                                    'terms'    => $series_id,
-                                                ],
-                                            ],
-                                        ]);
-
-                                        $series_parent_url = !empty($series_posts)
-                                            ? get_permalink($series_posts[0]->ID)
-                                            : home_url();
+                                    // Check lock status
+                                    $lock_status = get_episode_lock_status($parent_post_id, $post_id, $episode_number);
+                                    if ($lock_status['locked']) {
+                                        // Show lock message and stop further rendering
                                         ?>
-
-                                        <div class="episode-navigation row my-4">
-                                            <div class="col-6 text-start">
-                                                <?php if ($prev_episode_id): ?>
-                                                    <button type="button"
-                                                        class="btn btn-primary"
-                                                        onclick="window.location.href='<?php echo esc_url(get_permalink($prev_episode_id)); ?>'">
-                                                        ← Previous Episode
-                                                    </button>
-                                                <?php endif; ?>
-                                            </div>
-
-                                            <div class="col-6 text-end">
-                                                <button type="button"
-                                                    class="btn btn-primary"
-                                                    onclick="window.location.href='<?php echo esc_url($series_parent_url); ?>'">
-                                                    ← Back
-                                                </button>
-
-                                                <?php if ($next_episode_id): ?>
-                                                    <button type="button"
-                                                        class="btn btn-primary ms-2"
-                                                        onclick="window.location.href='<?php echo esc_url(get_permalink($next_episode_id)); ?>'">
-                                                        Next Episode →
-                                                    </button>
-                                                <?php endif; ?>
+                                        <div class="container my-5">
+                                            <div class="row justify-content-center">
+                                                <div class="col-12 text-center">
+                                                    <div class="p-4 rounded shadow" style="background:#f8f9fa;max-width:400px;margin:auto;">
+                                                        <img src="<?php echo get_template_directory_uri(); ?>/images/lock-coin.png" alt="Locked" style="width:64px;">
+                                                        <h4 class="mt-3 mb-2 text-danger">This episode is locked</h4>
+                                                        <p class="mb-3">Unlock to read this episode.</p>
+                                                        <!-- Optionally, add unlock button/modal trigger here -->
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+                                        <?php
+                                    } else {
+                                ?>
+                                    <?php increase_story_view_count(); ?>
 
-                                    <?php endif; ?>
+                                    <div class="row col-12 mb-3 mx-auto">
+                                        <!-- Image Section -->
+                                        <div class="col-12 text-center mb-3">
+                                            <?php if (has_post_thumbnail()) : ?>
+                                                <?php the_post_thumbnail('medium', [
+                                                    'class' => 'img-fluid d-inline-block rounded post-image-size',
+                                                ]); ?>
+                                            <?php else : ?>
+                                                <!-- <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                                                    class="img-fluid d-inline-block rounded post-image-size"
+                                                    alt="Default Image"> -->
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
 
-                                <div
-                                    class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
-                                    data-post-id="<?php the_ID(); ?>"
-                                    data-series-id="<?php echo esc_attr($series_id); ?>"Add commentMore actions
-                                    data-post-parent="<?php echo $is_parent; ?>">
-                                        <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
-                                        <p class="mb-2">Click on a star to rate it!</p>
-                                        <div class="stars">
-                                            <?php
-                                                $user_id = get_current_user_id();
-                                                $post_id = get_the_ID();
-                                                $rating = get_user_rating_for_post($user_id, $post_id);
+                                    <div class="py-2 single-page-content">
+                                        <?php
+                                            the_content();
+                                        ?>
+                                    </div>
+
+                                    <?php
+                                        $series = get_the_terms(get_the_ID(), 'series');
+                                        $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
+                                        $series_id = ($series && !is_wp_error($series)) ? $series[0]->term_id : 0;
+                                        $is_parent = $series_name == 'தொடர்கதை அல்ல' ? false : true;
+                                    ?>
+
+                                    <?php
+                                        if ($is_parent && $series_id) :
+                                            // Get all posts from the same series ordered by date
+                                            $episodes = get_posts([
+                                                'post_type'      => 'post',
+                                                'posts_per_page' => -1,
+                                                'orderby'        => 'date',
+                                                'order'          => 'ASC',
+                                                'tax_query'      => [
+                                                    [
+                                                        'taxonomy' => 'series',
+                                                        'field'    => 'term_id',
+                                                        'terms'    => $series_id,
+                                                    ],
+                                                ],
+                                            ]);
+
+                                            $episode_ids = wp_list_pluck($episodes, 'ID');
+                                            $current_index = array_search(get_the_ID(), $episode_ids);
+
+                                            $prev_episode_id = ($current_index > 1) ? $episode_ids[$current_index - 1] : null;
+                                            $next_episode_id = ($current_index < count($episode_ids) - 1) ? $episode_ids[$current_index + 1] : null;
+
+                                            $series_posts = get_posts([
+                                                'post_type'      => 'post',
+                                                'posts_per_page' => 1,
+                                                'orderby'        => 'date',
+                                                'order'          => 'ASC',
+                                                'tax_query'      => [
+                                                    [
+                                                        'taxonomy' => 'series',
+                                                        'field'    => 'term_id',
+                                                        'terms'    => $series_id,
+                                                    ],
+                                                ],
+                                            ]);
+
+                                            $series_parent_url = !empty($series_posts)
+                                                ? get_permalink($series_posts[0]->ID)
+                                                : home_url();
                                             ?>
 
-                                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
-                                            <?php endfor; ?>
-                                        </div>
-                                        <p>No votes so far! Be the first to rate this post.</p>
-                                </div>
-                                
-                                <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="loginRequiredLabel">Login Required</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body text-center">
-                                            You must be logged in to rate. <br>
-                                            <a href="#" class="btn btn-primary mt-3 login-btn">Login</a>
-                                        </div>
-                                        </div>
+                                            <div class="episode-navigation row my-4">
+                                                <div class="col-6 text-start">
+                                                    <?php if ($prev_episode_id): ?>
+                                                        <button type="button"
+                                                            class="btn btn-primary"
+                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($prev_episode_id)); ?>'">
+                                                            ← Previous Episode
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+
+                                                <div class="col-6 text-end">
+                                                    <button type="button"
+                                                        class="btn btn-primary"
+                                                        onclick="window.location.href='<?php echo esc_url($series_parent_url); ?>'">
+                                                        ← Back
+                                                    </button>
+
+                                                    <?php if ($next_episode_id): ?>
+                                                        <button type="button"
+                                                            class="btn btn-primary ms-2"
+                                                            onclick="window.location.href='<?php echo esc_url(get_permalink($next_episode_id)); ?>'">
+                                                            Next Episode →
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                        <?php endif; ?>
+
+                                    <div
+                                        class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
+                                        data-post-id="<?php the_ID(); ?>"
+                                        data-series-id="<?php echo esc_attr($series_id); ?>"Add commentMore actions
+                                        data-post-parent="<?php echo $is_parent; ?>">
+                                            <p class="my-2 fw-bold fs-13px">இந்த படைப்பை மதிப்பிட விரும்புகிறீர்களா?</p>
+                                            <p class="mb-2">Click on a star to rate it!</p>
+                                            <div class="stars">
+                                                <?php
+                                                    $user_id = get_current_user_id();
+                                                    $post_id = get_the_ID();
+                                                    $rating = get_user_rating_for_post($user_id, $post_id);
+                                                ?>
+
+                                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                    <span class="star <?php echo ($i <= $rating) ? 'rated' : ''; ?>" data-value="<?php echo $i; ?>">&#9733;</span>
+                                                <?php endfor; ?>
+                                            </div>
+                                            <p>No votes so far! Be the first to rate this post.</p>
                                     </div>
-                                </div>
-
-
-                                <?php if (comments_open() || get_comments_number()) : ?>
-                                    <div class="text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto">
-                                    <div class="col-12 col-md-9 mx-auto border-0 my-3">
-                                            <div class="card-body">
-                                                <?php comments_template(); ?>
+                                    
+                                    <div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="loginRequiredLabel">Login Required</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                You must be logged in to rate. <br>
+                                                <a href="#" class="btn btn-primary mt-3 login-btn">Login</a>
+                                            </div>
                                             </div>
                                         </div>
                                     </div>
-                                <?php endif; ?>
+
+
+                                    <?php if (comments_open() || get_comments_number()) : ?>
+                                        <div class="text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto">
+                                        <div class="col-12 col-md-9 mx-auto border-0 my-3">
+                                                <div class="card-body">
+                                                    <?php comments_template(); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php } ?>
                             <?php }
                         ?>
                     </div>
@@ -479,39 +621,10 @@
                 btn.textContent = moreText.classList.contains('d-none') ? 'Read more' : 'Read less';
             });
         });
+
+        window.episodeNumberToIdForKey = <?php echo json_encode($episode_map_for_Key); ?>;
+        window.episodeNumberToIdForAll = <?php echo json_encode($episode_map_for_All); ?>;
+        window.episodeIdToLockType = <?php echo json_encode($episodeIdToLockType); ?>;
     });
 
-function showLockPopup(type) {
-    let msg = '';
-    switch (type) {
-        case 'ads':
-            msg = 'இந்த பாகம் Ads Lock ஆகும் — விளம்பரம் பார்க்க வேண்டும்.';
-            break;
-        case 'coin':
-            msg = 'இந்த பாகம் Coin Lock ஆகும் — நாணயங்கள் தேவை.';
-            break;
-        case 'default':
-            msg = 'இது இயல்புநிலை பூட்டு (Default Lock) ஆகும்.';
-            break;
-        default:
-            msg = 'இந்த பாகம் பூட்டப்பட்டுள்ளது.';
-    }
-
-    // Simple popup (you can replace with Bootstrap modal if needed)
-    const popup = document.createElement('div');
-    popup.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 9999;">
-            <div style="background: white; padding: 20px 30px; border-radius: 8px; text-align:center; max-width:400px;">
-                <p>${msg}</p>
-                <button onclick="this.closest('div').parentNode.remove()" style="margin-top:10px;" class="btn btn-primary">சரி</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(popup);
-}
 </script>
