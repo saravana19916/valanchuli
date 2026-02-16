@@ -120,18 +120,35 @@ function increase_story_view_count($post_id = null) {
     }
 
     if ($post_id) {
+        // Update post meta (legacy)
         $count = (int) get_post_meta($post_id, 'story_view_count', true);
         update_post_meta($post_id, 'story_view_count', $count + 1);
+
+        // Update daily views table
+        global $wpdb;
+        $table = $wpdb->prefix . 'daily_story_views';
+        $user_id = get_current_user_id() ? get_current_user_id() : 0;
+        $author_id = (int) get_post_field('post_author', $post_id);
+        $today = current_time('Y-m-d');
+
+        // Try to update existing row
+        $updated = $wpdb->query($wpdb->prepare(
+            "UPDATE $table SET view_count = view_count + 1 WHERE post_id = %d AND user_id = %d AND view_date = %s",
+            $post_id, $user_id, $today
+        ));
+
+        // If no row updated, insert new
+        if ($updated === 0) {
+            $wpdb->insert($table, [
+                'post_id'    => $post_id,
+                'author_id'  => $author_id,
+                'user_id'    => $user_id,
+                'view_count' => 1,
+                'view_date'  => $today,
+            ]);
+        }
     }
 }
-
-// function increase_story_view_count() {
-//     global $post;
-//     $count = get_post_meta($post->ID, 'story_view_count', true);
-//     $count = $count ? $count + 1 : 1;
-//     update_post_meta($post->ID, 'story_view_count', $count);
-// }
-// add_action('wp_head', 'increase_story_view_count');
 
 function get_average_series_views($post_id, $term_id) {
     $args = [

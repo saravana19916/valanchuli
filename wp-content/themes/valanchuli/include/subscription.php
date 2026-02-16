@@ -175,7 +175,7 @@ function save_subscription_callback() {
         'payment_method' => $payment_method,
         'start_date' => $start_date,
         'end_date' => $end_date,
-        'status' => 1,
+        'status' => $payment_status && $payment_status == 'success' ? 1 : 0,
         'payment_status' => $payment_status,
         'created_at' => current_time('mysql')
     ]);

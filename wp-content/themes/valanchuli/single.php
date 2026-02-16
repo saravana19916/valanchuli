@@ -233,6 +233,20 @@
                                                                                 data-coin="<?php echo esc_attr($lock_status['coin']); ?>"
                                                                                 data-offer-coin="<?php echo esc_attr($lock_status['offer_coin']); ?>"
                                                                             <?php endif; ?>
+                                                                            <?php if (
+                                                                                (is_array($lock_type) && in_array('ads', $lock_type)) ||
+                                                                                $lock_type === 'ads'
+                                                                            ):
+                                                                                // Get ads lock details for this episode
+                                                                                $ads_lock = get_ads_lock_for_episode($series_id, $episodeNumber); // Implement this function to fetch lock details
+                                                                                $ads_time_min = isset($ads_lock['ads_time_min']) ? $ads_lock['ads_time_min'] : '';
+                                                                                $ads_time_sec = isset($ads_lock['ads_time_sec']) ? $ads_lock['ads_time_sec'] : '';
+                                                                                $ads_content = isset($ads_lock['ads_content']) ? $ads_lock['ads_content'] : '';
+                                                                            ?>
+                                                                                data-ads-time-min="<?php echo esc_attr($ads_time_min); ?>"
+                                                                                data-ads-time-sec="<?php echo esc_attr($ads_time_sec); ?>"
+                                                                                data-ads-content="<?php echo esc_attr(mb_substr(wp_strip_all_tags($ads_content), 0, 100)); ?>"
+                                                                            <?php endif; ?>
                                                                             >
 
                                                                             <div class="lock-image">

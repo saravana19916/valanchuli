@@ -118,3 +118,27 @@ function get_episode_lock_status($series_id, $episode_id, $episode_number) {
 
     return ['locked' => false, 'type' => null];
 }
+
+function get_ads_lock_for_episode($series_id, $episode_number) {
+    if (!$series_id || !$episode_number) return null;
+
+    $locks = get_post_meta($series_id, '_episode_locks', true);
+    if (!is_array($locks)) return null;
+
+    // If only a single lock is stored, wrap it in an array
+    if (isset($locks['type'])) {
+        $locks = [$locks];
+    }
+
+    foreach ($locks as $lock) {
+        if (
+            isset($lock['type']) && $lock['type'] === 'ads' &&
+            isset($lock['from'], $lock['to']) &&
+            $episode_number >= intval($lock['from']) &&
+            $episode_number <= intval($lock['to'])
+        ) {
+            return $lock;
+        }
+    }
+    return null;
+}

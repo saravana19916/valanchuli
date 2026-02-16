@@ -346,29 +346,21 @@
                         </div>
 
                         <div class="mb-2 position-relative">
-                        <button class="btn w-100 fw-bold d-flex align-items-center justify-content-center position-relative"
-                            style="
-                            background: linear-gradient(90deg, #254e63 0%, #2e6b85 100%);
-                            color: #fff;
-                            border-radius: 16px;
-                            font-size: 1.3rem;
-                            box-shadow: 0 2px 8px rgba(44, 104, 141, 0.10);
-                            padding: 1rem 1.5rem;
-                            border: none;
-                            "
-                            onclick="window.location.href='<?php echo esc_url(site_url('/subscription?redirect_to=' . urlencode(get_permalink()))); ?>';"
-                        >
-                            <div class="row col-12">
-                                <div class="col-9">
-                                    <span class="flex-grow-1 text-center" style="letter-spacing: 0.5px;">Subscribe Now</span>
+                            <button class="btn w-100 px-2 fw-bold border-0 shadow-sm d-flex align-items-center justify-content-center"
+                                style="background: linear-gradient(90deg, #254e63 0%, #2e6b85 100%); border-radius: 16px; color: #fff; text-align: left;padding: 1rem 1.5rem;"
+                                onclick="window.location.href='<?php echo esc_url(site_url('/subscription?redirect_to=' . urlencode(get_permalink()))); ?>';"
+                                >
+                                <div class="row col-12 align-items-center">
+                                    <div class="col-8 d-flex flex-column justify-content-center">
+                                        <span style="font-size:1.3rem; font-weight:600; line-height:1;">Subscribe Now</span>
+                                    </div>
+                                    <div class="col-4 d-flex justify-content-center">
+                                        <img src="<?php echo get_template_directory_uri(); ?>/images/subscription1.png"
+                                            alt="Keys"
+                                            style="height:45px;">
+                                    </div>
                                 </div>
-                                <div class="col-3">
-                                    <img src="<?php echo get_template_directory_uri(); ?>/images/subscription1.png"
-                                        alt="Subscription"
-                                        style="height:48px; position:absolute; right:18px; top:50%; transform:translateY(-50%);">
-                                </div>
-                            </div>  
-                        </button>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -760,16 +752,6 @@
             document.getElementById('buyKeysBtnWrap').classList.add('d-none');
             document.getElementById('unlockKeysBtnWrap').classList.add('d-none');
 
-            // Set user key count
-            // document.getElementById('userKeyCount').textContent = userKeys;
-
-            // let adsLockCount = 0;
-            // if (window.episodeIdToLockType && Array.isArray(episodeIdsToUnlock)) {
-            //     adsLockCount = episodeIdsToUnlock.filter(function(epId) {
-            //         let lockTypes = window.episodeIdToLockType[epId];
-            //         return Array.isArray(lockTypes) && lockTypes.length === 1 && lockTypes[0] === 'ads';
-            //     }).length;
-            // }
             let adsLockCount = 0;
             if (window.episodeIdToLockType && Array.isArray(episodeIdsAllToUnlock)) {
                 adsLockCount = episodeIdsAllToUnlock.filter(function(epId) {
@@ -786,7 +768,7 @@
             if (lockTypes.includes('ads') && lockTypes.includes('coin')) {
                 let unlockMessage = '';
                 if (adsLockCount > 0) {
-                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யவும்</span>`;
+                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யுங்கள் அல்லது subscribe செய்யுங்கள்</span>`;
                     document.getElementById('unlockModalDesc').innerHTML = `
                         <div class="d-flex align-items-center mb-2">
                             <span style="font-size:1rem;">
@@ -802,7 +784,7 @@
                                 இந்த எபிசோடை <b>Unlock</b> செய்ய <span style="color:#19706e;font-weight:bold;">video</span> பார்க்கலாம் அல்லது </span>`
                         ) +
                         `<span style="color:#c0392b;font-size:1.3rem;">${coinToUnlock} Keys</span>
-                        <span> பயன்படுத்தி <b>Unlock</b> செய்யுங்கள்</span>`;
+                        <span> பயன்படுத்தி <b>Unlock</b> செய்யுங்கள் அல்லது subscribe செய்யுங்கள்</span>`;
 
                         document.getElementById('unlockModalDesc').innerHTML = `
                             <div class="d-flex align-items-center mb-2">
@@ -831,7 +813,7 @@
             } else if (lockTypes.includes('ads')) {
                 if (episodeIdsAllToUnlock.length > 1 || adsLockCount > 1) {
                      let
-                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யவும்</span>`;
+                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யுங்கள் அல்லது subscribe செய்யுங்கள்</span>`;
                     document.getElementById('unlockModalDesc').innerHTML = `
                         <div class="d-flex align-items-center mb-2">
                             <span style="font-size:1rem;">
@@ -842,7 +824,7 @@
                 } else {
                     document.getElementById('unlockModalDesc').innerHTML = `
                         <span style="font-size:1.2rem;">
-                            இந்த எபிசோடை Unlock செய்ய <span style="color:#19706e;font-weight:bold;">video</span> பார்க்கவும்.
+                            இந்த எபிசோடை Unlock செய்ய <span style="color:#19706e;font-weight:bold;">video</span> பார்க்கவும் அல்லது subscribe செய்யுங்கள்.
                         </span>
                     `;
                     document.getElementById('unlockAdBtnWrap').classList.remove('d-none');
@@ -856,7 +838,7 @@
 
                 let unlockMessage = '';
                 if (adsLockCount > 0) {
-                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யவும்</span>`;
+                    unlockMessage = `<span>முந்தைய எபிசோட்களை unlock செய்யுங்கள் அல்லது subscribe செய்யுங்கள்</span>`;
                     document.getElementById('unlockModalDesc').innerHTML = `
                         <div class="d-flex align-items-center mb-2">
                             <span style="font-size:1rem;">
@@ -872,7 +854,7 @@
                                 இந்த எபிசோடை <b>Unlock</b> செய்ய </span>`
                         ) +
                         `<span style="color:#c0392b;font-size:1.3rem;">${coinToUnlock} Keys </span>
-                        <span> பயன்படுத்தி <b>Unlock</b> செய்யுங்கள்</span>`;
+                        <span> பயன்படுத்தி <b>Unlock</b> செய்யுங்கள் அல்லது subscribe செய்யுங்கள்</span>`;
 
                     document.getElementById('unlockModalDesc').innerHTML = `
                         <div class="d-flex align-items-center mb-2">
@@ -953,26 +935,9 @@
     document.getElementById('unlockWithAdBtn').onclick = function() {
         // Get episode and parent IDs from your modal context or last clicked element
         var episodeId = window.lastClickedLockEpisode.dataset.episodeId;
+        var episodeNumber = window.lastClickedLockEpisode.dataset.episodeNumber;
         var parentId = window.lastClickedLockEpisode.dataset.parentId;
-
-        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({
-                action: 'unlock_episode_with_ad',
-                episode_id: episodeId,
-                parent_id: parentId
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert('Episode unlocked!');
-                location.reload();
-            } else {
-                alert(data.data && data.data.message ? data.data.message : 'Unlock failed!');
-            }
-        });
+        window.location.href = "<?php echo site_url('/ad-lock'); ?>?episode_number=" + encodeURIComponent(episodeNumber) + "&parent_id=" + encodeURIComponent(parentId) + "&episode_id=" + encodeURIComponent(episodeId);
     };
 </script>
 

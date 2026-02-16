@@ -92,7 +92,7 @@ function render_add_coin_transaction_page() {
                 form.reset();
                 jQuery('.tamil-search-select').val(null).trigger('change');
             } else {
-                alert('Failed to add key');
+                alert(' to add key');
             }
         });
     });

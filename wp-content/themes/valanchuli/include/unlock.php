@@ -73,8 +73,10 @@ add_action('wp_ajax_unlock_episode_with_keys', function() {
         if ($ep_id) {
             $wpdb->replace($unlock_table, [
                 'user_id' => $user_id,
+                'author_id' => (int) get_post_field('post_author', $ep_id),
                 'episode_id' => $ep_id,
                 'series_id' => $parent_id,
+                'lock_type' => 'key',
                 'unlocked_at' => current_time('mysql')
             ]);
         }
@@ -100,8 +102,10 @@ add_action('wp_ajax_unlock_episode_with_ad', function() {
     $unlock_table = $wpdb->prefix . 'user_episode_unlocks';
     $wpdb->replace($unlock_table, [
         'user_id' => $user_id,
+        'author_id' => (int) get_post_field('post_author', $episode_id),
         'episode_id' => $episode_id,
         'series_id' => $parent_id,
+        'lock_type' => 'ad',
         'unlocked_at' => current_time('mysql')
     ]);
 

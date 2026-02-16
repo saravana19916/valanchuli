@@ -23,7 +23,7 @@ require_once get_template_directory() . '/include/subscription.php';
 require_once get_template_directory() . '/include/payment.php';
 // require_once get_template_directory() . '/include/add-subscription-transaction.php';
 // require_once get_template_directory() . '/include/add-coin-transaction.php';
-// require_once get_template_directory() . '/include/active-subscription-list.php';
+require_once get_template_directory() . '/include/active-subscription-list.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -447,4 +447,3 @@ function assign_episode_number_to_series() {
 // Hook the function to run when WordPress initializes
 // add_action('init', 'assign_episode_number_to_series');
 
-?>
