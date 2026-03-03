@@ -180,5 +180,114 @@ function save_subscription_callback() {
         'created_at' => current_time('mysql')
     ]);
 
+    $notification_table = $wpdb->prefix . 'user_notifications';
+
+    if ($payment_status == 'success') {
+        if ($last && strtotime($last->end_date) > time()) {
+            // Subscription is active, so this is a queued subscription
+            $msg = "🎉 Subscription Queued!\nஉங்கள் புதிய Subscription வெற்றிகரமாக Queue செய்யப்பட்டது.\nமுடிவடையும் பிறகு உங்கள் புதிய plan செயல்படும்.";
+        } else {
+            // First time or expired, so this is a normal subscription
+            $msg = "🎉 Subscription Successful!\nநீங்கள் வெற்றிகரமாக Subscribe செய்துவிட்டீர்கள்.\nஇப்போதே உங்கள் வாசிப்பு பயணத்தை தொடங்குங்கள் 📚\n🚀 Happy Reading! ❤️";
+        }
+        $wpdb->insert($notification_table, [
+            'user_id' => $user_id,
+            'message' => $msg,
+            'is_read' => 0,
+            'created_at' => current_time('mysql')
+        ]);
+    }
+
     wp_send_json_success();
 }
+
+function check_subscription_reminder($user_id) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'user_subscriptions';
+    $notification_table = $wpdb->prefix . 'user_notifications';
+    $sub = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id=%d AND status=1 ORDER BY end_date DESC LIMIT 1", $user_id));
+
+    // Check for any queued (future) subscription
+    $future_sub = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table WHERE user_id=%d AND status=1 AND start_date > %s LIMIT 1",
+        $user_id, current_time('mysql')
+    ));
+
+    // If there is a future subscription, do not show reminder notification
+    if ($future_sub) {
+        return;
+    }
+
+    if ($sub && strtotime($sub->end_date) > time()) {
+        $days_left = floor((strtotime($sub->end_date) - time()) / (24 * 60 * 60));
+        if ($days_left < 3 && $days_left >= 0) {
+            $today = date('Y-m-d');
+            $msg = "Reminder ⏰\nஉங்கள் Subscription விரைவில் முடிவடைய உள்ளது.\nதொடர்ந்து கதைகளை வாசிக்க இப்போதே Renew செய்யுங்கள் 📚";
+            // Check if already notified today
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
+                $user_id, '%Reminder%', $today
+            ));
+            if (!$exists) {
+                $wpdb->insert($notification_table, [
+                    'user_id' => $user_id,
+                    'message' => $msg,
+                    'is_read' => 0,
+                    'created_at' => current_time('mysql')
+                ]);
+            }
+        }
+    }
+}
+
+function check_subscription_expired($user_id) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'user_subscriptions';
+    $notification_table = $wpdb->prefix . 'user_notifications';
+
+    // Get the latest active subscription (could be expired)
+    $sub = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id=%d AND status=1 ORDER BY end_date DESC LIMIT 1", $user_id));
+
+    // Check for any queued (future) subscription
+    $future_sub = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table WHERE user_id=%d AND status=1 AND start_date > %s LIMIT 1",
+        $user_id, current_time('mysql')
+    ));
+
+    // If there is a future subscription, do not show expired notification
+    if ($future_sub) {
+        return;
+    }
+
+    if ($sub && strtotime($sub->end_date) < time()) {
+        $today = date('Y-m-d');
+        $msg = "Subscription expired 🔐 Stories Locked\nஉங்கள் Subscription முடிவடைந்துவிட்டது. உங்களுக்காக கதைகள் காத்திருக்கின்றன. மீண்டும் அனைத்து கதைகளையும் திறக்க உடனே Renew செய்யுங்கள் 📚";
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s", $user_id, '%expired%', $today));
+        if (!$exists) {
+            $wpdb->insert($notification_table, [
+                'user_id' => $user_id,
+                'message' => $msg,
+                'is_read' => 0,
+                'created_at' => current_time('mysql')
+            ]);
+        }
+    }
+}
+
+add_action('init', function() {
+    if (is_user_logged_in()) {
+        $user_id = get_current_user_id();
+        check_subscription_reminder($user_id);
+        check_subscription_expired($user_id);
+    }
+});
+
+add_action('wp_ajax_mark_notifications_read', function() {
+    global $wpdb;
+    $user_id = get_current_user_id();
+    if ($user_id) {
+        $table = $wpdb->prefix . 'user_notifications';
+        $wpdb->query($wpdb->prepare("UPDATE $table SET is_read=1 WHERE user_id=%d AND is_read=0", $user_id));
+    }
+    wp_send_json_success();
+});

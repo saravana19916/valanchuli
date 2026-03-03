@@ -3,7 +3,7 @@
 add_action('admin_menu', function () {
     add_menu_page(
         'Revenue Settings',
-        'Revenue',
+        'Revenue Settings',
         'manage_options',
         'revenue-settings',
         'render_revenue_settings_page',
@@ -21,7 +21,7 @@ add_action('admin_init', function () {
         'sanitize_callback' => 'absint'
     ]);
 
-    register_setting('revenue_settings_group', 'reader_revenue_percentage', [
+    register_setting('revenue_settings_group', 'platform_revenue_percentage', [
         'type' => 'integer',
         'default' => 30,
         'sanitize_callback' => 'absint'
@@ -32,9 +32,9 @@ add_action('admin_init', function () {
 
 function render_revenue_settings_page() {
 
-    $writer = get_option('writer_revenue_percentage', 70);
-    $reader = get_option('reader_revenue_percentage', 30);
-    $total  = (int) $writer + (int) $reader;
+    $writer = get_option('writer_revenue_percentage', 30);
+    $platform = get_option('platform_revenue_percentage', 40);
+    $total  = (int) $writer + (int) $platform;
     ?>
 
     <div class="wrap">
@@ -42,7 +42,7 @@ function render_revenue_settings_page() {
 
         <?php if ($total !== 100): ?>
             <div class="notice notice-warning">
-                <p><strong>Warning:</strong> Writer + Reader revenue should equal 100%.</p>
+                <p><strong>Warning:</strong> Writer + Platform revenue should equal 100%.</p>
             </div>
         <?php endif; ?>
 
@@ -62,11 +62,11 @@ function render_revenue_settings_page() {
                 </tr>
 
                 <tr>
-                    <th scope="row">Reader Revenue (%)</th>
+                    <th scope="row">Platform Revenue (%)</th>
                     <td>
                         <input type="number"
-                               name="reader_revenue_percentage"
-                               value="<?php echo esc_attr($reader); ?>"
+                               name="platform_revenue_percentage"
+                               value="<?php echo esc_attr($platform); ?>"
                                min="0"
                                max="100" />
                     </td>

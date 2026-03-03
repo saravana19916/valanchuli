@@ -132,10 +132,14 @@ function render_series_lock_tab() {
     echo '<input type="hidden" name="page" value="series-locks">';
     echo '<input type="hidden" name="tab" value="series">';
     echo '<label><strong>Select Series:</strong></label>';
-    echo '<div style="max-height:250px;overflow:auto;border:1px solid #ccc;padding:10px;width:350px;">';
+    echo '<div style="margin-bottom:10px;">';
+    echo '<input type="text" id="series-search" placeholder="Search series..." style="width:220px;padding:3px;border-radius:6px;border:1px solid #ccc;"> ';
+    echo '<label style="margin-left:10px;"><input type="checkbox" id="select-all-series"> Select All</label>';
+    echo '</div>';
+    echo '<div id="series-list-box" style="max-height:300px;overflow-y:auto;border:1px solid #ccc;padding:10px;width:350px;">';
     foreach ($series_list as $s) {
         $checked = in_array($s->ID, $selected_series) ? 'checked' : '';
-        echo "<label style='display:block'><input type='checkbox' name='post_ids[]' value='{$s->ID}' $checked> {$s->post_title}</label>";
+        echo "<label style='display:block'><input type='checkbox' class='series-checkbox' name='post_ids[]' value='{$s->ID}' $checked> {$s->post_title}</label>";
     }
     echo '</div><br>';
     echo '<input type="submit" class="button button-primary" value="Edit Selected">';
@@ -143,6 +147,37 @@ function render_series_lock_tab() {
     if ($selected_series) {
         render_series_lock_form($selected_series);
     }
+
+    // Add JS for search and select all
+    echo <<<HTML
+<script>
+document.getElementById('series-search').addEventListener('input', function() {
+    var filter = this.value.toLowerCase();
+    document.querySelectorAll('#series-list-box label').forEach(function(label) {
+        var text = label.textContent.toLowerCase();
+        label.style.display = text.includes(filter) ? 'block' : 'none';
+    });
+});
+
+// Select All functionality
+document.getElementById('select-all-series').addEventListener('change', function() {
+    var checked = this.checked;
+    document.querySelectorAll('.series-checkbox').forEach(function(cb) {
+        cb.checked = checked;
+    });
+});
+
+// After page load, check if all series are selected and set Select All
+document.addEventListener('DOMContentLoaded', function() {
+    var allCheckboxes = document.querySelectorAll('.series-checkbox');
+    var selectAll = document.getElementById('select-all-series');
+    if (allCheckboxes.length > 0) {
+        var allChecked = Array.from(allCheckboxes).every(function(cb) { return cb.checked; });
+        selectAll.checked = allChecked;
+    }
+});
+</script>
+HTML;
 }
 
 function render_story_lock_details_tab() {
@@ -288,7 +323,11 @@ function render_series_lock_form($post_ids) {
     echo '</form>';
     echo <<<HTML
 <p><button type="button" class="button button-primary" id="open-lock-modal">+ Add New Lock Range</button></p>
-<div id="lock-modal" style="display:none;position:fixed;top:10%;left:50%;transform:translateX(-50%);background:#fff;z-index:9999;padding:20px;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.2);min-width:350px;">
+<div id="lock-modal"
+     style="display:none;position:fixed;top:10%;left:50%;transform:translateX(-50%);
+            background:#fff;z-index:9999;padding:20px;border-radius:8px;
+            box-shadow:0 2px 16px rgba(0,0,0,0.2);min-width:350px;
+            max-height:80vh;overflow-y:auto;">
     <h3 id="lock-modal-title">Create Lock</h3>
     <form id="lockForm" autocomplete="off">
         <input type="hidden" id="edit_index" name="edit_index" value="">
@@ -316,10 +355,9 @@ function render_series_lock_form($post_ids) {
             </tr>
             <!-- Ads Lock extra fields -->
             <tr id="ads_fields" style="display:none;">
-                <td><label>Time</label></td>
+                <td><label>Time in Seconds</label></td>
                 <td>
-                    <input type="number" id="ads_time_min" min="0" placeholder="Min" style="width:60px;"> :
-                    <input type="number" id="ads_time_sec" min="0" max="59" placeholder="Sec" style="width:60px;">
+                    <input type="number" id="ads_time_sec" min="0" placeholder="Sec" style="width:80px;">
                 </td>
             </tr>
             <tr id="ads_content_row" style="display:none;">
@@ -336,7 +374,7 @@ HTML;
                 $editor_id,
                 [
                     'textarea_name' => $editor_name,
-                    'media_buttons' => false,
+                    'media_buttons' => true,
                     'textarea_rows' => 10,
                     'teeny'         => false,
                     'quicktags'     => true,
@@ -376,9 +414,7 @@ HTML;
             // Prepare time display (only for ads lock)
             $time = '';
             if ($lock['type'] === 'ads') {
-                $min = isset($lock['ads_time_min']) ? $lock['ads_time_min'] : '';
-                $sec = isset($lock['ads_time_sec']) ? $lock['ads_time_sec'] : '';
-                $time = $min && $sec ? esc_html($min) . 'm ' . esc_html($sec) . 's' : '';
+                $time = isset($lock['ads_time_sec']) ? $lock['ads_time_sec'] : '';
             }
 
             // Prepare content preview (only for ads lock)
@@ -397,11 +433,10 @@ HTML;
                 <td>'.($lock['type'] === 'ads' ? $content_preview : '').'</td>
                 <td>
                     <button type="button" class="button edit-lock" data-index="'.$i.'">Edit</button>
-                    <button type="button" class="button remove-lock" data-index="'.$i.'">Remove</button>
+                    <button type="button" class="button remove-lock" data-index="'.$i.'" data-postid="'.$post_id.'">Remove</button>
                     <input type="hidden" name="lock_type[]" value="'.esc_attr($lock['type']).'">
                     <input type="hidden" name="lock_from[]" value="'.esc_attr($lock['from']).'">
                     <input type="hidden" name="lock_to[]" value="'.esc_attr($lock['to']).'">
-                    <input type="hidden" name="ads_time_min[]" value="'.esc_attr($lock['ads_time_min'] ?? '').'">
                     <input type="hidden" name="ads_time_sec[]" value="'.esc_attr($lock['ads_time_sec'] ?? '').'">
                     <input type="hidden" name="ads_content[]" value="'.esc_attr($lock['ads_content'] ?? '').'">
                 </td>
@@ -448,7 +483,6 @@ document.getElementById('lockTableBody').addEventListener('click', function(e) {
         document.getElementById('lock_type').value = tr.querySelector('input[name="lock_type[]"]').value;
         document.getElementById('lock_from').value = tr.querySelector('input[name="lock_from[]"]').value;
         document.getElementById('lock_to').value = tr.querySelector('input[name="lock_to[]"]').value;
-        document.getElementById('ads_time_min').value = tr.querySelector('input[name="ads_time_min[]"]')?.value || '';
         document.getElementById('ads_time_sec').value = tr.querySelector('input[name="ads_time_sec[]"]')?.value || '';
         // For ads_content, handle TinyMCE if present
         let adsContent = tr.querySelector('input[name="ads_content[]"]')?.value || '';
@@ -465,8 +499,28 @@ document.getElementById('lockTableBody').addEventListener('click', function(e) {
         showLockModal(true);
     }
     if (e.target.classList.contains('remove-lock')) {
-        e.target.closest('tr').remove();
-        resetForm();
+        if (!confirm('Are you sure you want to remove this lock?')) return;
+        const btn = e.target;
+        const index = btn.getAttribute('data-index');
+        const postId = btn.getAttribute('data-postid');
+        fetch(ajaxurl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                action: 'remove_series_lock',
+                nonce: seriesLocks.nonce,
+                post_id: postId,
+                lock_index: index
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                btn.closest('tr').remove();
+            } else {
+                alert('Failed to remove lock');
+            }
+        });
     }
 });
 document.getElementById('lock_type').addEventListener('change', function() {
@@ -501,7 +555,7 @@ add_action('admin_post_save_series_locks', function() {
     //             'to'   => intval($_POST['lock_to'][$i]),
     //         ];
     //         if ($type === 'ads') {
-    //             $lock['ads_time_min'] = sanitize_text_field($_POST['ads_time_min'][$i] ?? '');
+    //             $lock['ads_time_sec'] = sanitize_text_field($_POST['ads_time_sec'][$i] ?? '');
     //             $lock['ads_time_sec'] = sanitize_text_field($_POST['ads_time_sec'][$i] ?? '');
     //             $lock['ads_content']  = urldecode($_POST['ads_content'][$i] ?? '');
     //         }
@@ -539,7 +593,6 @@ function add_series_lock()
 
     $post_ids = array_map('intval', $_POST['post_ids'] ?? []);
 
-    $ads_time_min = sanitize_text_field($_POST['ads_time_min'] ?? '');
     $ads_time_sec = sanitize_text_field($_POST['ads_time_sec'] ?? '');
     $ads_content  = $_POST['ads_content'] ?? '';
 
@@ -550,7 +603,6 @@ function add_series_lock()
     ];
 
     if ($type === 'ads') {
-        $lock_data['ads_time_min'] = $ads_time_min;
         $lock_data['ads_time_sec'] = $ads_time_sec;
         $lock_data['ads_content']  = $ads_content;
     }
@@ -593,4 +645,22 @@ add_action('admin_head', function() {
     }
     </style>
     <?php
+});
+
+add_action('wp_ajax_remove_series_lock', function() {
+    check_ajax_referer('series_lock_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Unauthorized');
+    }
+    $post_id = intval($_POST['post_id']);
+    $lock_index = intval($_POST['lock_index']);
+    $locks = get_post_meta($post_id, '_episode_locks', true);
+    if (!is_array($locks)) $locks = [];
+    if (isset($locks[$lock_index])) {
+        array_splice($locks, $lock_index, 1);
+        update_post_meta($post_id, '_episode_locks', $locks);
+        wp_send_json_success();
+    } else {
+        wp_send_json_error('Lock not found');
+    }
 });

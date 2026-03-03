@@ -18,12 +18,14 @@ require_once get_template_directory() . '/include/site-message.php';
 require_once get_template_directory() . '/include/coin-pack-settings.php';
 require_once get_template_directory() . '/include/unlock.php';
 // require_once get_template_directory() . '/include/ad-lock-settings.php';
-// require_once get_template_directory() . '/include/revenue-settings.php';
+require_once get_template_directory() . '/include/revenue-settings.php';
 require_once get_template_directory() . '/include/subscription.php';
 require_once get_template_directory() . '/include/payment.php';
 // require_once get_template_directory() . '/include/add-subscription-transaction.php';
 // require_once get_template_directory() . '/include/add-coin-transaction.php';
 require_once get_template_directory() . '/include/active-subscription-list.php';
+require_once get_template_directory() . '/include/month-earning.php';
+require_once get_template_directory() . '/include/user-bank-details-report.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -396,6 +398,49 @@ function search_by_title_only( $search, $wp_query ) {
     return $search;
 }
 add_filter( 'posts_search', 'search_by_title_only', 10, 2 );
+
+function getParentPostId($post_id) {
+    $terms = get_the_terms($post_id, 'series');
+    $series_id = ($terms && !is_wp_error($terms)) ? $terms[0]->term_id : 0;
+
+    $series_posts = get_posts([
+        'post_type'      => 'post',
+        'posts_per_page' => 1,
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+        'tax_query'      => [
+            [
+                'taxonomy' => 'series',
+                'field'    => 'term_id',
+                'terms'    => $series_id,
+            ],
+        ],
+    ]);
+
+    $parent_post_id = !empty($series_posts) ? $series_posts[0]->ID : 0;
+
+    return $parent_post_id;
+}
+
+function get_locked_stories_count_by_author($author_id) {
+    global $wpdb;
+    // Get all post IDs by this author
+    $post_ids = get_posts([
+        'author'         => $author_id,
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'fields'         => 'ids',
+        'posts_per_page' => -1
+    ]);
+    $count = 0;
+    foreach ($post_ids as $post_id) {
+        $locks = get_post_meta($post_id, '_episode_locks', true);
+        if (is_array($locks) && !empty($locks)) {
+            $count++;
+        }
+    }
+    return $count;
+}
 
 // add episode number
 function assign_episode_number_to_series() {

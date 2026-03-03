@@ -119,35 +119,41 @@ function increase_story_view_count($post_id = null) {
         $post_id = get_the_ID();
     }
 
-    if ($post_id) {
-        // Update post meta (legacy)
-        $count = (int) get_post_meta($post_id, 'story_view_count', true);
-        update_post_meta($post_id, 'story_view_count', $count + 1);
-
-        // Update daily views table
-        global $wpdb;
-        $table = $wpdb->prefix . 'daily_story_views';
-        $user_id = get_current_user_id() ? get_current_user_id() : 0;
-        $author_id = (int) get_post_field('post_author', $post_id);
-        $today = current_time('Y-m-d');
-
-        // Try to update existing row
-        $updated = $wpdb->query($wpdb->prepare(
-            "UPDATE $table SET view_count = view_count + 1 WHERE post_id = %d AND user_id = %d AND view_date = %s",
-            $post_id, $user_id, $today
-        ));
-
-        // If no row updated, insert new
-        if ($updated === 0) {
-            $wpdb->insert($table, [
-                'post_id'    => $post_id,
-                'author_id'  => $author_id,
-                'user_id'    => $user_id,
-                'view_count' => 1,
-                'view_date'  => $today,
-            ]);
-        }
+    // Only track if user is logged in
+    $user_id = get_current_user_id();
+    if (!$post_id || !$user_id) {
+        return;
     }
+
+    // Check if this user has already viewed this post (ever)
+    global $wpdb;
+    $table = $wpdb->prefix . 'daily_story_views';
+    $already_viewed = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table WHERE post_id = %d AND user_id = %d",
+        $post_id, $user_id
+    ));
+
+    if ($already_viewed) {
+        // Already tracked, do nothing
+        return;
+    }
+
+    // Update post meta (legacy, count unique user views)
+    $count = (int) get_post_meta($post_id, 'story_view_count', true);
+    update_post_meta($post_id, 'story_view_count', $count + 1);
+
+    $parent_post_id = getParentPostId($post_id);
+    $author_id = (int) get_post_field('post_author', $post_id);
+
+    // Insert new view record (no need for view_date)
+    $wpdb->insert($table, [
+        'post_id'    => $post_id,
+        'series_id'  => $parent_post_id,
+        'author_id'  => $author_id,
+        'user_id'    => $user_id,
+        'view_count' => 1,
+        'view_date'  => current_time('Y-m-d'),
+    ]);
 }
 
 function get_average_series_views($post_id, $term_id) {

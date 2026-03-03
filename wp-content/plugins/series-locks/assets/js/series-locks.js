@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const to = document.getElementById('lock_to').value;
         const editIndex = document.getElementById('edit_index').value;
 
-        const adsTimeMin = document.getElementById('ads_time_min').value;
         const adsTimeSec = document.getElementById('ads_time_sec').value;
         let adsContent = '';
         if (typeof tinymce !== 'undefined' && tinymce.get('ads_content')) {
@@ -49,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         postIds.forEach(id => params.append('post_ids[]', id));
-        params.append('ads_time_min', adsTimeMin);
         params.append('ads_time_sec', adsTimeSec);
         params.append('ads_content', adsContent);
 

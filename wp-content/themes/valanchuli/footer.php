@@ -429,16 +429,45 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Handle all search toggles
-        document.querySelectorAll('#searchToggle').forEach(function(btn, idx) {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                // Find the corresponding dropdown in the same parent
-                var dropdown = btn.parentElement.querySelector('#searchDropdown');
-                if (dropdown) {
-                    dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-                }
-            });
+    //     document.querySelectorAll('#searchToggle').forEach(function(btn, idx) {
+    //         btn.addEventListener('click', function(e) {
+    //             e.stopPropagation();
+    //             var dropdown = btn.parentElement.querySelector('#searchDropdown');
+    //             if (dropdown) {
+    //                 dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    //             }
+    //         });
+    //     });
+    //    document.querySelectorAll('#searchDropdown').forEach(function(dropdown) {
+    //         dropdown.addEventListener('click', function(e) {
+    //             e.stopPropagation();
+    //         });
+    //     });
+
+        // Mobile
+        document.getElementById('searchToggle').onclick = function(e) {
+            e.stopPropagation();
+            let dropdown = document.getElementById('searchDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        };
+        document.getElementById('searchDropdown').onclick = function(e) {
+            e.stopPropagation(); // Prevent closing when clicking inside
+        };
+
+        // Desktop
+        document.getElementById('searchToggleDesktop').onclick = function(e) {
+            e.stopPropagation();
+            let dropdown = document.getElementById('searchDropdownDesktop');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        };
+        document.getElementById('searchDropdownDesktop').onclick = function(e) {
+            e.stopPropagation();
+        };
+
+        // Hide dropdowns when clicking outside
+        document.addEventListener('click', function() {
+            document.getElementById('searchDropdown').style.display = 'none';
+            document.getElementById('searchDropdownDesktop').style.display = 'none';
         });
 
         // Handle all user toggles

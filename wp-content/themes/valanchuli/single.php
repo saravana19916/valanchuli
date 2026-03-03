@@ -239,11 +239,9 @@
                                                                             ):
                                                                                 // Get ads lock details for this episode
                                                                                 $ads_lock = get_ads_lock_for_episode($series_id, $episodeNumber); // Implement this function to fetch lock details
-                                                                                $ads_time_min = isset($ads_lock['ads_time_min']) ? $ads_lock['ads_time_min'] : '';
                                                                                 $ads_time_sec = isset($ads_lock['ads_time_sec']) ? $ads_lock['ads_time_sec'] : '';
                                                                                 $ads_content = isset($ads_lock['ads_content']) ? $ads_lock['ads_content'] : '';
                                                                             ?>
-                                                                                data-ads-time-min="<?php echo esc_attr($ads_time_min); ?>"
                                                                                 data-ads-time-sec="<?php echo esc_attr($ads_time_sec); ?>"
                                                                                 data-ads-content="<?php echo esc_attr(mb_substr(wp_strip_all_tags($ads_content), 0, 100)); ?>"
                                                                             <?php endif; ?>
@@ -417,24 +415,7 @@
                                     $user_id = get_current_user_id();
 
                                     // Get series info
-                                    $terms = get_the_terms($post_id, 'series');
-                                    $series_id = ($terms && !is_wp_error($terms)) ? $terms[0]->term_id : 0;
-
-                                    $series_posts = get_posts([
-                                        'post_type'      => 'post',
-                                        'posts_per_page' => 1,
-                                        'orderby'        => 'date',
-                                        'order'          => 'ASC',
-                                        'tax_query'      => [
-                                            [
-                                                'taxonomy' => 'series',
-                                                'field'    => 'term_id',
-                                                'terms'    => $series_id,
-                                            ],
-                                        ],
-                                    ]);
-
-                                    $parent_post_id = !empty($series_posts) ? $series_posts[0]->ID : 0;
+                                    $parent_post_id = getParentPostId($post_id);
 
                                     // Get episode number (adjust if your meta key is different)
                                     $episode_number = get_post_meta($post_id, 'episode_number', true);

@@ -125,21 +125,16 @@ function render_active_subscriptions_page() {
                 <input type="date" name="to" value="<?php echo esc_attr($to); ?>">
             </label>
             <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Search user, email, plan..." style="min-width:180px;">
-            <button class="button">Search</button>
-            <a href="<?php echo $base_url; ?>&status=<?php echo esc_attr($status); ?>&download=csv<?php
-                if($month) echo '&month=' . $month;
-                if($from) echo '&from=' . $from;
-                if($to) echo '&to=' . $to;
-                if($search) echo '&s=' . urlencode($search);
-            ?>" class="button button-secondary" style="margin-left:10px;">&#8681; Download CSV</a>
+            <button type="button" id="active-subscription-csv" class="button" style="margin-left:10px;">Download CSV</button>
         </form>
-        <table class="widefat striped">
+        <table id="active-subscription-table" class="widefat striped">
             <thead>
                 <tr>
                     <th>User</th>
                     <th>Email</th>
                     <th>Plan Name</th>
                     <th>Revenue</th>
+                    <th>Subscription Date</th>
                     <th>Active From</th>
                     <th>Active To</th>
                     <th>Status</th>
@@ -152,6 +147,7 @@ function render_active_subscriptions_page() {
                         <td><?php echo esc_html($row->user_email); ?></td>
                         <td><?php echo esc_html($row->plan_name); ?></td>
                         <td><?php echo esc_html($row->plan_amount); ?></td>
+                        <td><?php echo esc_html(date('Y-m-d', strtotime($row->created_at))); ?></td>
                         <td><?php echo esc_html(date('Y-m-d', strtotime($row->start_date))); ?></td>
                         <td><?php echo esc_html(date('Y-m-d', strtotime($row->end_date))); ?></td>
                         <td>
@@ -251,48 +247,37 @@ function render_active_subscriptions_page() {
         font-weight: bold;
     }
     </style>
-    <?php
-    // CSV download handler - MUST be before any HTML output!
-    if (isset($_GET['download']) && $_GET['download'] === 'csv') {
-        $csv_results = $wpdb->get_results("
-            SELECT s.*, u.user_email, u.display_name
-            FROM $table s
-            LEFT JOIN {$wpdb->users} u ON s.user_id = u.ID
-            $where
-            ORDER BY s.start_date DESC
-        ");
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename=\"subscriptions.csv\"');
-        header('Pragma: no-cache');
-        header('Expires: 0');
 
-        $out = fopen('php://output', 'w');
-        fputcsv($out, ['User', 'Email', 'Plan Name', 'Revenue', 'Active From', 'Active To', 'Status']);
-        foreach ($csv_results as $row) {
-            $now = current_time('mysql');
-            $status_label = '';
-            if ($row->status == 0) {
-                $status_label = 'Cancelled';
-            } elseif ($row->status == 1) {
-                if ($row->end_date < $now) {
-                    $status_label = 'Expired';
-                } elseif ($row->start_date <= $now && $row->end_date >= $now) {
-                    $status_label = 'Active';
-                } else {
-                    $status_label = 'Pending';
-                }
-            }
-            fputcsv($out, [
-                $row->display_name,
-                $row->user_email,
-                $row->plan_name,
-                $row->plan_amount,
-                date('Y-m-d', strtotime($row->start_date)),
-                date('Y-m-d', strtotime($row->end_date)),
-                $status_label
-            ]);
+    <script>
+        function downloadTableAsCSV(tableId, filename) {
+            const table = document.getElementById(tableId);
+            let csv = [];
+            // Get headers, skip last column
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => `"${th.innerText.trim()}"`);
+            csv.push(headers.join(','));
+            // Get visible rows
+            table.querySelectorAll('tbody tr').forEach(row => {
+                if (row.style.display === 'none') return;
+                // For each cell except last
+                const cols = Array.from(row.children).map(td => `"${td.innerText.trim()}"`);
+                
+                csv.push(cols.join(','));
+            });
+            // Download
+            const csvString = csv.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
-        fclose($out);
-        exit;
-    }
+
+        // Attach to buttons
+        document.getElementById('active-subscription-csv').onclick = function() {
+            downloadTableAsCSV('active-subscription-table', 'active-subscriptions.csv');
+        };
+    </script>
+    <?php
 }

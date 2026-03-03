@@ -186,10 +186,17 @@ function psm_admin_page() {
                 <tr>
                     <th>Select Stories</th>
                     <td>
-                        <div style="max-height:200px;overflow-y:auto;border:1px solid #ccd0d4;padding:10px;background:#fff;">
+                        <div style="margin-bottom:10px;">
+                            <input type="text" id="story-search" placeholder="Search stories..." style="width:220px;padding:6px;border-radius:6px;border:1px solid #ccd0d4;">
+                            <label style="margin-left:10px;">
+                                <input type="checkbox" id="select-all-stories"> Select All
+                            </label>
+                        </div>
+                        <div id="story-list-box" style="max-height:200px;overflow-y:auto;border:1px solid #ccd0d4;padding:10px;background:#fff;">
                             <?php foreach ($stories as $story): ?>
                                 <label style="display:block;margin-bottom:6px;">
                                     <input type="checkbox"
+                                           class="story-checkbox"
                                            name="story_ids[]"
                                            value="<?= esc_attr($story->ID); ?>"
                                            <?= ($edit_rule && $edit_rule->post_id == $story->ID) ? 'checked disabled' : ''; ?>>
@@ -289,4 +296,31 @@ function psm_admin_page() {
         </table>
 
     </div>
+
+    <script>
+    document.getElementById('story-search').addEventListener('input', function() {
+        var filter = this.value.toLowerCase();
+        document.querySelectorAll('#story-list-box label').forEach(function(label) {
+            var text = label.textContent.toLowerCase();
+            label.style.display = text.includes(filter) ? 'block' : 'none';
+        });
+    });
+
+    document.getElementById('select-all-stories').addEventListener('change', function() {
+        var checked = this.checked;
+        document.querySelectorAll('.story-checkbox').forEach(function(cb) {
+            if (!cb.disabled) cb.checked = checked;
+        });
+    });
+
+    // After page load, set Select All if all checkboxes are checked
+    document.addEventListener('DOMContentLoaded', function() {
+        var allCheckboxes = document.querySelectorAll('.story-checkbox:not([disabled])');
+        var selectAll = document.getElementById('select-all-stories');
+        if (allCheckboxes.length > 0) {
+            var allChecked = Array.from(allCheckboxes).every(function(cb) { return cb.checked; });
+            selectAll.checked = allChecked;
+        }
+    });
+    </script>
 <?php } ?>

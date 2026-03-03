@@ -7,6 +7,20 @@ body, html {
     overflow-x: hidden;
 }
 
+/* Always show vertical scrollbar in admin */
+/* html, body, #wpcontent, #wpbody-content {
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+::-webkit-scrollbar {
+    width: 12px;
+    background: #eee;
+}
+::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 6px;
+} */
+
 .text-story-title {
     color: #484747;
 }
