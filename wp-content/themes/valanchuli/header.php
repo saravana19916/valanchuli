@@ -34,7 +34,7 @@
                         <i class="fas fa-search fa-lg"></i>
                     </button>
                     <div id="searchDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
-                        style="min-width: 250px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                        style="min-width: 250px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                         <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
                             <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
                             <p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
@@ -48,7 +48,7 @@
                         <i class="fas fa-user fa-lg"></i>
                     </button>
                     <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
-                        style="min-width: 200px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                        style="min-width: 200px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                         <?php if (is_user_logged_in()) : $current_user = wp_get_current_user(); ?>
                             <span class="dropdown-item text-center">Welcome <?php echo esc_html( $current_user->user_login ); ?> </span>
                             <a href="<?php echo site_url('/profile'); ?>" class="dropdown-item text-center">சுயவிவரம்</a>
@@ -72,9 +72,11 @@
                 ?>
                     <div class="notification-container" style="position:relative;display:inline-block;">
                         <div class="notification-icon" style="position:relative;display:inline-block;cursor:pointer;">
-                            <span style="font-size:22px;">🔔</span>
+                            <button class="btn btn-link text-white p-0">
+                                <i class="fas fa-bell fa-lg"></i>
+                            </button>
                             <?php if ($unread_count > 0): ?>
-                                <span class="notification-count" style="position:absolute;top:-8px;right:-8px;background:#c00;color:#fff;border-radius:50%;padding:2px 6px;font-size:12px;"><?php echo $unread_count; ?></span>
+                                <span class="notification-count" style="position:absolute;top:-22px;right:-11px;background:#c00;color:#fff;border-radius:50%;padding:1px 6px;font-size:12px;"><?php echo $unread_count; ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="notification-dropdown custom-notification-dropdown" style="display:none;">
@@ -138,7 +140,7 @@
                     <i class="fas fa-search fa-lg"></i>
                 </button>
                 <div id="searchDropdownDesktop" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
-                    style="min-width: 250px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                    style="min-width: 250px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                     <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
                         <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
 						<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
@@ -152,7 +154,7 @@
                     <i class="fas fa-user fa-lg"></i>
                 </button>
                 <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
-                    style="min-width: 200px; display: none; position: absolute; top: 100%; right: 0; z-index: 1000;">
+                    style="min-width: 200px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                     <?php if (is_user_logged_in()) : $current_user = wp_get_current_user(); ?>
                         <span class="dropdown-item text-center">Welcome <?php echo esc_html( $current_user->user_login ); ?> </span>
                         <a href="<?php echo site_url('/profile'); ?>" class="dropdown-item text-center">சுயவிவரம்</a>
@@ -176,9 +178,11 @@
             ?>
                 <div class="notification-container" style="position:relative;display:inline-block;">
                     <div class="notification-icon" style="position:relative;display:inline-block;cursor:pointer;">
-                        <span style="font-size:22px;">🔔</span>
+                        <button class="btn btn-link text-white p-0">
+                            <i class="fas fa-bell fa-lg"></i>
+                        </button>
                         <?php if ($unread_count > 0): ?>
-                            <span class="notification-count" style="position:absolute;top:-8px;right:-8px;background:#c00;color:#fff;border-radius:50%;padding:2px 6px;font-size:12px;"><?php echo $unread_count; ?></span>
+                            <span class="notification-count" style="position:absolute;top: -22px;right:-11px;background:#c00;color:#fff;border-radius:50%;padding:1px 6px;font-size:12px;"><?php echo $unread_count; ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="notification-dropdown custom-notification-dropdown" style="display:none;">
@@ -262,22 +266,28 @@
                     e.stopPropagation();
                     // Hide all dropdowns first
                     document.querySelectorAll('.notification-dropdown').forEach(function(dd) {
-                        dd.style.display = 'none';
-                    });
-                    // Show the dropdown for this icon
+                        if (dd !== this.parentElement.querySelector('.notification-dropdown')) {
+                            dd.style.display = 'none';
+                        }
+                    }, this);
+                    // Toggle the dropdown for this icon
                     var dropdown = this.parentElement.querySelector('.notification-dropdown');
                     if (dropdown) {
-                        dropdown.style.display = 'block';
-                        // Mark all as read via AJAX
-                        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'action=mark_notifications_read'
-                        }).then(function(){ 
-                            var count = icon.querySelector('.notification-count');
-                            if (count) count.style.display = 'none';
-                        });
+                        if (dropdown.style.display === 'block') {
+                            dropdown.style.display = 'none';
+                        } else {
+                            dropdown.style.display = 'block';
+                            // Mark all as read via AJAX
+                            fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: 'action=mark_notifications_read'
+                            }).then(function(){ 
+                                var count = icon.querySelector('.notification-count');
+                                if (count) count.style.display = 'none';
+                            });
+                        }
                     }
                 });
             });

@@ -20,6 +20,7 @@ add_action('wp_ajax_save_bank_details', function() {
         $wpdb->update($table, $fields, ['user_id' => $user_id]);
     } else {
         $fields['user_id'] = $user_id;
+        $fields['updated_at'] = current_time('mysql');
         $wpdb->insert($table, $fields);
     }
     wp_send_json_success('Bank details saved');

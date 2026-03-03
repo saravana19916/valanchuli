@@ -196,6 +196,12 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
     color: #888;
     cursor: pointer;
 }
+@media (max-width: 600px) {
+    .bank-modal {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
 </style>
 
 <div class="earning-main-bg">
@@ -320,32 +326,34 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
         <div class="desc">Provide your bank account information for payments.</div>
         <form id="bankDetailsForm">
             <div class="form-group">
-                <label>Bank Name</label>
-                <input type="text" name="bank_name" value="<?php echo esc_attr($bank_details->bank_name ?? ''); ?>">
+                <label>Bank Name <span class="required">*</span></label>
+                <input type="text" name="bank_name" value="<?php echo esc_attr($bank_details->bank_name ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <div class="form-group">
-                <label>Account Holder Name</label>
-                <input type="text" name="holder_name" value="<?php echo esc_attr($bank_details->holder_name ?? ''); ?>">
+                <label>Account Holder Name <span class="required">*</span></label>
+                <input type="text" name="holder_name" value="<?php echo esc_attr($bank_details->holder_name ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <div class="form-group">
-                <label>Account Number</label>
-                <input type="text" name="account_number" value="<?php echo esc_attr($bank_details->account_number ?? ''); ?>">
+                <label>Account Number <span class="required">*</span></label>
+                <input type="text" name="account_number" value="<?php echo esc_attr($bank_details->account_number ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <div class="form-group">
-                <label>IFSC Code</label>
-                <input type="text" name="ifsc_code" value="<?php echo esc_attr($bank_details->ifsc_code ?? ''); ?>">
+                <label>IFSC Code <span class="required">*</span></label>
+                <input type="text" name="ifsc_code" value="<?php echo esc_attr($bank_details->ifsc_code ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <div class="form-group">
-                <label>PAN Number</label>
-                <input type="text" name="pan_number" value="<?php echo esc_attr($bank_details->pan_number ?? ''); ?>">
+                <label>PAN Number <span class="required">*</span></label>
+                <input type="text" name="pan_number" value="<?php echo esc_attr($bank_details->pan_number ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <div class="form-group">
-                <label>Phone Number</label>
-                <input type="text" name="phone_number" value="<?php echo esc_attr($bank_details->phone_number ?? ''); ?>">
+                <label>Phone Number <span class="required">*</span></label>
+                <input type="text" name="phone_number" value="<?php echo esc_attr($bank_details->phone_number ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
+            <?php if (!$bank_details): ?>
             <div class="modal-actions">
                 <button type="submit" class="save-btn">Save</button>
             </div>
+            <?php endif; ?>
         </form>
     </div>
 </div>
@@ -361,6 +369,21 @@ document.getElementById('closeBankModal').onclick = function() {
 document.getElementById('bankDetailsForm').onsubmit = function(e) {
     e.preventDefault();
     var form = e.target;
+    var valid = true;
+    var fields = ['bank_name', 'holder_name', 'account_number', 'ifsc_code', 'pan_number', 'phone_number'];
+    fields.forEach(function(name) {
+        var input = form[name];
+        if (!input.value.trim()) {
+            input.style.borderColor = '#c00';
+            valid = false;
+        } else {
+            input.style.borderColor = '#e0e0e0';
+        }
+    });
+    if (!valid) {
+        alert('Please fill all fields.');
+        return;
+    }
     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
         method: 'POST',
         credentials: 'same-origin',
@@ -378,7 +401,11 @@ document.getElementById('bankDetailsForm').onsubmit = function(e) {
     .then(data => {
         if (data.success) {
             alert('Bank details saved!');
-            document.getElementById('bankModalBg').style.display = 'none';
+            Array.from(form.querySelectorAll('input')).forEach(function(input) {
+                input.disabled = true;
+            });
+            var saveBtn = form.querySelector('.save-btn');
+            if (saveBtn) saveBtn.style.display = 'none';
         } else {
             alert('Failed to save: ' + (data.data || 'Unknown error'));
         }

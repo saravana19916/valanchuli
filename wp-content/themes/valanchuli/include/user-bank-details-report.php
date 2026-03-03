@@ -24,7 +24,7 @@ function render_user_bank_details_report() {
     $table = $wpdb->prefix . 'user_bank_details';
 
     // --- Pagination setup ---
-    $per_page = 20;
+    $per_page = 1;
     $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
     $offset = ($paged - 1) * $per_page;
 
@@ -94,7 +94,7 @@ function render_user_bank_details_report() {
     // --- Pagination links ---
     $total_pages = ceil($total / $per_page);
     if ($total_pages > 1) {
-        echo '<div style="margin:20px 0;">';
+        echo '<div class="custom-bank-pagination">';
         for ($i = 1; $i <= $total_pages; $i++) {
             $url = add_query_arg([
                 'page' => 'user-bank-details-report',
@@ -102,13 +102,48 @@ function render_user_bank_details_report() {
                 'bank_search' => $search
             ], admin_url('admin.php'));
             if ($i == $paged) {
-                echo '<span style="margin-right:8px;font-weight:bold;">' . $i . '</span>';
+                echo '<span class="custom-page-num active">' . $i . '</span>';
             } else {
-                echo '<a href="' . esc_url($url) . '" style="margin-right:8px;">' . $i . '</a>';
+                echo '<a class="custom-page-num" href="' . esc_url($url) . '">' . $i . '</a>';
             }
         }
         echo '</div>';
     }
 
     echo '</div>';
+
+    // Add this CSS to your plugin or admin head
+    echo '<style>
+.custom-bank-pagination {
+    margin: 20px 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.custom-page-num {
+    display: inline-block;
+    min-width: 32px;
+    padding: 6px 12px;
+    margin: 0 2px;
+    border-radius: 6px;
+    background: #f5f5f5;
+    color: #005d67;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 500;
+    border: 1px solid #e0e0e0;
+    transition: background 0.2s, color 0.2s;
+}
+.custom-page-num:hover {
+    background: #005d67;
+    color: #fff;
+}
+.custom-page-num.active {
+    background: #005d67;
+    color: #fff;
+    font-weight: bold;
+    border: 1px solid #005d67;
+    cursor: default;
+}
+</style>';
 }
