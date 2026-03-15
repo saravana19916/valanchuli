@@ -298,8 +298,8 @@ a {
     text-decoration: none;
 }
 
-a:hover, .footer-menu li:hover {
-    text-decoration: underline;
+a:hover, .footer-menu li:hover, .terms-links a:hover {
+    text-decoration: underline !important;
 }
 
 .footer-menu li {
@@ -308,7 +308,7 @@ a:hover, .footer-menu li:hover {
     line-height: 2rem;
 }
 
-.footer-menu li a {
+.footer-menu li a, .terms-links a {
     color: white;
     text-decoration: none !important;
 }
@@ -454,6 +454,17 @@ a:hover, .footer-menu li:hover {
     position: absolute;
     bottom: -5px;
     left: 20%;
+    transform: translateX(-50%);
+    height: 2px;
+    width: 3rem;
+    background-color: rgb(211, 47, 47);
+}
+
+.terms-bottom-border::before {
+    content: "";
+    position: absolute;
+    left: 15.6%;
+    margin-top: 27px;
     transform: translateX(-50%);
     height: 2px;
     width: 3rem;

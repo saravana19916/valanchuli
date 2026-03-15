@@ -196,6 +196,8 @@ function save_subscription_callback() {
             'is_read' => 0,
             'created_at' => current_time('mysql')
         ]);
+
+        subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date);
     }
 
     wp_send_json_success();
@@ -218,15 +220,18 @@ function check_subscription_reminder($user_id) {
         return;
     }
 
-    if ($sub && strtotime($sub->end_date) > time()) {
-        $days_left = floor((strtotime($sub->end_date) - time()) / (24 * 60 * 60));
-        if ($days_left < 3 && $days_left >= 0) {
-            $today = date('Y-m-d');
-            $msg = "Reminder ⏰\nஉங்கள் Subscription விரைவில் முடிவடைய உள்ளது.\nதொடர்ந்து கதைகளை வாசிக்க இப்போதே Renew செய்யுங்கள் 📚";
-            // Check if already notified today
+    if ($sub) {
+        $end_time = strtotime($sub->end_date);
+        $now = time();
+        $days_left = floor(($end_time - $now) / (24 * 60 * 60));
+        $today = date('Y-m-d');
+
+        // 7th day before expiry
+        if ($days_left == 7) {
+            $msg = "Reminder ⏰\nஉங்கள் Subscription 7 நாட்களில் முடிவடைகிறது.\nதொடர்ந்து கதைகளை வாசிக்க இப்போதே Renew செய்யுங்கள் 📚";
             $exists = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
-                $user_id, '%Reminder%', $today
+                $user_id, '%7 நாட்களில் முடிவடைகிறது%', $today
             ));
             if (!$exists) {
                 $wpdb->insert($notification_table, [
@@ -235,6 +240,64 @@ function check_subscription_reminder($user_id) {
                     'is_read' => 0,
                     'created_at' => current_time('mysql')
                 ]);
+
+                reminderEmailSend($user_id, 7);
+            }
+        }
+
+        // 3rd day before expiry
+        if ($days_left == 3) {
+            $msg = "3 நாட்கள் Reminder ⏰\nஉங்கள் Subscription 3 நாட்களில் முடிவடைகிறது.\nதொடர்ந்து கதைகளை வாசிக்க இப்போதே Renew செய்யுங்கள் 📚";
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
+                $user_id, '%3 நாட்களில் முடிவடைகிறது%', $today
+            ));
+            if (!$exists) {
+                $wpdb->insert($notification_table, [
+                    'user_id' => $user_id,
+                    'message' => $msg,
+                    'is_read' => 0,
+                    'created_at' => current_time('mysql')
+                ]);
+
+                reminderEmailSend($user_id, 3);
+            }
+        }
+
+        // 1st day before expiry (expires tomorrow)
+        if ($days_left == 1) {
+            $msg = "Reminder ⏰\nஉங்கள் Subscription நாளை முடிவடைகிறது.\nதொடர்ந்து கதைகளை வாசிக்க இப்போதே Renew செய்யுங்கள் 📚";
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
+                $user_id, '%Subscription நாளை முடிவடைகிறது%', $today
+            ));
+            if (!$exists) {
+                $wpdb->insert($notification_table, [
+                    'user_id' => $user_id,
+                    'message' => $msg,
+                    'is_read' => 0,
+                    'created_at' => current_time('mysql')
+                ]);
+
+                reminderEmailSend($user_id, 1);
+            }
+        }
+
+        // On expiry day
+        if ($days_left == 0) {
+            $msg = "Subscription expired 🔐 Stories Locked\nஉங்கள் Subscription முடிவடைந்துவிட்டது. உங்களுக்காக கதைகள் காத்திருக்கின்றன. மீண்டும் அனைத்து கதைகளையும் திறக்க உடனே Renew செய்யுங்கள் 📚";
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
+                $user_id, '%Subscription முடிவடைந்துவிட்டது%', $today
+            ));
+            if (!$exists) {
+                $wpdb->insert($notification_table, [
+                    'user_id' => $user_id,
+                    'message' => $msg,
+                    'is_read' => 0,
+                    'created_at' => current_time('mysql')
+                ]);
+                expirationEmailSend($user_id);
             }
         }
     }
@@ -259,18 +322,146 @@ function check_subscription_expired($user_id) {
         return;
     }
 
-    if ($sub && strtotime($sub->end_date) < time()) {
+    if ($sub) {
+        $end_time = strtotime($sub->end_date);
+        $now = time();
+        $days_left = floor(($now - $end_time) / (24 * 60 * 60));
         $today = date('Y-m-d');
         $msg = "Subscription expired 🔐 Stories Locked\nஉங்கள் Subscription முடிவடைந்துவிட்டது. உங்களுக்காக கதைகள் காத்திருக்கின்றன. மீண்டும் அனைத்து கதைகளையும் திறக்க உடனே Renew செய்யுங்கள் 📚";
-        $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s", $user_id, '%expired%', $today));
-        if (!$exists) {
-            $wpdb->insert($notification_table, [
-                'user_id' => $user_id,
-                'message' => $msg,
-                'is_read' => 0,
-                'created_at' => current_time('mysql')
-            ]);
+        $current_date = current_time('mysql');
+
+        // 7th day before expiry
+        if ($days_left == 7 || $days_left == 3 || $days_left == 1) {
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $notification_table WHERE user_id=%d AND message LIKE %s AND DATE(created_at) = %s",
+                $user_id, '%Subscription முடிவடைந்துவிட்டது%', $today
+            ));
+            if (!$exists) {
+                $wpdb->insert($notification_table, [
+                    'user_id' => $user_id,
+                    'message' => $msg,
+                    'is_read' => 0,
+                    'created_at' => $current_date
+                ]);
+
+                expirationEmailSend($user_id);
+            }
         }
+    }
+}
+
+function subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date)
+{
+    $site_url = site_url();
+    // Send email to user
+    $user = get_userdata($user_id);
+    if ($user && $user->user_email) {
+        $subject = "🎉 உங்கள் Valanchuli Subscription செயல்படுத்தப்பட்டது!";
+        $body = <<<EOT
+            Dear Reader,
+            
+            வாழ்த்துகள்!
+
+            உங்கள் Valanchuli Subscription ($plan_name) வெற்றிகரமாக செயல்படுத்தப்பட்டுள்ளது. உங்கள் Subscription காலம் $start_date முதல் $end_date வரை செல்லும். இனி நீங்கள் Valanchuli-யில் உள்ள பல கதைகளையும் தடையின்றி வாசிக்கலாம்.
+
+            📚 Subscription மூலம் கிடைக்கும் சலுகைகள்:
+            * Subscription Stories அனைத்தையும் எந்த தடையுமின்றி முழுமையாக வாசிக்கலாம் 
+            * புதிய Episodes உடனடியாக வாசிக்கும் வாய்ப்பு!
+            * Ads இல்லாமல் Smooth Reading Experience
+            இவை அனைத்தும் உங்களுக்காக காத்திருக்கின்றது!!!
+
+            🔐 valanchuli Premium Stories பற்றி:
+            Valanchuli-யில் உள்ள Premium Stories முழுவதையும் unlock செய்ய, அந்தக் கதைக்கு தேவையான Keys பயன்படுத்த வேண்டும். Keys பயன்படுத்தினால் அந்த முழு கதையையும் Unlock செய்து வாசிக்கலாம்.
+
+            கீழே உள்ள லிங்கை கிளிக் செய்து இப்பொழுதே உங்கள் வாசிப்பு அனுபவத்தை தொடங்குங்கள்
+
+            <a href="{$site_url}" style="color:#005d67;font-weight:600;text-decoration:underline;">{$site_url}</a>
+
+            Happy Reading!
+
+            Thanks & Regards,
+            Valanchuli – உங்கள் கதைகளின் உலகம்
+            EOT;
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        wp_mail($user->user_email, $subject, nl2br($body), $headers);
+    }
+}
+
+function reminderEmailSend($user_id, $days_left)
+{
+    $subscription_url = site_url('/subscription');
+    // Send email to user
+    $user = get_userdata($user_id);
+    if ($user && $user->user_email) {
+        $days_left = $days_left == 1 ? 'நாளை' : "$days_left நாட்களில்";
+        $subject = "📚 உங்கள் Valanchuli Subscription இன்னும் $days_left முடிவடைய போகிறது!";
+        $body = <<<EOT
+            Dear Reader,
+
+            📢 ஒரு சிறிய நினைவூட்டல்!
+
+            ⏳ உங்கள் Valanchuli Subscription இன்னும் $days_left முடிவடைய போகிறது.
+
+            📖 நீங்கள் படித்து கொண்டிருக்கும் கதைகள் இன்னும் பல சுவாரஸ்யமான திருப்பங்களை நோக்கி பயணிக்க இருக்கிறது.
+
+            வலஞ்சுழியில் - 
+            ✨ இன்னும் பல
+            📖 சுவாரஸ்யமான அத்தியாயங்கள்
+            🎭 உணர்ச்சி மிகுந்த தருணங்கள்
+            📚 சொல்லப்படாத பல கதைகள்
+            உங்களுக்காக காத்திருக்கின்றன.
+
+            ⏰ உங்கள் வாசிப்பு அனுபவம் இடையூறு இல்லாமல் தொடர
+            👉 Subscription-ஐ renewal செய்ய மறக்காதீர்கள்.
+
+            🔓 Subscription-ஐ renewal செய்ய இங்கே <a href="{$subscription_url}" style="color:#005d67;font-weight:600;text-decoration:underline;">கிளிக்</a> செய்யுங்கள்
+
+            Thanks & Regards,
+            Valanchuli – உங்கள் கதைகளின் உலகம்
+            EOT;
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        wp_mail($user->user_email, $subject, nl2br($body), $headers);
+    }
+}
+
+function expirationEmailSend($user_id)
+{
+    $subscription_url = site_url('/subscription');
+    // Send email to user
+    $user = get_userdata($user_id);
+    if ($user && $user->user_email) {
+        $subject = '🔔 உங்கள் Valanchuli Subscription முடிந்துவிட்டது!';
+        $body = <<<EOT
+            Dear Reader,
+
+            📢 உங்களுக்கு தெரியுமா?
+
+            ⏳ உங்கள் Valanchuli Subscription முடிந்துவிட்டது.
+            ஆனால்… 📚 வலஞ்சுழியில் இருக்கும் கதைகள் இன்னும் முடிவுக்கு வரவில்லை!
+
+            💔 உங்களை போல் ஒரு valuable reader- ஐ அந்த கதைகள் ரொம்பவே miss செய்கிறது.
+
+            வலஞ்சுழியில் - 
+            ✨ இன்னும் சொல்லப்படாத
+            📖 பல கதைகள்...
+            🎭 பல சுவார்ஸ்யமான தருணங்கள்!!
+            💥 பல அதிர்ச்சி திருப்பங்கள் உங்களுக்காக காத்திருக்கின்றன..
+
+            👉 இப்பொழுதே Subscription Renewal செய்து மீண்டும் கதைகளின் உலகுக்குள் வாருங்கள்.
+
+            🔓 Subscription renewal செய்தாலே
+            📚 உங்களுக்கு பிடித்த கதைகள் எல்லாம் மீண்டும் திறந்துவிடும்.
+
+            🔓 கதைகளை Unlock செய்ய இங்கே <a href="{$subscription_url}" style="color:#005d67;font-weight:600;text-decoration:underline;">கிளிக்</a> செய்யுங்கள்
+
+            Thanks & Regards,
+            Valanchuli – உங்கள் கதைகளின் உலகம்
+            EOT;
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        wp_mail($user->user_email, $subject, nl2br($body), $headers);
     }
 }
 

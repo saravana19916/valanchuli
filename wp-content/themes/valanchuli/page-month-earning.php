@@ -146,12 +146,6 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
     margin-bottom: 8px;
     text-align: center;
 }
-.bank-modal .desc {
-    color: #888;
-    font-size: 1rem;
-    text-align: center;
-    margin-bottom: 18px;
-}
 .bank-modal .form-group {
     margin-bottom: 14px;
 }
@@ -202,6 +196,34 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
         overflow-y: auto;
     }
 }
+.paid.unpaid {
+    color: #c00;
+    background: #fdeaea;
+}
+.paid.processing {
+    color: #856404;
+    background: #fff3cd;
+}
+.earning-history-row-revenue {
+    display: grid;
+    grid-template-columns: 194px 1fr 80px;
+    align-items: center;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.earning-history-row-revenue .label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #333;
+}
+.earning-history-row-revenue .amount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #005d67;
+}
+.earning-history-row-revenue .paid {
+    justify-self: end;
+}
 </style>
 
 <div class="earning-main-bg">
@@ -209,16 +231,16 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
         <div class="earning-title">My Earnings</div>
         <button class="bank-btn" id="openBankModal">Bank Details</button>
         <div class="earning-card">
-            <div class="fw-semibold mb-2" style="font-size:1.1rem;">Current Month Earnings</div>
-            <div class="earning-amount">₹<?php echo getWriterSubsctiptionEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t')) + (isset(getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]) ? getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]['revenue_share'] : 0); ?></div>
-            <div class="earning-row">
+            <div class="fw-semibold mb-2" style="font-size:1.1rem;">Current Month Key Revenue</div>
+            <div class="earning-amount">₹<?php echo (isset(getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]) ? getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]['revenue_share'] : 0); ?></div>
+            <!-- <div class="earning-row">
                 <div style="display:flex;align-items:center;">
                     <span class="icon">🔑</span>
                     <span class="label" style="margin-left:8px;">
                         <?php
                             $key_earnings = getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'));
                             echo isset($key_earnings[0]) ? $key_earnings[0]['keys'] : 0;
-                        ?> Keys Purchased
+                        ?> Key Revenue
                     </span>
                 </div>
                 <span class="value">
@@ -236,7 +258,7 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                 <span class="value">
                     ₹<?php echo getWriterSubsctiptionEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t')); ?>
                 </span>
-            </div>
+            </div> -->
             <div class="earning-row">
                 <div style="display:flex;align-items:center;">
                     <span class="icon" style="vertical-align:middle;">
@@ -246,9 +268,18 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                             <circle cx="16" cy="16" r="14" fill="none" stroke="#005d67" stroke-width="1"/>
                         </svg>
                     </span>
-                    <span class="label" style="margin-left:8px;"><b>30%</b> Revenue Share</span>
+                    <span class="label" style="margin-left:8px;"><b><?php echo get_option('writer_revenue_percentage', 0); ?>%</b> Revenue Share</span>
                 </div>
             </div>
+
+            <?php
+            $info_board = get_option('revenue_info_board', '');
+            if (!empty($info_board)) {
+                echo '<div class="earning-info-board" style="margin:24px 0;padding:18px;background:#f9f9f9;border-radius:12px;border:1px solid #e0e0e0;max-height:220px;overflow-y:auto;">';
+                echo wpautop($info_board);
+                echo '</div>';
+            }
+            ?>
         </div>
 
         <?php
@@ -258,36 +289,106 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
 
         // Get all payment history for this user, newest first
         $history = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table WHERE user_id = %d AND payment_status = %s ORDER BY from_date DESC", $user_id, 'Paid'
+            "SELECT * FROM $table WHERE user_id = %d ORDER BY from_date DESC", $user_id
         ));
 
-        // Show only 5 initially
-        $show_count = 5;
+        // Group by month and sum revenue
+        $monthly_history = [];
+        foreach ($history as $row) {
+            $month = date('Y-m', strtotime($row->from_date));
+            if (!isset($monthly_history[$month])) {
+                $monthly_history[$month] = [
+                    'from_date' => $row->from_date,
+                    'to_date' => $row->to_date,
+                    'key' => 0,
+                    'subscription' => 0,
+                    'status' => [],
+                    'transaction_id' => [],
+                    'unpaid_reason' => [],
+                ];
+            }
+            if ($row->revenue_type == 'key') {
+                $monthly_history[$month]['key'] += $row->revenue_payment;
+                $monthly_history[$month]['status']['key'] = $row->payment_status;
+                $monthly_history[$month]['transaction_id']['key'] = $row->transaction_id;
+                $monthly_history[$month]['unpaid_reason']['key'] = $row->unpaid_reason;
+            } elseif ($row->revenue_type == 'subscription') {
+                $monthly_history[$month]['subscription'] += $row->revenue_payment;
+                $monthly_history[$month]['status']['subscription'] = $row->payment_status;
+                $monthly_history[$month]['transaction_id']['subscription'] = $row->transaction_id;
+                $monthly_history[$month]['unpaid_reason']['subscription'] = $row->unpaid_reason;
+            }
+        }
         ?>
 
         <div class="earning-history-title">Earning History</div>
         <div id="earning-history-list">
-            <?php if (empty($history)): ?>
+            <?php if (empty($monthly_history)): ?>
                 <div class="earning-history-card" style="text-align:center; color:#888;">
                     No data found
                 </div>
             <?php else: ?>
-                <?php foreach ($history as $i => $row): ?>
+                <?php
+                $months = array_keys($monthly_history);
+                rsort($months); // Show latest first
+                $show_count = 5;
+                $i = 0;
+                foreach ($months as $month):
+                    $data = $monthly_history[$month];
+                    $total = $data['key'] + $data['subscription'];
+                ?>
                     <div class="earning-history-card" style="<?= $i >= $show_count ? 'display:none;' : '' ?>">
                         <div class="earning-history-row">
-                            <span>
-                                <?php echo date('F Y', strtotime($row->from_date)); ?>
+                            <span class="fw-bold">
+                                <?php echo date('F Y', strtotime($data['from_date'])); ?> (<?= date('d-m-Y', strtotime($data['from_date'])); ?> to <?= date('d-m-Y', strtotime($data['to_date'])); ?>)
                             </span>
-                            <span class="amount">₹<?= number_format($row->revenue_payment, 2); ?></span>
+                            <span class="amount">₹<?= number_format($total, 2); ?></span>
                         </div>
-                        <div class="earning-history-row">
-                            <span class="date">
-                                <?= date('d/m/Y', strtotime($row->from_date)); ?> - <?= date('d/m/Y', strtotime($row->to_date)); ?>
-                            </span>
-                            <span class="paid"><?= esc_html($row->payment_status); ?></span>
+                        <div class="earning-history-row earning-history-row-revenue">
+                            <span class="label">Key Revenue</span>
+                            <span class="amount">₹<?= number_format($data['key'], 2); ?></span>
+                            <?php
+                            $status_key = strtolower($data['status']['key'] ?? '');
+                            $paid_class_key = 'paid';
+                            if ($status_key === 'unpaid') $paid_class_key .= ' unpaid';
+                            elseif ($status_key === 'processing') $paid_class_key .= ' processing';
+                            ?>
+                            <span class="<?= $paid_class_key; ?>"><?= esc_html($data['status']['key'] ?? ''); ?></span>
                         </div>
+                        <?php if ($status_key === 'paid' && !empty($data['transaction_id']['key'])): ?>
+                            <div class="earning-history-row mt-1 mb-2" style="font-size:0.95rem;">
+                                <span class="fw-bold">Transaction ID: <?= esc_html($data['transaction_id']['key']); ?></span>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (($status_key === 'unpaid' || $status_key === 'processing') && !empty($data['unpaid_reason']['key'])): ?>
+                            <div class="earning-history-row mt-1" style="color:#c00; font-size:0.95rem;">
+                                <span>Reason: <?= esc_html($data['unpaid_reason']['key']); ?></span>
+                            </div>
+                        <?php endif; ?>
+                        <div class="earning-history-row earning-history-row-revenue">
+                            <span class="label">Subscription Revenue</span>
+                            <span class="amount">₹<?= number_format($data['subscription'], 2); ?></span>
+                            <?php
+                            $status_sub = strtolower($data['status']['subscription'] ?? '');
+                            $paid_class_sub = 'paid';
+                            if ($status_sub === 'unpaid') $paid_class_sub .= ' unpaid';
+                            elseif ($status_sub === 'processing') $paid_class_sub .= ' processing';
+                            ?>
+                            <span class="<?= $paid_class_sub; ?>"><?= esc_html($data['status']['subscription'] ?? ''); ?></span>
+                        </div>
+                        <?php if ($status_sub === 'paid' && !empty($data['transaction_id']['subscription'])): ?>
+                            <div class="earning-history-row mt-1 mb-2" style="font-size:0.95rem;">
+                                <span class="fw-bold">Transaction ID: <?= esc_html($data['transaction_id']['subscription']); ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (($status_sub === 'unpaid' || $status_sub === 'processing') && !empty($data['unpaid_reason']['subscription'])): ?>
+                            <div class="earning-history-row mt-1" style="color:#c00; font-size:0.95rem;">
+                                <span>Reason: <?= esc_html($data['unpaid_reason']['subscription']); ?></span>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                <?php endforeach; ?>
+                <?php $i++; endforeach; ?>
             <?php endif; ?>
         </div>
         <?php if (!empty($history) && count($history) > $show_count): ?>
@@ -323,8 +424,10 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
     <div class="bank-modal">
         <span class="close-btn" id="closeBankModal">&times;</span>
         <h2>Bank Details</h2>
-        <div class="desc">Provide your bank account information for payments.</div>
-        <form id="bankDetailsForm">
+        <?php if (!$bank_details): ?>
+            <div class="fs-14px fw-bold" id="bankSaveNote">வங்கி விவரத்தை பதிவிட்டு save செய்த பிறகு உங்களால் மீண்டும் edit செய்ய முடியாது, அதனால் கவனமாக கையாளவும்.</div>
+        <?php endif; ?>
+        <form id="bankDetailsForm" class="mt-4">
             <div class="form-group">
                 <label>Bank Name <span class="required">*</span></label>
                 <input type="text" name="bank_name" value="<?php echo esc_attr($bank_details->bank_name ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
@@ -350,10 +453,14 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                 <input type="text" name="phone_number" value="<?php echo esc_attr($bank_details->phone_number ?? ''); ?>" <?php echo (!empty($bank_details) && is_object($bank_details)) ? 'disabled' : ''; ?>>
             </div>
             <?php if (!$bank_details): ?>
-            <div class="modal-actions">
-                <button type="submit" class="save-btn">Save</button>
-            </div>
+                <div class="modal-actions">
+                    <button type="submit" class="save-btn">Save</button>
+                </div>
             <?php endif; ?>
+            <div class="fs-14px fw-bold" id="bankEditNote" style="<?php echo !$bank_details ? 'display:none;' : ''; ?>">
+                உங்கள் Bank details மாற்ற அல்லது திருத்த வேண்டும் என்றால் இங்கே 
+                <a href="<?php echo site_url('/contact'); ?>" style="color:#005d67;font-weight:600;text-decoration:underline;">கிளிக்</a> செய்யுங்கள்.
+            </div>
         </form>
     </div>
 </div>
@@ -406,6 +513,9 @@ document.getElementById('bankDetailsForm').onsubmit = function(e) {
             });
             var saveBtn = form.querySelector('.save-btn');
             if (saveBtn) saveBtn.style.display = 'none';
+            // Hide the save note and show the edit note
+            document.getElementById('bankSaveNote').style.display = 'none';
+            document.getElementById('bankEditNote').style.display = 'block';
         } else {
             alert('Failed to save: ' + (data.data || 'Unknown error'));
         }

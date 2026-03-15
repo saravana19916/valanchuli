@@ -21,18 +21,51 @@ add_action('admin_menu', function() {
     );
 });
 
+// Enqueue Font Awesome
+add_action('admin_enqueue_scripts', function() {
+    wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css');
+});
+
 // Main dashboard page
 function render_key_revenue_dashboard() {
     global $wpdb;
 
-    // Handle save for payment status/unpaid reason
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['writer_payment_update'])) {
-        check_admin_referer('save_writer_payment');
+    // Handle save for payment status/unpaid reason (AJAX or POST)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['key_writer_payment_update'])) {
+        check_admin_referer('save_key_writer_payment');
+        global $wpdb;
         $writer_id = intval($_POST['writer_id']);
+        $revenue_payment = floatval($_POST['revenue_payment']);
         $status = sanitize_text_field($_POST['payment_status']);
-        $reason = sanitize_text_field($_POST['unpaid_reason']);
-        update_user_meta($writer_id, 'key_writer_payment_status', $status);
-        update_user_meta($writer_id, 'key_writer_unpaid_reason', $reason);
+        $transaction_id = sanitize_text_field($_POST['transaction_id']);
+        $reason = $status == 'Paid' ? '' : sanitize_text_field($_POST['unpaid_reason']);
+        $from = isset($_GET['from']) ? sanitize_text_field($_GET['from']) : date('Y-m-01');
+        $to = isset($_GET['to']) ? sanitize_text_field($_GET['to']) : date('Y-m-t');
+
+        // Store in new table for reporting
+        $table = $wpdb->prefix . 'writer_payment_history';
+        // Check if already exists for this user and period
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $table WHERE user_id = %d AND revenue_type = %s AND from_date = %s AND to_date = %s",
+            $writer_id, 'key', $from, $to
+        ));
+        $data = [
+            'user_id'        => $writer_id,
+            'from_date'      => $from,
+            'to_date'        => $to,
+            'revenue_type'   => 'key',
+            'payment_status' => $status,
+            'transaction_id' => $transaction_id,
+            'unpaid_reason'  => $reason,
+            'revenue_payment'=> $revenue_payment,
+            'updated_at'     => current_time('mysql'),
+        ];
+        if ($exists) {
+            $wpdb->update($table, $data, ['id' => $exists]);
+        } else {
+            $wpdb->insert($table, $data);
+        }
+
         echo '<div class="updated"><p>Payment status updated.</p></div>';
     }
 
@@ -40,79 +73,150 @@ function render_key_revenue_dashboard() {
     $from = isset($_GET['from']) ? sanitize_text_field($_GET['from']) : date('Y-m-01');
     $to = isset($_GET['to']) ? sanitize_text_field($_GET['to']) : date('Y-m-t');
 
-    // Key value from option (default 0.5)
-    $key_value = floatval(get_option('common_coin_unlock', 0.5));
+    $key_value = floatval(get_option('common_single_key_amount', 0.5));
+    $keysToUnlockEpisode = floatval(get_option('common_coin_unlock', 0));
     $writerPer = floatval(get_option('writer_revenue_percentage', 30));
     $platformPer = floatval(get_option('platform_revenue_percentage', 70));
     $writer_share_per_key = $key_value * ($writerPer / 100);
     $platform_share_per_key = $key_value * ($platformPer / 100);
 
+    // Get reward keys for each writer in the period
+    $reward_keys_by_writer = [];
+    $reward_keys_total = 0;
+    $reward_keys_revenue_total = 0;
+    $reward_table = $wpdb->prefix . 'writer_key_rewards';
+    $reward_rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT author_id, SUM(`key`) as reward_keys
+         FROM $reward_table
+         WHERE rewarded_at BETWEEN %s AND %s
+         GROUP BY author_id",
+        $from . ' 00:00:00', $to . ' 23:59:59'
+    ));
+    foreach ($reward_rows as $row) {
+        $reward_keys_by_writer[$row->author_id] = intval($row->reward_keys);
+        $reward_keys_total += intval($row->reward_keys);
+        $reward_keys_revenue_total += intval($row->reward_keys) * $writer_share_per_key;
+    }
+
     // Total keys purchased (lock_type='key')
-    $total_keys = $wpdb->get_var($wpdb->prepare(
+    $total_unlocked_episodes = $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM {$wpdb->prefix}user_episode_unlocks WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s",
         $from . ' 00:00:00', $to . ' 23:59:59'
     ));
-    $total_keys = $total_keys ?: 0;
+    $total_unlocked_episodes = $total_unlocked_episodes ?: 0;
+
+    $total_keys = $total_unlocked_episodes * $keysToUnlockEpisode;
 
     // Total payment
-    $total_payment = $total_keys * $key_value;
+    $total_keys_with_rewards = $total_keys + $reward_keys_total;
+    $total_payment = $total_keys_with_rewards * $key_value;
 
     // Writer and platform revenue
-    $writers_revenue = $total_keys * $writer_share_per_key;
-    $platform_revenue = $total_keys * $platform_share_per_key;
+    $writers_revenue = ($total_keys * $writer_share_per_key) + $reward_keys_revenue_total;
+    $platform_revenue = $total_keys_with_rewards * $platform_share_per_key;
 
     // Writerwise revenue
+    // 1. Get unlocks
     $writerwise = $wpdb->get_results($wpdb->prepare(
-        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes, COUNT(*) as total_keys
+        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes
          FROM {$wpdb->prefix}user_episode_unlocks
          WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s
          GROUP BY author_id",
         $from . ' 00:00:00', $to . ' 23:59:59'
     ));
 
+    // 2. Get rewards
+    $reward_table = $wpdb->prefix . 'writer_key_rewards';
+    $reward_rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT author_id, SUM(`key`) as reward_keys
+         FROM $reward_table
+         WHERE rewarded_at BETWEEN %s AND %s
+         GROUP BY author_id",
+        $from . ' 00:00:00', $to . ' 23:59:59'
+    ));
+
+    // 3. Merge author IDs
+    $all_author_ids = [];
+    foreach ($writerwise as $row) $all_author_ids[$row->author_id] = ['episodes' => $row->episodes];
+    foreach ($reward_rows as $row) {
+        if (!isset($all_author_ids[$row->author_id])) $all_author_ids[$row->author_id] = ['episodes' => 0];
+        $all_author_ids[$row->author_id]['reward_keys'] = intval($row->reward_keys);
+    }
+    foreach ($all_author_ids as $author_id => $data) {
+        if (!isset($data['reward_keys'])) $all_author_ids[$author_id]['reward_keys'] = 0;
+    }
+
+    // 4. Build writerwise_data
     $writerwise_data = [];
-    foreach ($writerwise as $row) {
-        $user_info = get_userdata($row->author_id);
+    foreach ($all_author_ids as $author_id => $data) {
+        $user_info = get_userdata($author_id);
         $name = $user_info ? $user_info->display_name : 'Unknown';
-        $payment_status = get_user_meta($row->author_id, 'key_writer_payment_status', true) ?: 'Unpaid';
-        $unpaid_reason = get_user_meta($row->author_id, 'key_writer_unpaid_reason', true) ?: '';
-        $payment = $row->total_keys * $key_value;
-        $revenue_share = $row->total_keys * $writer_share_per_key;
+        $total_keys_Purchase = $data['episodes'] * $keysToUnlockEpisode;
+        $reward_keys = $data['reward_keys'];
+        $payment = ($total_keys_Purchase + $reward_keys) * $key_value;
+        $revenue_share = ($total_keys_Purchase * $writer_share_per_key) + ($reward_keys * $writer_share_per_key);
         $writerwise_data[] = [
-            'id' => $row->author_id,
+            'id' => $author_id,
             'name' => $name,
-            'episodes' => $row->episodes,
-            'keys' => $row->total_keys,
+            'episodes' => $data['episodes'],
+            'keys' => $total_keys_Purchase,
+            'reward_keys' => $reward_keys,
             'payment' => $payment,
             'revenue_share' => $revenue_share,
-            'status' => $payment_status,
-            'reason' => $unpaid_reason,
+            // ...other fields...
         ];
     }
 
     // Storywise revenue
+    // 1. Get unlocks per story
     $storywise = $wpdb->get_results($wpdb->prepare(
-        "SELECT series_id, author_id, COUNT(DISTINCT episode_id) as episodes, COUNT(*) as total_keys
+        "SELECT series_id, author_id, COUNT(DISTINCT episode_id) as episodes
          FROM {$wpdb->prefix}user_episode_unlocks
          WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s
-         GROUP BY series_id",
+         GROUP BY series_id, author_id",
         $from . ' 00:00:00', $to . ' 23:59:59'
     ));
 
+    // 2. Get rewards per story
+    $reward_rows_story = $wpdb->get_results($wpdb->prepare(
+        "SELECT post_id, author_id, SUM(`key`) as reward_keys
+         FROM $reward_table
+         WHERE rewarded_at BETWEEN %s AND %s
+         GROUP BY post_id, author_id",
+        $from . ' 00:00:00', $to . ' 23:59:59'
+    ));
+
+    // 3. Merge story-author pairs
+    $all_story_authors = [];
+    foreach ($storywise as $row) $all_story_authors[$row->series_id . '_' . $row->author_id] = ['episodes' => $row->episodes];
+    foreach ($reward_rows_story as $row) {
+        $key = $row->post_id . '_' . $row->author_id;
+        if (!isset($all_story_authors[$key])) $all_story_authors[$key] = ['episodes' => 0];
+        $all_story_authors[$key]['reward_keys'] = intval($row->reward_keys);
+    }
+    foreach ($all_story_authors as $key => $data) {
+        if (!isset($data['reward_keys'])) $all_story_authors[$key]['reward_keys'] = 0;
+    }
+
+    // 4. Build storywise_data
     $storywise_data = [];
-    foreach ($storywise as $row) {
-        $post = get_post($row->series_id);
-        $user_info = get_userdata($row->author_id);
+    foreach ($all_story_authors as $key => $data) {
+        list($series_id, $author_id) = explode('_', $key);
+        $post = get_post($series_id);
+        $user_info = get_userdata($author_id);
         $name = $user_info ? $user_info->display_name : 'Unknown';
-        $payment = $row->total_keys * $key_value;
-        $revenue_share = $row->total_keys * $writer_share_per_key;
+        $total_keys_Purchase = $data['episodes'] * $keysToUnlockEpisode;
+        $reward_keys = $data['reward_keys'];
+        $payment = ($total_keys_Purchase + $reward_keys) * $key_value;
+        $revenue_share = ($total_keys_Purchase * $writer_share_per_key) + ($reward_keys * $writer_share_per_key);
         $storywise_data[] = [
-            'id' => $row->author_id,
+            'id' => $author_id,
             'title' => $post ? $post->post_title : 'Unknown',
             'writer' => $name,
-            'keys' => $row->total_keys,
+            'keys' => $total_keys_Purchase,
+            'reward_keys' => $reward_keys,
             'payment' => $payment,
-            'episodes' => $row->episodes,
+            'episodes' => $data['episodes'],
             'revenue_share' => $revenue_share,
         ];
     }
@@ -130,12 +234,16 @@ function render_key_revenue_dashboard() {
         </form>
         <div style="display:flex;gap:18px;margin-bottom:20px;">
             <div style="flex:1;background:#eaf7f2;padding:18px 24px;border-radius:10px;">
-                <div style="font-size:1.2rem;color:#005d67;">Key Value</div>
+                <div style="font-size:1.2rem;color:#005d67;">Single Key Amount</div>
                 <div style="font-size:2rem;font-weight:bold;margin-top: 15px;">₹<?php echo number_format($key_value, 2); ?></div>
             </div>
             <div style="flex:1;background:#fff0f0;padding:18px 24px;border-radius:10px;">
-                <div style="font-size:1.2rem;color:#b71c1c;">Total Keys Purchase</div>
-                <div style="font-size:2rem;font-weight:bold;margin-top: 15px;"><?php echo number_format($total_keys); ?></div>
+                <div style="font-size:1.2rem;color:#b71c1c;">Total Episodes Unlocked</div>
+                <div style="font-size:2rem;font-weight:bold;margin-top: 15px;"><?php echo number_format($total_unlocked_episodes); ?></div>
+            </div>
+            <div style="flex:1;background:#fff0f0;padding:18px 24px;border-radius:10px;">
+                <div style="font-size:1.2rem;color:#b71c1c;">Total Keys Purchased</div>
+                <div style="font-size:2rem;font-weight:bold;margin-top: 15px;"><?php echo number_format($total_keys) + number_format($reward_keys_total); ?></div>
             </div>
             <div style="flex:1;background:#eaf7f2;padding:18px 24px;border-radius:10px;">
                 <div style="font-size:1.2rem;color:#005d67;">Total Payment</div>
@@ -152,8 +260,13 @@ function render_key_revenue_dashboard() {
         </div>
 
         <h2 style="margin-top:30px;">Writerwise Revenue Share</h2>
-        <input type="text" id="writerwise-search" placeholder="Search Writerwise..." style="margin-bottom:10px;width:250px;">
-        <button id="writerwise-csv" class="button" style="margin-left:10px;">Download CSV</button>
+        <div style="display:flex;align-items:center;margin-bottom:10px;">
+            <input type="text" id="writerwise-search" placeholder="Search Writerwise..." style="flex:1;max-width:250px;">
+            <button id="writerwise-search-btn" class="button" style="margin-left:8px;">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button id="writerwise-csv" class="button" style="margin-left:16px;">Download CSV</button>
+        </div>
         <table id="writerwise-table" class="widefat striped" style="margin-bottom:30px;">
             <thead>
                 <tr>
@@ -161,9 +274,11 @@ function render_key_revenue_dashboard() {
                     <th>Writer Name</th>
                     <th>Number of Episodes Unlocked</th>
                     <th>Total Keys</th>
+                    <th>Reward Keys</th>
                     <th>Total Payment</th>
                     <th>Revenue Share</th>
                     <th>Payment Status</th>
+                    <th>Transaction ID</th>
                     <th>Unpaid Reason</th>
                     <th>Action</th>
                 </tr>
@@ -175,22 +290,28 @@ function render_key_revenue_dashboard() {
                     <td><?php echo esc_html($wr['name']); ?></td>
                     <td><?php echo esc_html($wr['episodes']); ?></td>
                     <td><?php echo esc_html($wr['keys']); ?></td>
+                    <td><?php echo esc_html($wr['reward_keys']); ?></td>
                     <td>₹<?php echo number_format($wr['payment'], 2); ?></td>
                     <td>₹<?php echo number_format($wr['revenue_share'], 2); ?></td>
                     <td>
                         <form method="post" style="display:inline;">
-                            <?php wp_nonce_field('save_writer_payment'); ?>
+                            <?php wp_nonce_field('save_key_writer_payment'); ?>
                             <input type="hidden" name="writer_id" value="<?php echo esc_attr($wr['id']); ?>">
+                            <input type="hidden" name="revenue_payment" value="<?php echo esc_attr($wr['revenue_share']); ?>">
                             <select name="payment_status">
                                 <option value="Paid" <?php selected($wr['status'], 'Paid'); ?>>Paid</option>
                                 <option value="Unpaid" <?php selected($wr['status'], 'Unpaid'); ?>>Unpaid</option>
+                                <option value="Processing" <?php selected($wr['status'], 'Processing'); ?>>Processing</option>
                             </select>
+                    </td>
+                    <td>
+                            <input type="text" name="transaction_id" value="<?php echo esc_attr($wr['transaction_id']); ?>" placeholder="Transaction ID">
                     </td>
                     <td>
                             <input type="text" name="unpaid_reason" value="<?php echo esc_attr($wr['reason']); ?>" placeholder="Reason">
                     </td>
                     <td>
-                            <button type="submit" name="writer_payment_update" class="button">Save</button>
+                            <button type="submit" name="key_writer_payment_update" class="button">Save</button>
                         </form>
                     </td>
                 </tr>
@@ -199,16 +320,22 @@ function render_key_revenue_dashboard() {
         </table>
 
         <h2>Storywise Revenue Share</h2>
-        <input type="text" id="storywise-search" placeholder="Search Storywise..." style="margin-bottom:10px;width:250px;">
-        <button id="storywise-csv" class="button" style="margin-left:10px;">Download CSV</button>
+        <div style="display:flex;align-items:center;margin-bottom:10px;">
+            <input type="text" id="storywise-search" placeholder="Search Storywise..." style="flex:1;max-width:250px;">
+            <button id="storywise-search-btn" class="button" style="margin-left:8px;">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button id="storywise-csv" class="button" style="margin-left:16px;">Download CSV</button>
+        </div>
         <table id="storywise-table" class="widefat striped">
             <thead>
                 <tr>
                     <th>Writer ID</th>
                     <th>Story Name</th>
                     <th>Writer Name</th>
-                    <th>Unlocked Episodes</th>
+                    <th>Number of Episodes Unlocked</th>
                     <th>Total Keys</th>
+                    <th>Reward Keys</th>
                     <th>Total Payment</th>
                     <th>Revenue Share</th>
                 </tr>
@@ -221,6 +348,7 @@ function render_key_revenue_dashboard() {
                     <td><?php echo esc_html($row['writer']); ?></td>
                     <td><?php echo esc_html($row['episodes']); ?></td>
                     <td><?php echo esc_html($row['keys']); ?></td>
+                    <td><?php echo esc_html($row['reward_keys']); ?></td>
                     <td>₹<?php echo number_format($row['payment'], 2); ?></td>
                     <td>₹<?php echo number_format($row['revenue_share'], 2); ?></td>
                 </tr>
@@ -234,10 +362,27 @@ function render_key_revenue_dashboard() {
     </style>
     <script>
     // Filter tables
-    function filterTable(inputId, tableId) {
+    // function filterTable(inputId, tableId) {
+    //     const input = document.getElementById(inputId);
+    //     const table = document.getElementById(tableId);
+    //     input.addEventListener('keyup', function() {
+    //         const filter = input.value.toLowerCase();
+    //         const rows = table.querySelectorAll('tbody tr');
+    //         rows.forEach(row => {
+    //             const text = row.textContent.toLowerCase();
+    //             row.style.display = text.includes(filter) ? '' : 'none';
+    //         });
+    //     });
+    // }
+    // filterTable('writerwise-search', 'writerwise-table');
+    // filterTable('storywise-search', 'storywise-table');
+
+    // Filter tables on button click
+    function filterTableOnClick(inputId, tableId, btnId) {
         const input = document.getElementById(inputId);
         const table = document.getElementById(tableId);
-        input.addEventListener('keyup', function() {
+        const btn = document.getElementById(btnId);
+        btn.addEventListener('click', function() {
             const filter = input.value.toLowerCase();
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach(row => {
@@ -246,8 +391,8 @@ function render_key_revenue_dashboard() {
             });
         });
     }
-    filterTable('writerwise-search', 'writerwise-table');
-    filterTable('storywise-search', 'storywise-table');
+    filterTableOnClick('writerwise-search', 'writerwise-table', 'writerwise-search-btn');
+    filterTableOnClick('storywise-search', 'storywise-table', 'storywise-search-btn');
 
     // CSV Export Function (skip Action column, use selected value for dropdown)
     function downloadTableAsCSV(tableId, filename) {

@@ -21,6 +21,11 @@ add_action('admin_menu', function() {
     );
 });
 
+// Enqueue Font Awesome
+add_action('admin_enqueue_scripts', function() {
+    wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css');
+});
+
 // Main dashboard page
 function render_subscription_revenue_dashboard() {
     global $wpdb;
@@ -32,27 +37,25 @@ function render_subscription_revenue_dashboard() {
         $writer_id = intval($_POST['writer_id']);
         $revenue_payment = floatval($_POST['revenue_payment']);
         $status = sanitize_text_field($_POST['payment_status']);
-        $reason = sanitize_text_field($_POST['unpaid_reason']);
+        $transaction_id = sanitize_text_field($_POST['transaction_id']);
+        $reason = $status == 'Paid' ? '' : sanitize_text_field($_POST['unpaid_reason']);
         $from = isset($_GET['from']) ? sanitize_text_field($_GET['from']) : date('Y-m-01');
         $to = isset($_GET['to']) ? sanitize_text_field($_GET['to']) : date('Y-m-t');
-
-        // Store in user meta (for backward compatibility)
-        update_user_meta($writer_id, 'writer_payment_status', $status);
-        update_user_meta($writer_id, 'writer_unpaid_reason', $reason);
-        update_user_meta($writer_id, 'writer_revenue_payment', $revenue_payment);
 
         // Store in new table for reporting
         $table = $wpdb->prefix . 'writer_payment_history';
         // Check if already exists for this user and period
         $exists = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM $table WHERE user_id = %d AND from_date = %s AND to_date = %s",
-            $writer_id, $from, $to
+            "SELECT id FROM $table WHERE user_id = %d AND revenue_type = %s AND from_date = %s AND to_date = %s",
+            $writer_id, 'subscription', $from, $to
         ));
         $data = [
             'user_id'        => $writer_id,
             'from_date'      => $from,
             'to_date'        => $to,
+            'revenue_type'   => 'subscription',
             'payment_status' => $status,
+            'transaction_id' => $transaction_id,
             'unpaid_reason'  => $reason,
             'revenue_payment'=> $revenue_payment,
             'updated_at'     => current_time('mysql'),
@@ -77,7 +80,7 @@ function render_subscription_revenue_dashboard() {
          WHERE status = 1 
            AND payment_status = 'success'
            AND start_date <= %s AND end_date >= %s",
-        $to . ' 23:59:59', $from . ' 00:00:00'
+        $from . ' 00:00:00', $to . ' 23:59:59'
     ));
 
     // Unique users
@@ -128,11 +131,18 @@ function render_subscription_revenue_dashboard() {
     foreach ($writer_reads as $wr) {
         $user_info = get_userdata($wr->author_id);
         $name = $user_info ? $user_info->display_name : 'Unknown';
-        $payment_status = get_user_meta($wr->author_id, 'writer_payment_status', true) ?: 'Unpaid';
-        $unpaid_reason = get_user_meta($wr->author_id, 'writer_unpaid_reason', true) ?: '';
         $revenue = $total_reads > 0 ? round(($wr->total_reads / $total_reads) * $writers_pool) : 0;
 
         $locked_stories = get_locked_stories_count_by_author($wr->author_id);
+
+        $table = $wpdb->prefix . 'writer_payment_history';
+        $payment_row = $wpdb->get_row($wpdb->prepare(
+            "SELECT payment_status, unpaid_reason, transaction_id FROM $table WHERE user_id = %d AND from_date = %s AND to_date = %s AND revenue_type = %s LIMIT 1",
+            $wr->author_id, $from, $to, 'subscription'
+        ));
+        $payment_status = ($payment_row && $payment_row->payment_status) ? $payment_row->payment_status : 'Unpaid';
+        $unpaid_reason = ($payment_row && $payment_row->unpaid_reason) ? $payment_row->unpaid_reason : '';
+        $transaction_id = ($payment_row && $payment_row->transaction_id) ? $payment_row->transaction_id : '';
 
         $writer_revenue[] = [
             'id' => $wr->author_id,
@@ -141,6 +151,7 @@ function render_subscription_revenue_dashboard() {
             'locked_stories' => $locked_stories,
             'revenue' => $revenue,
             'status' => $payment_status,
+            'transaction_id' => $transaction_id,
             'reason' => $unpaid_reason,
         ];
     }
@@ -253,8 +264,14 @@ function render_subscription_revenue_dashboard() {
 
         <!-- Writerwise Revenue Distribution -->
         <h2 style="margin-top:30px;">Writerwise Revenue Distribution</h2>
-        <input type="text" id="writerwise-search" placeholder="Search Writerwise..." style="margin-bottom:10px;width:250px;">
-        <button id="writerwise-csv" class="button" style="margin-left:10px;">Download CSV</button>
+        <!-- Writerwise Search -->
+        <div style="display:flex;align-items:center;margin-bottom:10px;width:100%;">
+            <input type="text" id="writerwise-search" placeholder="Search Writerwise..." style="flex:1;max-width:250px;">
+            <button id="writerwise-search-btn" class="button" style="margin-left:8px;">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button id="writerwise-csv" class="button" style="margin-left:16px;">Download CSV</button>
+        </div>
         <table id="writerwise-table" class="widefat striped" style="margin-bottom:30px;">
             <thead>
                 <tr>
@@ -264,7 +281,8 @@ function render_subscription_revenue_dashboard() {
                     <th>Total Views</th>
                     <th>Revenue Payment</th>
                     <th>Payment Status</th>
-                    <th>Unpaid Reason</th>
+                    <th>Transaction ID</th>
+                    <th>Reason</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -284,7 +302,11 @@ function render_subscription_revenue_dashboard() {
                             <select name="payment_status">
                                 <option value="Paid" <?php selected($wr['status'], 'Paid'); ?>>Paid</option>
                                 <option value="Unpaid" <?php selected($wr['status'], 'Unpaid'); ?>>Unpaid</option>
+                                <option value="Processing" <?php selected($wr['status'], 'Processing'); ?>>Processing</option>
                             </select>
+                    </td>
+                    <td>
+                            <input type="text" name="transaction_id" value="<?php echo esc_attr($wr['transaction_id']); ?>" placeholder="Transaction ID">
                     </td>
                     <td>
                             <input type="text" name="unpaid_reason" value="<?php echo esc_attr($wr['reason']); ?>" placeholder="Reason">
@@ -300,8 +322,14 @@ function render_subscription_revenue_dashboard() {
 
         <!-- Storywise Revenue Details -->
         <h2>Storywise Revenue Details</h2>
-        <input type="text" id="storywise-search" placeholder="Search Storywise..." style="margin-bottom:10px;width:250px;">
-        <button id="storywise-csv" class="button" style="margin-left:10px;">Download CSV</button>
+        <!-- Storywise Search -->
+        <div style="display:flex;align-items:center;margin-bottom:10px;width:250px;">
+            <input type="text" id="storywise-search" placeholder="Search Storywise..." style="flex:1;">
+            <button id="storywise-search-btn" class="button" style="margin-left:8px;">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button id="storywise-csv" class="button" style="margin-left:10px;">Download CSV</button>
+        </div>
         <table id="storywise-table" class="widefat striped">
             <thead>
                 <tr>
@@ -336,10 +364,26 @@ function render_subscription_revenue_dashboard() {
         .widefat select, .widefat input[type="text"] { width: 100px; }
     </style>
     <script>
-        function filterTable(inputId, tableId) {
+        // function filterTable(inputId, tableId) {
+        //     const input = document.getElementById(inputId);
+        //     const table = document.getElementById(tableId);
+        //     input.addEventListener('keyup', function() {
+        //         const filter = input.value.toLowerCase();
+        //         const rows = table.querySelectorAll('tbody tr');
+        //         rows.forEach(row => {
+        //             const text = row.textContent.toLowerCase();
+        //             row.style.display = text.includes(filter) ? '' : 'none';
+        //         });
+        //     });
+        // }
+        // filterTable('writerwise-search', 'writerwise-table');
+        // filterTable('storywise-search', 'storywise-table');
+
+        function filterTableOnClick(inputId, tableId, btnId) {
             const input = document.getElementById(inputId);
             const table = document.getElementById(tableId);
-            input.addEventListener('keyup', function() {
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('click', function() {
                 const filter = input.value.toLowerCase();
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach(row => {
@@ -348,8 +392,8 @@ function render_subscription_revenue_dashboard() {
                 });
             });
         }
-        filterTable('writerwise-search', 'writerwise-table');
-        filterTable('storywise-search', 'storywise-table');
+        filterTableOnClick('writerwise-search', 'writerwise-table', 'writerwise-search-btn');
+        filterTableOnClick('storywise-search', 'storywise-table', 'storywise-search-btn');
 
         // CSV Export Function
         function downloadTableAsCSV(tableId, filename, excludeLastColumn = false) {

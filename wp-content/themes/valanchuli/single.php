@@ -440,7 +440,26 @@
                                         <?php
                                     } else {
                                 ?>
-                                    <?php increase_story_view_count(); ?>
+
+                                    <?php
+                                        $post_id = get_the_ID();
+                                        $content = get_post_field('post_content', $post_id);
+                                        $content = strip_shortcodes($content); // Remove shortcodes
+                                        $content = strip_tags($content);       // Remove HTML tags
+                                        $word_count = count(preg_split('/\s+/u', trim($content), -1, PREG_SPLIT_NO_EMPTY));
+
+                                        if ($word_count <= 175) {
+                                            $required_seconds = 30;
+                                        } elseif ($word_count <= 350) {
+                                            $required_seconds = 60;
+                                        } elseif ($word_count <= 700) {
+                                            $required_seconds = 120;
+                                        } elseif ($word_count <= 1000) {
+                                            $required_seconds = 168;
+                                        } else {
+                                            $required_seconds = ceil($word_count / 350) * 60;
+                                        }
+                                    ?>
 
                                     <div class="row col-12 mb-3 mx-auto">
                                         <!-- Image Section -->
@@ -541,9 +560,26 @@
                                             </div>
 
                                         <?php endif; ?>
+                                    
+                                    <?php
+                                    $current_user_id = get_current_user_id();
+                                    $post_author_id = (int) get_post_field('post_author', $post_id);
 
-                                    <div
-                                        class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
+                                    if ($current_user_id !== $post_author_id) : ?>
+                                        <div class="reward-key-box text-center mx-auto mb-4" style="max-width:420px;background:#fffbe8;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:24px 18px;">
+                                            <div style="font-size:1.2rem;font-weight:bold;margin-bottom:8px;">இந்த episode பிடிச்சிருந்தா எழுத்தாளரை உற்சாகப்படுத்துங்க!!</div>
+                                            <div class="reward-key-buttons" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+                                                <button class="reward-key-btn" data-key="2" style="background:#e6d3b3;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #e6d3b3;">👍 Nice<br><span style="color:#7c5c2b;">2 Key</span></button>
+                                                <button class="reward-key-btn" data-key="5" style="background:#cde7d8;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #cde7d8;">👌 செம<br><span style="color:#2b7c5c;">5 Key</span></button>
+                                                <button class="reward-key-btn" data-key="7" style="background:#d3e6f7;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #d3e6f7;">😍 மனச தொட்டுடுச்சி!<br><span style="color:#2b5c7c;">7 Key</span></button>
+                                                <button class="reward-key-btn" data-key="10" style="background:#f7d3e6;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #f7d3e6;">🔥🔥 Fire Episode<br><span style="color:#7c2b5c;">10 Key</span></button>
+                                                <button class="reward-key-btn" data-key="25" style="background:#e6c3b3;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #e6c3b3;">⏰🚀⏩ next episode சீக்கிரம் வேணும்!!<br><span style="color:#7c3c2b;">25 Key</span></button>
+                                            </div>
+                                            <div style="font-size:1rem;font-weight:bold;margin-bottom:8px; margin-top:15px;">இப்போதே உற்சாகப்படுத்துங்கள்</div>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
                                         data-post-id="<?php the_ID(); ?>"
                                         data-series-id="<?php echo esc_attr($series_id); ?>"Add commentMore actions
                                         data-post-parent="<?php echo $is_parent; ?>">
@@ -622,4 +658,102 @@
         window.episodeIdToLockType = <?php echo json_encode($episodeIdToLockType); ?>;
     });
 
+    document.addEventListener('DOMContentLoaded', function () {
+        var requiredSeconds = <?php echo $required_seconds; ?>;
+        var postId = <?php echo $post_id; ?>;
+        var timer = null;
+        var viewCountSent = false;
+        var remainingSeconds = requiredSeconds;
+        var lastHiddenTime = null;
+        var timerPaused = false;
+
+        function startTimer() {
+            timer = setInterval(function () {
+                console.log("remainingSeconds:", remainingSeconds);
+                remainingSeconds--;
+                if (remainingSeconds <= 0 && !viewCountSent) {
+                    viewCountSent = true;
+                    clearInterval(timer);
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=increase_story_view_count_ajax&post_id=' + postId
+                    }).then(response => response.text())
+                    .then(data => {
+                        console.log(data);
+                    });
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timer) clearInterval(timer);
+        }
+
+        // Start timer when page loads
+        startTimer();
+
+        // Pause timer when tab is hidden or window loses focus
+        function pauseTimer() {
+            if (!timerPaused) {
+                lastHiddenTime = Date.now();
+                stopTimer();
+                timerPaused = true;
+            }
+        }
+
+        // Resume timer when tab is visible or window regains focus
+        function resumeTimer() {
+            if (timerPaused) {
+                lastHiddenTime = null;
+                timerPaused = false;
+                if (!viewCountSent && remainingSeconds > 0) {
+                    startTimer();
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                pauseTimer();
+            } else {
+                resumeTimer();
+            }
+        });
+
+        window.addEventListener('blur', pauseTimer);
+        window.addEventListener('focus', resumeTimer);
+
+        window.addEventListener('beforeunload', function () {
+            stopTimer();
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.reward-key-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var keyAmount = btn.getAttribute('data-key');
+                var postId = <?php echo $post_id; ?>;
+                var authorId = <?php echo $author_id; ?>;
+                // Confirm action
+                if (confirm(keyAmount + ' Key will be sent to the writer. Continue?')) {
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=reward_keys_to_writer&post_id=' + postId + '&author_id=' + authorId + '&key_amount=' + keyAmount
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Keys sent successfully!');
+                        } else {
+                            alert(data.data || 'Failed to send keys.');
+                        }
+                    });
+                }
+            });
+        });
+    });
 </script>

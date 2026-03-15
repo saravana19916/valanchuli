@@ -35,10 +35,13 @@
                     </button>
                     <div id="searchDropdown" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
                         style="min-width: 250px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
-                        <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
-                            <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
-                            <p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
+                        <form method="get" action="<?php echo esc_url(home_url('/')); ?>" style="display:flex;align-items:center;">
+                            <input type="text" name="s" class="form-control tamilwriter story-search-mobile tamil-suggestion-input" id="story-search-mobile" placeholder="தேடு..." value="<?php echo get_search_query(); ?>" style="flex:1;">
+                            <button type="submit" class="btn btn-link p-0 ms-2" id="searchSubmitBtn" style="background:none;border:none;">
+                                <i class="fas fa-search fa-lg"></i>
+                            </button>
                         </form>
+                        <p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search-mobile" style="display: none;"></p>
                     </div>
                 </div>
 
@@ -141,10 +144,13 @@
                 </button>
                 <div id="searchDropdownDesktop" class="dropdown-menu dropdown-menu-end p-3 shadow border-0"
                     style="min-width: 250px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
-                    <form method="get" action="<?php echo esc_url(home_url('/')); ?>">
-                        <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>">
-						<p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
+                    <form method="get" action="<?php echo esc_url(home_url('/')); ?>" style="display:flex;align-items:center;">
+                        <input type="text" name="s" class="form-control tamilwriter story-search tamil-suggestion-input" id="story-search" placeholder="தேடு..." value="<?php echo get_search_query(); ?>" style="flex:1;">
+                        <button type="submit" class="btn btn-link p-0 ms-2" id="searchSubmitBtn" style="background:none;border:none;">
+                            <i class="fas fa-search fa-lg"></i>
+                        </button>
                     </form>
+                    <p class="tamil-suggestion-box mt-2" data-suggestion-for="story-search" style="display: none;"></p>
                 </div>
             </div>
 
@@ -386,5 +392,55 @@
     padding: 30px 0;
     text-align: center;
     color: #aaa;
+}
+
+#searchDropdown form,
+#searchDropdownDesktop form {
+    display: flex;
+    align-items: center;
+}
+
+#searchDropdown input,
+#searchDropdownDesktop input {
+    flex: 1;
+}
+
+#searchDropdown button,
+#searchDropdownDesktop button {
+    margin-left: 8px;
+}
+
+.tamil-suggestion-box {
+    margin-top: 6px;
+    margin-bottom: 0;
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    font-size: 1rem;
+    color: #333;
+    min-width: 100px;
+    max-width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 1001;
+    max-height: 180px;      /* Add this for scroll */
+    overflow-y: auto;       /* Add this for scroll */
+}
+
+@media (max-width: 600px) {
+    .position-relative {
+        position: relative !important;
+    }
+    .tamil-suggestion-box {
+        width: 100vw !important;
+        left: 0 !important;
+        min-width: 0 !important;
+        max-width: 98vw !important;
+        border-radius: 0 0 10px 10px;
+        z-index: 1001 !important;
+    }
 }
 </style>

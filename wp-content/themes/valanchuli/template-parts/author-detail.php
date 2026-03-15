@@ -18,6 +18,7 @@
                 </div>
                 <div class="col-md-5 text-center p-4">
                     <h3 class="fw-bold mb-1">Author: <span class="text-primary-color"><?php echo esc_html($name); ?></span></h3>
+                    <h5 class="fw-bold mb-1">Author ID: <span class="text-primary-color"><?php echo esc_html($userId); ?></span></h5>
                     <p class="text-muted mb-0">Welcome to author page.</p>
                 </div>
             </div>

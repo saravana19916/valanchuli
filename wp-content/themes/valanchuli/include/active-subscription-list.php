@@ -125,6 +125,8 @@ function render_active_subscriptions_page() {
                 <input type="date" name="to" value="<?php echo esc_attr($to); ?>">
             </label>
             <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Search user, email, plan..." style="min-width:180px;">
+            <button type="submit" class="button" style="margin-left:10px;">Filter</button>
+            <button type="button" class="button" id="active-subscription-reset" style="margin-left:10px;">Reset</button>
             <button type="button" id="active-subscription-csv" class="button" style="margin-left:10px;">Download CSV</button>
         </form>
         <table id="active-subscription-table" class="widefat striped">
@@ -277,6 +279,17 @@ function render_active_subscriptions_page() {
         // Attach to buttons
         document.getElementById('active-subscription-csv').onclick = function() {
             downloadTableAsCSV('active-subscription-table', 'active-subscriptions.csv');
+        };
+
+        document.getElementById('active-subscription-reset').onclick = function() {
+            const form = this.closest('form');
+            // Reset all fields
+            form.querySelector('select[name="month"]').value = '';
+            form.querySelector('input[name="from"]').value = '';
+            form.querySelector('input[name="to"]').value = '';
+            form.querySelector('input[name="s"]').value = '';
+            // Submit the form to reload default list
+            form.submit();
         };
     </script>
     <?php

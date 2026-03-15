@@ -40,6 +40,10 @@ add_action('admin_init', function () {
         'common_episode_lock_group',
         'common_coin_unlock'
     );
+    register_setting(
+        'common_episode_lock_group',
+        'common_single_key_amount'
+    );
 });
 
 add_action('admin_enqueue_scripts', 'series_locks_enqueue_admin_assets');
@@ -86,13 +90,24 @@ function render_common_episode_lock_page() {
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row">Key to Unlock</th>
+                    <th scope="row">Keys to Unlock Episode</th>
                     <td>
                         <input type="text"
                                name="common_coin_unlock"
                                value="<?php echo esc_attr(get_option('common_coin_unlock')); ?>"
                                class="regular-text"
                                placeholder="Enter key to unlock">
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">Single Key Amount</th>
+                    <td>
+                        <input type="text"
+                               name="common_single_key_amount"
+                               value="<?php echo esc_attr(get_option('common_single_key_amount')); ?>"
+                               class="regular-text"
+                               placeholder="Enter single key amount">
                     </td>
                 </tr>
             </table>
@@ -134,6 +149,9 @@ function render_series_lock_tab() {
     echo '<label><strong>Select Series:</strong></label>';
     echo '<div style="margin-bottom:10px;">';
     echo '<input type="text" id="series-search" placeholder="Search series..." style="width:220px;padding:3px;border-radius:6px;border:1px solid #ccc;"> ';
+    echo '<button id="series-search-btn" class="button" style="margin-left:8px; margin-top:4px;">
+                <i class="fas fa-search"></i> Search
+            </button>';
     echo '<label style="margin-left:10px;"><input type="checkbox" id="select-all-series"> Select All</label>';
     echo '</div>';
     echo '<div id="series-list-box" style="max-height:300px;overflow-y:auto;border:1px solid #ccc;padding:10px;width:350px;">';
@@ -151,8 +169,17 @@ function render_series_lock_tab() {
     // Add JS for search and select all
     echo <<<HTML
 <script>
-document.getElementById('series-search').addEventListener('input', function() {
-    var filter = this.value.toLowerCase();
+// document.getElementById('series-search').addEventListener('input', function() {
+//     var filter = this.value.toLowerCase();
+//     document.querySelectorAll('#series-list-box label').forEach(function(label) {
+//         var text = label.textContent.toLowerCase();
+//         label.style.display = text.includes(filter) ? 'block' : 'none';
+//     });
+// });
+
+document.getElementById('series-search-btn').addEventListener('click', function(e) {
+    e.preventDefault(); // Prevent form submission!
+    var filter = document.getElementById('series-search').value.toLowerCase();
     document.querySelectorAll('#series-list-box label').forEach(function(label) {
         var text = label.textContent.toLowerCase();
         label.style.display = text.includes(filter) ? 'block' : 'none';
@@ -207,6 +234,9 @@ function render_story_lock_details_tab() {
     echo '<input type="hidden" name="page" value="series-locks">';
     echo '<input type="hidden" name="tab" value="stories">';
     echo '<input type="search" name="s" value="'.esc_attr($search).'" placeholder="Search story..." style="width:250px;">';
+    echo '<button class="button" type="submit" style="margin-left:8px;">
+    <i class="fas fa-search"></i> Search
+</button>';
     echo '<select name="series">';
     echo '<option value="">All Series</option>';
     foreach ($locked_series as $term) {

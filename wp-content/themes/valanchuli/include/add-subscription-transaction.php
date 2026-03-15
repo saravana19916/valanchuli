@@ -26,7 +26,7 @@ function render_add_subscription_transaction_page() {
                             <option value="">Select User</option>
                             <?php foreach ($users as $user): ?>
                                 <option value="<?php echo esc_attr($user->ID); ?>">
-                                    <?php echo esc_html($user->display_name . " ({$user->user_login})"); ?>
+                                    <?php echo esc_html($user->display_name . " ({$user->ID})"); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -74,7 +74,7 @@ function render_add_subscription_transaction_page() {
                 <tr>
                     <th><label for="payment_status">Payment Status</label></th>
                     <td>
-                        <input type="text" name="payment_status" id="payment_status" value="success" required>
+                        <input type="text" name="payment_status" id="payment_status" value="success" disabled required>
                     </td>
                 </tr>
             </table>
@@ -131,6 +131,35 @@ function render_add_subscription_transaction_page() {
         });
     });
     </script>
+    <style>
+    @media (max-width: 600px) {
+        .select2-container {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+        .select2-selection--single {
+            font-size: 1rem;
+        }
+    }
+
+    #plan_name {
+        width: 18%;
+    }
+
+    @media (max-width: 600px) {
+        #plan_name {
+            width: 100%;
+        }
+
+        .select2-container {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+        .select2-selection--single {
+            font-size: 1rem;
+        }
+    }
+    </style>
     <?php
 }
 

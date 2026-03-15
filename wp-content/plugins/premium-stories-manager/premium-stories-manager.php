@@ -187,7 +187,10 @@ function psm_admin_page() {
                     <th>Select Stories</th>
                     <td>
                         <div style="margin-bottom:10px;">
-                            <input type="text" id="story-search" placeholder="Search stories..." style="width:220px;padding:6px;border-radius:6px;border:1px solid #ccd0d4;">
+                            <input type="text" id="story-search" placeholder="Search stories..." style="width:220px;padding:4px;border-radius:6px;border:1px solid #ccd0d4;">
+                            <button id="story-search-btn" class="button" type="button" style="margin-left:8px; margin-top: 5px;">
+                                <i class="fas fa-search"></i> Search
+                            </button>
                             <label style="margin-left:10px;">
                                 <input type="checkbox" id="select-all-stories"> Select All
                             </label>
@@ -242,12 +245,16 @@ function psm_admin_page() {
 
         <hr>
 
-        <form method="get" style="margin-bottom:15px;">
+        <form method="get" style="margin-bottom:15px; display: flex; align-items: center;">
             <input type="hidden" name="page" value="premium-stories">
 
-            <select name="series">
-                <option value="">All Series</option>
+            <input type="text" id="premium-search-input" placeholder="Search stories..." style="margin-right:8px; padding:4px; border-radius:6px; border:1px solid #ccd0d4;">
+            <button id="premium-search-btn" class="button" type="button" style="margin-right: 15px;">
+                <i class="fas fa-search"></i> Search
+            </button>
 
+            <select name="series" style="margin-right: 12px;">
+                <option value="">All Series</option>
                 <?php foreach ($series_list as $series): ?>
                     <option value="<?= esc_attr($series->ID); ?>"
                         <?= selected($selected_series, $series->ID, false); ?>>
@@ -256,7 +263,7 @@ function psm_admin_page() {
                 <?php endforeach; ?>
             </select>
 
-            <button class="button">Filter</button>
+            <button class="button" type="submit" style="margin-right:8px;">Filter</button>
         </form>
 
         <table class="widefat striped">
@@ -298,8 +305,9 @@ function psm_admin_page() {
     </div>
 
     <script>
-    document.getElementById('story-search').addEventListener('input', function() {
-        var filter = this.value.toLowerCase();
+
+    document.getElementById('story-search-btn').addEventListener('click', function() {
+        var filter = document.getElementById('story-search').value.toLowerCase();
         document.querySelectorAll('#story-list-box label').forEach(function(label) {
             var text = label.textContent.toLowerCase();
             label.style.display = text.includes(filter) ? 'block' : 'none';
@@ -321,6 +329,18 @@ function psm_admin_page() {
             var allChecked = Array.from(allCheckboxes).every(function(cb) { return cb.checked; });
             selectAll.checked = allChecked;
         }
+    });
+
+    document.getElementById('premium-search-btn').addEventListener('click', function() {
+        var searchValue = document.getElementById('premium-search-input').value.toLowerCase();
+        document.querySelectorAll('.widefat tbody tr').forEach(function(row) {
+            var story = row.querySelector('td:first-child');
+            if (story && story.textContent.toLowerCase().includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = searchValue ? 'none' : '';
+            }
+        });
     });
     </script>
 <?php } ?>

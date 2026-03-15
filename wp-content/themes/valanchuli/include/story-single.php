@@ -156,6 +156,51 @@ function increase_story_view_count($post_id = null) {
     ]);
 }
 
+add_action('wp_ajax_increase_story_view_count_ajax', 'increase_story_view_count_ajax');
+add_action('wp_ajax_nopriv_increase_story_view_count_ajax', 'increase_story_view_count_ajax');
+function increase_story_view_count_ajax() {
+    $post_id = intval($_POST['post_id'] ?? 0);
+    if (!$post_id && is_singular('post')) {
+        $post_id = get_the_ID();
+    }
+
+    // Only track if user is logged in
+    $user_id = get_current_user_id();
+    if (!$post_id || !$user_id) {
+        return;
+    }
+
+    // Check if this user has already viewed this post (ever)
+    global $wpdb;
+    $table = $wpdb->prefix . 'daily_story_views';
+    $already_viewed = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table WHERE post_id = %d AND user_id = %d",
+        $post_id, $user_id
+    ));
+
+    if ($already_viewed) {
+        // Already tracked, do nothing
+        return;
+    }
+
+    // Update post meta (legacy, count unique user views)
+    $count = (int) get_post_meta($post_id, 'story_view_count', true);
+    update_post_meta($post_id, 'story_view_count', $count + 1);
+
+    $parent_post_id = getParentPostId($post_id);
+    $author_id = (int) get_post_field('post_author', $post_id);
+
+    // Insert new view record (no need for view_date)
+    $wpdb->insert($table, [
+        'post_id'    => $post_id,
+        'series_id'  => $parent_post_id,
+        'author_id'  => $author_id,
+        'user_id'    => $user_id,
+        'view_count' => 1,
+        'view_date'  => current_time('Y-m-d'),
+    ]);
+}
+
 function get_average_series_views($post_id, $term_id) {
     $args = [
         'post_type'      => 'post',
@@ -185,4 +230,90 @@ function get_average_series_views($post_id, $term_id) {
 function get_custom_post_views($post_id) {
     $count = get_post_meta($post_id, 'story_view_count', true);
     return $count ? intval($count) : 0;
+}
+
+add_action('wp_ajax_reward_keys_to_writer', 'reward_keys_to_writer');
+add_action('wp_ajax_nopriv_reward_keys_to_writer', 'reward_keys_to_writer');
+
+function reward_keys_to_writer() {
+    $current_user_id = get_current_user_id();
+    $author_id = intval($_POST['author_id'] ?? 0);
+    $post_id = intval($_POST['post_id'] ?? 0);
+    $key_amount = intval($_POST['key_amount'] ?? 0);
+
+    // Check login
+    if (!$current_user_id) {
+        wp_send_json_error('You must be logged in.');
+    }
+    // Prevent sending to self
+    if ($current_user_id == $author_id) {
+        wp_send_json_error('Cannot reward yourself.');
+    }
+    // Check key balance (implement your own logic)
+    $user_keys = get_user_meta($current_user_id, 'wallet_keys', true);
+    if ($user_keys < $key_amount) {
+        wp_send_json_error('Insufficient keys.');
+    }
+
+    // Deduct keys from current user
+    update_user_meta($current_user_id, 'wallet_keys', $user_keys - $key_amount);
+
+    // Add keys to author
+    $author_keys = get_user_meta($author_id, 'wallet_keys', true);
+    update_user_meta($author_id, 'wallet_keys', $author_keys + $key_amount);
+    // Track in custom table (example)
+    global $wpdb;
+    $table = $wpdb->prefix . 'writer_key_rewards';
+    $wpdb->insert($table, [
+        'user_id' => $current_user_id,
+        'author_id' => $author_id,
+        'post_id' => $post_id,
+        'key' => $key_amount,
+        'rewarded_at' => current_time('mysql'),
+    ]);
+
+    // Notification logic
+    $notification_table = $wpdb->prefix . 'user_notifications';
+
+    // Key taglines
+    $key_taglines = [
+        2  => 'nice, 2key',
+        5  => 'செம, 5key',
+        7  => 'மனச தொட்டுடுச்சி, 7key',
+        10 => 'Fire Episode, 10key',
+        25 => 'next episode சீக்கிரம் வேணும், 25key'
+    ];
+
+    // Get tagline
+    $tagline = isset($key_taglines[$key_amount]) ? $key_taglines[$key_amount] : $key_amount . ' key';
+
+    // Get user name
+    $user_info = get_userdata($current_user_id);
+    $user_name = $user_info ? $user_info->display_name : 'Admin';
+
+    // Get story title and episode number
+    $parentPostId = getParentPostId($post_id);
+    $postPost = get_post($parentPostId);
+    $post = get_post($post_id);
+    $parent_story_title = $postPost ? $postPost->post_title : '';
+    $story_title = $post ? $post->post_title : '';
+
+    // Compose notification message
+    $msg = sprintf(
+        "%s உங்கள் %s தொடர்கதையில் %s க்கு '%s' கொடுத்து உங்களை உற்சாகப்படுத்தியுள்ளார். தொடர்ந்து எழுதுங்கள்!",
+        $user_name,
+        $parent_story_title,
+        $story_title,
+        $tagline
+    );
+
+    // Insert notification
+    $wpdb->insert($notification_table, [
+        'user_id' => $author_id,
+        'message' => $msg,
+        'is_read' => 0,
+        'created_at' => current_time('mysql')
+    ]);
+
+    wp_send_json_success();
 }

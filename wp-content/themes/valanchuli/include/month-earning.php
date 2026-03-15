@@ -13,6 +13,7 @@ add_action('wp_ajax_save_bank_details', function() {
         'ifsc_code'      => sanitize_text_field($_POST['ifsc_code'] ?? ''),
         'pan_number'     => sanitize_text_field($_POST['pan_number'] ?? ''),
         'phone_number'   => sanitize_text_field($_POST['phone_number'] ?? ''),
+        'remark'         => sanitize_text_field($_POST['remark'] ?? ''),
     ];
     // Check if already exists
     $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE user_id = %d", $user_id));
@@ -24,6 +25,32 @@ add_action('wp_ajax_save_bank_details', function() {
         $wpdb->insert($table, $fields);
     }
     wp_send_json_success('Bank details saved');
+});
+
+add_action('wp_ajax_admin_edit_bank_details', function() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('No permission');
+    }
+    global $wpdb;
+    $table = $wpdb->prefix . 'user_bank_details';
+    $user_id = intval($_POST['user_id']);
+    $fields = [
+        'bank_name'      => sanitize_text_field($_POST['bank_name'] ?? ''),
+        'holder_name'    => sanitize_text_field($_POST['holder_name'] ?? ''),
+        'account_number' => sanitize_text_field($_POST['account_number'] ?? ''),
+        'ifsc_code'      => sanitize_text_field($_POST['ifsc_code'] ?? ''),
+        'pan_number'     => sanitize_text_field($_POST['pan_number'] ?? ''),
+        'phone_number'   => sanitize_text_field($_POST['phone_number'] ?? ''),
+        'remark'         => sanitize_text_field($_POST['remark'] ?? ''),
+        'updated_at'     => current_time('mysql'),
+    ];
+    $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE user_id = %d", $user_id));
+    if ($exists) {
+        $wpdb->update($table, $fields, ['user_id' => $user_id]);
+        wp_send_json_success('Bank details updated');
+    } else {
+        wp_send_json_error('No record found');
+    }
 });
 
 function getWriterSubsctiptionEarning($author_id, $from, $to)
@@ -79,8 +106,6 @@ function getWriterSubsctiptionEarning($author_id, $from, $to)
     foreach ($writer_reads as $wr) {
         $user_info = get_userdata($wr->author_id);
         $name = $user_info ? $user_info->display_name : 'Unknown';
-        $payment_status = get_user_meta($wr->author_id, 'writer_payment_status', true) ?: 'Unpaid';
-        $unpaid_reason = get_user_meta($wr->author_id, 'writer_unpaid_reason', true) ?: '';
         $revenue = $total_reads > 0 ? round(($wr->total_reads / $total_reads) * $writers_pool) : 0;
 
         if ($wr->author_id == $author_id) {
@@ -95,20 +120,14 @@ function getWriterSubsctiptionEarning($author_id, $from, $to)
 function getWriterKeyEarning($author_id, $from, $to)
 {
     global $wpdb;
-    $key_value = floatval(get_option('common_coin_unlock', 0.5));
+    $key_value = floatval(get_option('common_single_key_amount', 0.5));
+    $keysToUnlockEpisode = floatval(get_option('common_coin_unlock', 0));
     $writerPer = floatval(get_option('writer_revenue_percentage', 30));
     $writer_share_per_key = $key_value * ($writerPer / 100);
 
-    // Total keys purchased (lock_type='key')
-    $total_keys = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM {$wpdb->prefix}user_episode_unlocks WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s",
-        $from . ' 00:00:00', $to . ' 23:59:59'
-    ));
-    $total_keys = $total_keys ?: 0;
-
     // Writerwise revenue
     $writerwise = $wpdb->get_results($wpdb->prepare(
-        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes, COUNT(*) as total_keys
+        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes
          FROM {$wpdb->prefix}user_episode_unlocks
          WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s
          GROUP BY author_id",
@@ -117,11 +136,12 @@ function getWriterKeyEarning($author_id, $from, $to)
 
     $writerwise_data = [];
     foreach ($writerwise as $row) {
-        $revenue_share = $row->total_keys * $writer_share_per_key;
+        $total_keys_Purchase = $row->episodes * $keysToUnlockEpisode;
+        $revenue_share = $total_keys_Purchase * $writer_share_per_key;
 
         if ($row->author_id == $author_id) {
             $writerwise_data[] = [
-                'keys' => $row->total_keys,
+                'keys' => $row->episodes,
                 'revenue_share' => $revenue_share
             ];
         }
