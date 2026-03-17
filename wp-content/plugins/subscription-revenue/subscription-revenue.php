@@ -73,23 +73,45 @@ function render_subscription_revenue_dashboard() {
     $from = isset($_GET['from']) ? sanitize_text_field($_GET['from']) : date('Y-m-01');
     $to = isset($_GET['to']) ? sanitize_text_field($_GET['to']) : date('Y-m-t');
 
+    $from_date = $from . ' 00:00:00';
+    $to_date = $to . ' 23:59:59';
+
     // Get all successful subscriptions in the period
     $subscriptions = $wpdb->get_results($wpdb->prepare(
-        "SELECT user_id, plan_amount 
-         FROM {$wpdb->prefix}user_subscriptions 
-         WHERE status = 1 
-           AND payment_status = 'success'
-           AND start_date <= %s AND end_date >= %s",
-        $from . ' 00:00:00', $to . ' 23:59:59'
+        "SELECT user_id, plan_amount, start_date, end_date, plan_period 
+        FROM {$wpdb->prefix}user_subscriptions 
+        WHERE status = 1 
+        AND payment_status = 'success'
+        AND end_date >= %s AND start_date <= %s",
+        $from_date, $to_date
     ));
 
     // Unique users
     $user_ids = [];
     $total_subscription_amount = 0;
+
     foreach ($subscriptions as $sub) {
+        // Calculate plan days based on actual start and end date
+        $sub_start = strtotime($sub->start_date);
+        $sub_end = strtotime($sub->end_date);
+        $plan_days = ($sub_end > $sub_start) ? round(($sub_end - $sub_start) / 86400) : 0;
+
+        // Avoid division by zero
+        $per_day = $plan_days > 0 ? ($sub->plan_amount / $plan_days) : 0;
+
+        // Calculate overlap days as before
+        $period_start = strtotime($from_date);
+        $period_end = strtotime($to_date);
+        $overlap_start = max($sub_start, $period_start);
+        $overlap_end = min($sub_end, $period_end);
+
+        $days = ($overlap_end >= $overlap_start) ? (floor(($overlap_end - $overlap_start) / 86400) + 1) : 0;
+
+        $revenue = $days * $per_day;
+        $total_subscription_amount += $revenue;
         $user_ids[$sub->user_id] = true;
-        $total_subscription_amount += floatval($sub->plan_amount);
     }
+
     $subscription_users = count($user_ids);
     $subscription_users = $subscription_users ?: 0;
 
@@ -254,12 +276,6 @@ function render_subscription_revenue_dashboard() {
                 <div style="font-size:1.2rem;color:#bfa100;">Site Net Revenue</div>
                 <div style="font-size:1.3rem;font-weight:bold; margin-top: 15px;">₹<?php echo number_format($site_net_revenue); ?></div>
             </div>
-            <!-- <div style="flex:1;background:#eaf7f2;padding:18px 24px;border-radius:10px;">
-                <div style="font-size:1.2rem;color:#005d67;">Writers Revenue Share</div>
-                <div style="font-size:1.3rem;font-weight:bold;">₹<?php echo number_format($writers_pool); ?></div>
-                <div style="font-size:1.2rem;color:#005d67;">Site Net Revenue</div>
-                <div style="font-size:1.3rem;font-weight:bold;">₹<?php echo number_format($site_net_revenue); ?></div>
-            </div> -->
         </div>
 
         <!-- Writerwise Revenue Distribution -->
@@ -364,21 +380,6 @@ function render_subscription_revenue_dashboard() {
         .widefat select, .widefat input[type="text"] { width: 100px; }
     </style>
     <script>
-        // function filterTable(inputId, tableId) {
-        //     const input = document.getElementById(inputId);
-        //     const table = document.getElementById(tableId);
-        //     input.addEventListener('keyup', function() {
-        //         const filter = input.value.toLowerCase();
-        //         const rows = table.querySelectorAll('tbody tr');
-        //         rows.forEach(row => {
-        //             const text = row.textContent.toLowerCase();
-        //             row.style.display = text.includes(filter) ? '' : 'none';
-        //         });
-        //     });
-        // }
-        // filterTable('writerwise-search', 'writerwise-table');
-        // filterTable('storywise-search', 'storywise-table');
-
         function filterTableOnClick(inputId, tableId, btnId) {
             const input = document.getElementById(inputId);
             const table = document.getElementById(tableId);

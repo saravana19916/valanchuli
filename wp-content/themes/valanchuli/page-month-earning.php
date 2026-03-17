@@ -232,7 +232,7 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
         <button class="bank-btn" id="openBankModal">Bank Details</button>
         <div class="earning-card">
             <div class="fw-semibold mb-2" style="font-size:1.1rem;">Current Month Key Revenue</div>
-            <div class="earning-amount">₹<?php echo (isset(getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]) ? getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]['revenue_share'] : 0); ?></div>
+            <div class="earning-amount">₹ <?php echo (isset(getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]) ? getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]['revenue_share'] : 0); ?></div>
             <!-- <div class="earning-row">
                 <div style="display:flex;align-items:center;">
                     <span class="icon">🔑</span>

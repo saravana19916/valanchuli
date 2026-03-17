@@ -410,7 +410,7 @@
     margin-left: 8px;
 }
 
-.tamil-suggestion-box {
+#searchDropdown .tamil-suggestion-box, #searchDropdownDesktop .tamil-suggestion-box {
     margin-top: 6px;
     margin-bottom: 0;
     padding: 8px 12px;
@@ -434,7 +434,7 @@
     .position-relative {
         position: relative !important;
     }
-    .tamil-suggestion-box {
+    #searchDropdown .tamil-suggestion-box, #searchDropdownDesktop .tamil-suggestion-box {
         width: 100vw !important;
         left: 0 !important;
         min-width: 0 !important;

@@ -136,10 +136,19 @@ function psm_admin_page() {
         );
     }
 
+    // Set up pagination
+    $per_page = 20;
+    $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+    $offset = ($paged - 1) * $per_page;
+
+    // Get total count for pagination
+    $total = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE 1=1 $where");
+
     $rules = $wpdb->get_results("
         SELECT * FROM $table
         WHERE 1=1 $where
         ORDER BY id DESC
+        LIMIT $per_page OFFSET $offset
     ");
 
     $stories = get_posts([
@@ -302,7 +311,62 @@ function psm_admin_page() {
             </tbody>
         </table>
 
+        <?php
+        $total_pages = ceil($total / $per_page);
+        if ($total_pages > 1) {
+            echo '<div class="custom-premium-pagination">';
+            for ($i = 1; $i <= $total_pages; $i++) {
+                $url = add_query_arg([
+                    'page' => 'premium-stories',
+                    'paged' => $i,
+                    'series' => $selected_series,
+                    'premium_search' => isset($_GET['premium_search']) ? $_GET['premium_search'] : ''
+                ], admin_url('admin.php'));
+                if ($i == $paged) {
+                    echo '<span class="custom-page-num active">' . $i . '</span>';
+                } else {
+                    echo '<a class="custom-page-num" href="' . esc_url($url) . '">' . $i . '</a>';
+                }
+            }
+            echo '</div>';
+        }
+        ?>
+
     </div>
+
+    <style>
+    .custom-premium-pagination {
+        margin: 20px 0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .custom-page-num {
+        display: inline-block;
+        min-width: 32px;
+        padding: 6px 12px;
+        margin: 0 2px;
+        border-radius: 6px;
+        background: #f5f5f5;
+        color: #005d67;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 500;
+        border: 1px solid #e0e0e0;
+        transition: background 0.2s, color 0.2s;
+    }
+    .custom-page-num:hover {
+        background: #005d67;
+        color: #fff;
+    }
+    .custom-page-num.active {
+        background: #005d67;
+        color: #fff;
+        font-weight: bold;
+        border: 1px solid #005d67;
+        cursor: default;
+    }
+    </style>
 
     <script>
 

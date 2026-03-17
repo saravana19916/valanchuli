@@ -331,14 +331,6 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-
-                                                            <!-- <div class="d-flex mt-4">
-                                                                <div class="d-flex align-items-center top-0 end-0 bg-primary-color px-2 py-1 me-1 fw-bold rounded text-highlight-color">
-                                                                    <i class="fa-solid fa-eye me-1"></i>
-                                                                    <?php echo format_view_count($total_views); ?>
-                                                                </div>
-                                                                <span class="mt-1 fs-12px fw-bold fw-medium text-center text-primary-color">வாசித்தவர்கள்</span>
-                                                            </div> -->
                                                     </div>
                                                 </div>
                                             <?php $count++; endwhile; ?>
@@ -408,6 +400,7 @@
                                     <?php } ?>
                                     <?php 
                                 }
+                                $required_seconds = 0;
                             } else { ?>
                                 <?php
                                     global $wpdb;
@@ -567,15 +560,15 @@
 
                                     if ($current_user_id !== $post_author_id) : ?>
                                         <div class="reward-key-box text-center mx-auto mb-4" style="max-width:420px;background:#fffbe8;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:24px 18px;">
-                                            <div style="font-size:1.2rem;font-weight:bold;margin-bottom:8px;">இந்த episode பிடிச்சிருந்தா எழுத்தாளரை உற்சாகப்படுத்துங்க!!</div>
+                                            <div style="font-size:0.9rem;font-weight:bold;margin-bottom:8px;">இந்த episode பிடிச்சிருந்தா எழுத்தாளரை உற்சாகப்படுத்துங்க!!</div>
                                             <div class="reward-key-buttons" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
-                                                <button class="reward-key-btn" data-key="2" style="background:#e6d3b3;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #e6d3b3;">👍 Nice<br><span style="color:#7c5c2b;">2 Key</span></button>
-                                                <button class="reward-key-btn" data-key="5" style="background:#cde7d8;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #cde7d8;">👌 செம<br><span style="color:#2b7c5c;">5 Key</span></button>
-                                                <button class="reward-key-btn" data-key="7" style="background:#d3e6f7;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #d3e6f7;">😍 மனச தொட்டுடுச்சி!<br><span style="color:#2b5c7c;">7 Key</span></button>
-                                                <button class="reward-key-btn" data-key="10" style="background:#f7d3e6;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #f7d3e6;">🔥🔥 Fire Episode<br><span style="color:#7c2b5c;">10 Key</span></button>
-                                                <button class="reward-key-btn" data-key="25" style="background:#e6c3b3;border:none;border-radius:8px;padding:12px 18px;font-size:1rem;font-weight:bold;box-shadow:0 1px 4px #e6c3b3;">⏰🚀⏩ next episode சீக்கிரம் வேணும்!!<br><span style="color:#7c3c2b;">25 Key</span></button>
+                                                <button class="reward-key-btn" data-key="2" style="background:#e6d3b3;border:none;border-radius:8px;padding:12px 18px;font-size:0.8rem;font-weight:bold;box-shadow:0 1px 4px #e6d3b3;">👍 Nice<br><span style="color:#7c5c2b;">2 Key</span></button>
+                                                <button class="reward-key-btn" data-key="5" style="background:#cde7d8;border:none;border-radius:8px;padding:12px 18px;font-size:0.8rem;font-weight:bold;box-shadow:0 1px 4px #cde7d8;">👌 செம<br><span style="color:#2b7c5c;">5 Key</span></button>
+                                                <button class="reward-key-btn" data-key="7" style="background:#d3e6f7;border:none;border-radius:8px;padding:12px 18px;font-size:0.8rem;font-weight:bold;box-shadow:0 1px 4px #d3e6f7;">😍 மனச தொட்டுடுச்சி!<br><span style="color:#2b5c7c;">7 Key</span></button>
+                                                <button class="reward-key-btn" data-key="10" style="background:#f7d3e6;border:none;border-radius:8px;padding:12px 18px;font-size:0.8rem;font-weight:bold;box-shadow:0 1px 4px #f7d3e6;">🔥🔥 Fire Episode<br><span style="color:#7c2b5c;">10 Key</span></button>
+                                                <button class="reward-key-btn" data-key="25" style="background:#e6c3b3;border:none;border-radius:8px;padding:12px 18px;font-size:0.8rem;font-weight:bold;box-shadow:0 1px 4px #e6c3b3;">⏰🚀⏩ next episode சீக்கிரம் வேணும்!!<br><span style="color:#7c3c2b;">25 Key</span></button>
                                             </div>
-                                            <div style="font-size:1rem;font-weight:bold;margin-bottom:8px; margin-top:15px;">இப்போதே உற்சாகப்படுத்துங்கள்</div>
+                                            <div style="font-size:0.9rem;font-weight:bold;margin-bottom:8px; margin-top:15px;">இப்போதே உற்சாகப்படுத்துங்கள்</div>
                                         </div>
                                     <?php endif; ?>
                                     
@@ -669,7 +662,6 @@
 
         function startTimer() {
             timer = setInterval(function () {
-                console.log("remainingSeconds:", remainingSeconds);
                 remainingSeconds--;
                 if (remainingSeconds <= 0 && !viewCountSent) {
                     viewCountSent = true;

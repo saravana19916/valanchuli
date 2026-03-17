@@ -250,7 +250,7 @@ function reward_keys_to_writer() {
         wp_send_json_error('Cannot reward yourself.');
     }
     // Check key balance (implement your own logic)
-    $user_keys = get_user_meta($current_user_id, 'wallet_keys', true);
+    $user_keys = (int) get_user_meta($current_user_id, 'wallet_keys', true);
     if ($user_keys < $key_amount) {
         wp_send_json_error('Insufficient keys.');
     }
@@ -259,7 +259,7 @@ function reward_keys_to_writer() {
     update_user_meta($current_user_id, 'wallet_keys', $user_keys - $key_amount);
 
     // Add keys to author
-    $author_keys = get_user_meta($author_id, 'wallet_keys', true);
+    $author_keys = (int) get_user_meta($author_id, 'wallet_keys', true);
     update_user_meta($author_id, 'wallet_keys', $author_keys + $key_amount);
     // Track in custom table (example)
     global $wpdb;

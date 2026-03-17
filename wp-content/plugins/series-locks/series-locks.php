@@ -169,13 +169,6 @@ function render_series_lock_tab() {
     // Add JS for search and select all
     echo <<<HTML
 <script>
-// document.getElementById('series-search').addEventListener('input', function() {
-//     var filter = this.value.toLowerCase();
-//     document.querySelectorAll('#series-list-box label').forEach(function(label) {
-//         var text = label.textContent.toLowerCase();
-//         label.style.display = text.includes(filter) ? 'block' : 'none';
-//     });
-// });
 
 document.getElementById('series-search-btn').addEventListener('click', function(e) {
     e.preventDefault(); // Prevent form submission!
@@ -576,22 +569,6 @@ add_action('admin_post_save_series_locks', function() {
     $no_lock = isset($_POST['no_lock']) ? 1 : 0;
     $enable_default = isset($_POST['enable_default']);
     $default_lock_after = $enable_default ? intval($_POST['default_lock_after']) : '';
-    // $locks = [];
-    // if (!empty($_POST['lock_type'])) {
-    //     foreach ($_POST['lock_type'] as $i => $type) {
-    //         $lock = [
-    //             'type' => sanitize_text_field($type),
-    //             'from' => intval($_POST['lock_from'][$i]),
-    //             'to'   => intval($_POST['lock_to'][$i]),
-    //         ];
-    //         if ($type === 'ads') {
-    //             $lock['ads_time_sec'] = sanitize_text_field($_POST['ads_time_sec'][$i] ?? '');
-    //             $lock['ads_time_sec'] = sanitize_text_field($_POST['ads_time_sec'][$i] ?? '');
-    //             $lock['ads_content']  = urldecode($_POST['ads_content'][$i] ?? '');
-    //         }
-    //         $locks[] = $lock;
-    //     }
-    // }
     foreach ($post_ids as $post_id) {
         update_post_meta($post_id, '_no_lock', $no_lock);
         update_post_meta($post_id, '_default_lock_after', $default_lock_after);

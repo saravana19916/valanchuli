@@ -361,21 +361,6 @@ function render_key_revenue_dashboard() {
         .widefat select, .widefat input[type="text"] { width: 100px; }
     </style>
     <script>
-    // Filter tables
-    // function filterTable(inputId, tableId) {
-    //     const input = document.getElementById(inputId);
-    //     const table = document.getElementById(tableId);
-    //     input.addEventListener('keyup', function() {
-    //         const filter = input.value.toLowerCase();
-    //         const rows = table.querySelectorAll('tbody tr');
-    //         rows.forEach(row => {
-    //             const text = row.textContent.toLowerCase();
-    //             row.style.display = text.includes(filter) ? '' : 'none';
-    //         });
-    //     });
-    // }
-    // filterTable('writerwise-search', 'writerwise-table');
-    // filterTable('storywise-search', 'storywise-table');
 
     // Filter tables on button click
     function filterTableOnClick(inputId, tableId, btnId) {

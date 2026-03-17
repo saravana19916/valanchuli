@@ -265,15 +265,10 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
             }
         };
         var rzp1 = new Razorpay(options);
+        rzp1.on('payment.failed', function (response){
+            saveSubscription('razorpay', response.error.metadata.payment_id || '', 'failed', plan);
+        });
         rzp1.open();
-
-        // selectedPlan = {
-        //     name: this.dataset.plan,
-        //     period: this.dataset.period,
-        //     amount: this.dataset.amount
-        // };
-        // var modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-        // modal.show();
     });
 });
 

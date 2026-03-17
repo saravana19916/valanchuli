@@ -152,11 +152,13 @@ function save_subscription_callback() {
 
     // Calculate start and end date
     $start_date = current_time('mysql');
-    $months = 1;
-    if (stripos($plan_period, '3') !== false) $months = 3;
-    if (stripos($plan_period, '6') !== false) $months = 6;
-    if (stripos($plan_period, 'year') !== false || stripos($plan_period, '12') !== false) $months = 12;
-    $end_date = date('Y-m-d H:i:s', strtotime("+$months months", strtotime($start_date)));
+    $days = 30; // default for 1 month
+
+    if (stripos($plan_period, '3') !== false) $days = 90;
+    if (stripos($plan_period, '6') !== false) $days = 180;
+    if (stripos($plan_period, 'year') !== false || stripos($plan_period, '12') !== false) $days = 365;
+
+    $end_date = date('Y-m-d H:i:s', strtotime("$days days", strtotime($start_date)));
 
     // Check for existing active subscription and queue if needed
     $table = $wpdb->prefix . 'user_subscriptions';
