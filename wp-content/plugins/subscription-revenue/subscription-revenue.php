@@ -201,7 +201,7 @@ function render_subscription_revenue_dashboard() {
                 $division_name = $division->name;
             }
         }
-        $post_name = $post ? $post->post_title : 'Unknown';
+        $post_name = $post ? $post->post_title . ' (VLN' . $post->ID . ')' : 'Unknown';
 
         //get last updated date
         $terms = get_the_terms($post->ID, 'series');

@@ -367,7 +367,8 @@
                             body: new URLSearchParams({
                                 action: 'unlock_premium_series',
                                 series_id: seriesId,
-                                key_count: keyCount
+                                key_count: keyCount,
+                                author_id: el.dataset.authorId
                             })
                         })
                         .then(res => res.json())

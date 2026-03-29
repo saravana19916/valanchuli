@@ -178,7 +178,7 @@ function increase_story_view_count_ajax() {
         $post_id, $user_id
     ));
 
-    if ($already_viewed) {
+    if ($already_viewed || $post_id == 0) {
         // Already tracked, do nothing
         return;
     }
@@ -187,18 +187,39 @@ function increase_story_view_count_ajax() {
     $count = (int) get_post_meta($post_id, 'story_view_count', true);
     update_post_meta($post_id, 'story_view_count', $count + 1);
 
+
     $parent_post_id = getParentPostId($post_id);
     $author_id = (int) get_post_field('post_author', $post_id);
+    $episodeNumber = $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_value FROM {$wpdb->postmeta}
+         WHERE post_id = %d AND meta_key = %s LIMIT 1",
+        $post_id,
+        'episode_number'
+    ));
+    $episodeNumber = $episodeNumber !== null ? (int) $episodeNumber : 0;
+    $lock_status = get_episode_lock_status($parent_post_id, $post_id, $episodeNumber, false);
 
-    // Insert new view record (no need for view_date)
-    $wpdb->insert($table, [
-        'post_id'    => $post_id,
-        'series_id'  => $parent_post_id,
-        'author_id'  => $author_id,
-        'user_id'    => $user_id,
-        'view_count' => 1,
-        'view_date'  => current_time('Y-m-d'),
-    ]);
+    $subTable = $wpdb->prefix . 'user_subscriptions';
+    $now = current_time('mysql');
+
+    $isActiveSubscription = (bool) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $subTable
+         WHERE user_id = %d
+           AND start_date <= %s
+           AND end_date   >= %s",
+        $user_id, $now, $now
+    ));
+
+    if ($isActiveSubscription && isset($lock_status['locked']) && $lock_status['locked']) {
+        $wpdb->insert($table, [
+            'post_id'    => $post_id,
+            'series_id'  => $parent_post_id,
+            'author_id'  => $author_id,
+            'user_id'    => $user_id,
+            'view_count' => 1,
+            'view_date'  => current_time('Y-m-d'),
+        ]);
+    }
 }
 
 function get_average_series_views($post_id, $term_id) {
@@ -240,6 +261,7 @@ function reward_keys_to_writer() {
     $author_id = intval($_POST['author_id'] ?? 0);
     $post_id = intval($_POST['post_id'] ?? 0);
     $key_amount = intval($_POST['key_amount'] ?? 0);
+    $parentPostId = getParentPostId($post_id);
 
     // Check login
     if (!$current_user_id) {
@@ -268,6 +290,7 @@ function reward_keys_to_writer() {
         'user_id' => $current_user_id,
         'author_id' => $author_id,
         'post_id' => $post_id,
+        'parent_post_id' => $parentPostId,
         'key' => $key_amount,
         'rewarded_at' => current_time('mysql'),
     ]);

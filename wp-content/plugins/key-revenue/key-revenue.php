@@ -155,15 +155,30 @@ function render_key_revenue_dashboard() {
         $reward_keys = $data['reward_keys'];
         $payment = ($total_keys_Purchase + $reward_keys) * $key_value;
         $revenue_share = ($total_keys_Purchase * $writer_share_per_key) + ($reward_keys * $writer_share_per_key);
+        
+        // Fetch payment info for this writer and period
+        $payment_info = $wpdb->get_row($wpdb->prepare(
+            "SELECT payment_status, transaction_id, unpaid_reason 
+             FROM {$wpdb->prefix}writer_payment_history 
+             WHERE user_id = %d AND revenue_type = %s AND from_date = %s AND to_date = %s",
+            $author_id, 'key', $from, $to
+        ));
+
+        $status = $payment_info ? $payment_info->payment_status : 'Unpaid';
+        $transaction_id = $payment_info ? $payment_info->transaction_id : '';
+        $reason = $payment_info ? $payment_info->unpaid_reason : '';
+
         $writerwise_data[] = [
             'id' => $author_id,
-            'name' => $name,
+            'name' => $name,    
             'episodes' => $data['episodes'],
             'keys' => $total_keys_Purchase,
             'reward_keys' => $reward_keys,
             'payment' => $payment,
             'revenue_share' => $revenue_share,
-            // ...other fields...
+            'status' => $status,
+            'transaction_id' => $transaction_id,
+            'reason' => $reason,
         ];
     }
 
@@ -179,10 +194,10 @@ function render_key_revenue_dashboard() {
 
     // 2. Get rewards per story
     $reward_rows_story = $wpdb->get_results($wpdb->prepare(
-        "SELECT post_id, author_id, SUM(`key`) as reward_keys
+        "SELECT parent_post_id as series_id, post_id, author_id, SUM(`key`) as reward_keys
          FROM $reward_table
          WHERE rewarded_at BETWEEN %s AND %s
-         GROUP BY post_id, author_id",
+         GROUP BY parent_post_id, author_id",
         $from . ' 00:00:00', $to . ' 23:59:59'
     ));
 
@@ -190,7 +205,7 @@ function render_key_revenue_dashboard() {
     $all_story_authors = [];
     foreach ($storywise as $row) $all_story_authors[$row->series_id . '_' . $row->author_id] = ['episodes' => $row->episodes];
     foreach ($reward_rows_story as $row) {
-        $key = $row->post_id . '_' . $row->author_id;
+        $key = $row->series_id . '_' . $row->author_id;
         if (!isset($all_story_authors[$key])) $all_story_authors[$key] = ['episodes' => 0];
         $all_story_authors[$key]['reward_keys'] = intval($row->reward_keys);
     }
@@ -211,7 +226,7 @@ function render_key_revenue_dashboard() {
         $revenue_share = ($total_keys_Purchase * $writer_share_per_key) + ($reward_keys * $writer_share_per_key);
         $storywise_data[] = [
             'id' => $author_id,
-            'title' => $post ? $post->post_title : 'Unknown',
+            'title' => $post ? $post->post_title . ' (VLN' . $post->ID . ')' : 'Unknown',
             'writer' => $name,
             'keys' => $total_keys_Purchase,
             'reward_keys' => $reward_keys,

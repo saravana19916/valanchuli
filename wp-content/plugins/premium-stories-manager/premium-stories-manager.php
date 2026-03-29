@@ -23,7 +23,7 @@ function psm_create_table() {
         post_id BIGINT NOT NULL,
         episode_from INT NULL,
         coin INT NOT NULL,
-        offer_coin INT NOT NULL,
+        offer_coin INT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
 
@@ -212,7 +212,7 @@ function psm_admin_page() {
                                            name="story_ids[]"
                                            value="<?= esc_attr($story->ID); ?>"
                                            <?= ($edit_rule && $edit_rule->post_id == $story->ID) ? 'checked disabled' : ''; ?>>
-                                    <?= esc_html($story->post_title); ?>
+                                    <?= esc_html($story->post_title . ' (VLN' . $story->ID . ')'); ?>
                                 </label>
                             <?php endforeach; ?>
                         </div>
@@ -267,7 +267,7 @@ function psm_admin_page() {
                 <?php foreach ($series_list as $series): ?>
                     <option value="<?= esc_attr($series->ID); ?>"
                         <?= selected($selected_series, $series->ID, false); ?>>
-                        <?= esc_html($series->post_title); ?>
+                        <?= esc_html($series->post_title . ' (VLN' . $series->ID . ')'); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -289,7 +289,7 @@ function psm_admin_page() {
             <tbody>
                 <?php if ($rules): foreach ($rules as $rule): ?>
                     <tr>
-                        <td><?= esc_html(get_the_title($rule->post_id)); ?></td>
+                        <td><?= esc_html(get_the_title($rule->post_id) . ' (VLN' . $rule->post_id . ')'); ?></td>
                         <td><?= esc_html($rule->episode_from); ?></td>
                         <td><?= esc_html($rule->coin); ?></td>
                         <td><?= esc_html($rule->offer_coin); ?></td>

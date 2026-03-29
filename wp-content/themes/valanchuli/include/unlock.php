@@ -8,6 +8,17 @@ add_action('wp_ajax_unlock_premium_series', function() {
     $user_id = get_current_user_id();
     $series_id = intval($_POST['series_id']);
     $key_count = intval($_POST['key_count']);
+    $author_id = intval($_POST['author_id']);
+
+    $episodesCount = getEpisodeCount($series_id);
+
+    $rule = $wpdb->get_row( $wpdb->prepare(
+        "SELECT episode_from FROM {$wpdb->prefix}premium_story_rules WHERE post_id = %d", $story_id
+    ) );
+    $episode_from = $rule ? intval($rule->episode_from) : 0;
+
+    $locked_count = $episodesCount - $episode_from + 1;
+    if ($locked_count < 0) $locked_count = 0;
 
     // Get current keys
     $wallet_keys = intval(get_user_meta($user_id, 'wallet_keys', true));
@@ -24,23 +35,28 @@ add_action('wp_ajax_unlock_premium_series', function() {
 
     // Track unlock (create table if not exists: wp_premium_story_unlocks)
     $table = $wpdb->prefix . 'premium_story_unlocks';
-    $wpdb->query("CREATE TABLE IF NOT EXISTS $table (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        user_id BIGINT NOT NULL,
-        series_id BIGINT NOT NULL,
-        unlocked_at DATETIME NOT NULL,
-        unlock_until DATETIME NOT NULL,
-        key_count INT NOT NULL
-    )");
 
-    // Insert unlock record
     $wpdb->insert($table, [
         'user_id' => $user_id,
+        'author_id' => $author_id,
         'series_id' => $series_id,
+        'episodes_locked_count' => $locked_count,
+        'validity_period' => $years,
         'unlocked_at' => current_time('mysql'),
         'unlock_until' => $unlock_until,
         'key_count' => $key_count
     ]);
+
+    $story_title = get_the_title($series_id);
+    $msg = sprintf(
+        "Premium story '%s' கதைக்கான '%d keys' பயன்படுத்தி வெற்றிகரமாக '%d years access' பெற்றுள்ளீர்கள். Validity period முடிந்ததும் இந்த கதை மீண்டும் lock செய்யப்படும். அதுவரை படித்து மகிழுங்கள் !!",
+        $story_title,
+        $key_count,
+        $years
+    );
+
+    createNotification($user_id, $msg);
+    premiumEmailSend($user_id, $story_title, $key_count, $years);
 
     wp_send_json_success(['unlock_until' => $unlock_until]);
 });
@@ -111,3 +127,29 @@ add_action('wp_ajax_unlock_episode_with_ad', function() {
 
     wp_send_json_success(['message' => 'Episode unlocked']);
 });
+
+function premiumEmailSend($user_id, $series_name, $key_count, $years)
+{
+    $site_url = site_url();
+    $user = get_userdata($user_id);
+
+    if ($user && $user->user_email) {
+        $subject = sprintf("Premium Access Confirmation | %s – Valanchuli", $series_name);
+
+        $body = <<<EOT
+            வணக்கம்,
+
+            Premium story '{$series_name}' கதைக்காக, நீங்கள் {$key_count} Keys பயன்படுத்தி வெற்றிகரமாக {$years} ஆண்டுகளுக்கான access பெற்றுள்ளீர்கள்.
+
+            இந்த access, {$years} ஆண்டுகள் வரை செல்லுபடியாகும். Validity period முடிந்ததும், இந்த கதை மீண்டும் lock செய்யப்படும்.
+
+            அதுவரை, எந்த தடையும் இல்லாமல் கதையை படித்து மகிழுங்கள்!
+
+            நன்றி,
+            Valanchuli Team
+            EOT;
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        wp_mail($user->user_email, $subject, nl2br($body), $headers);
+    }
+}

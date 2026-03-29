@@ -43,7 +43,7 @@ $twitter_link  = "https://twitter.com/intent/tweet?text=" . rawurlencode($title)
     <?php if ( function_exists( 'ADDTOANY_SHARE_SAVE_KIT' ) ) { ?>
         <div class="my-3">
             <?php ADDTOANY_SHARE_SAVE_KIT(array('follow'=>true)); ?>
-            <!-- <a href="#" onclick="window.open('https://www.instagram.com/'); return false;">
+            <!-- <a href="#" onclick="window.open('https://www.com/'); return false;">
    Share to Instagram
 </a> -->
             <!-- <a href="https://instagram.com/yourprofile" target="_blank" class="a2a_button_instagram" style="margin-left:8px;">

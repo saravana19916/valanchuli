@@ -26,6 +26,8 @@ require_once get_template_directory() . '/include/add-coin-transaction.php';
 require_once get_template_directory() . '/include/active-subscription-list.php';
 require_once get_template_directory() . '/include/month-earning.php';
 require_once get_template_directory() . '/include/user-bank-details-report.php';
+require_once get_template_directory() . '/include/active-key-list.php';
+require_once get_template_directory() . '/include/premium-story-revenue.php';
 
 // Enqueue Bootstrap and Font Awesome
 function my_theme_enqueue_styles() {
@@ -420,6 +422,31 @@ function getParentPostId($post_id) {
     $parent_post_id = !empty($series_posts) ? $series_posts[0]->ID : 0;
 
     return $parent_post_id;
+}
+
+function getEpisodeCount($post_id) {
+    $terms = get_the_terms($post_id, 'series');
+
+    $series_term = $terms[0];
+
+    $query = new WP_Query([
+        'post_type'      => 'post',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'ASC',
+        'post__not_in'   => [$post_id],
+        'tax_query'      => [
+            [
+                'taxonomy' => 'series',
+                'field'    => 'term_id',
+                'terms'    => [$series_term->term_id],
+            ],
+        ],
+    ]);
+    $episodes = $query->posts;
+
+    return count($episodes);
 }
 
 function get_locked_stories_count_by_author($author_id) {

@@ -165,7 +165,7 @@ function save_subscription_callback() {
     $last = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id=%d AND status=1 ORDER BY end_date DESC LIMIT 1", $user_id));
     if ($last && strtotime($last->end_date) > time()) {
         $start_date = $last->end_date;
-        $end_date = date('Y-m-d H:i:s', strtotime("+$months months", strtotime($start_date)));
+        $end_date = date('Y-m-d H:i:s', strtotime("+$days days", strtotime($start_date)));
     }
 
     $wpdb->insert($table, [
@@ -182,8 +182,6 @@ function save_subscription_callback() {
         'created_at' => current_time('mysql')
     ]);
 
-    $notification_table = $wpdb->prefix . 'user_notifications';
-
     if ($payment_status == 'success') {
         if ($last && strtotime($last->end_date) > time()) {
             // Subscription is active, so this is a queued subscription
@@ -192,12 +190,8 @@ function save_subscription_callback() {
             // First time or expired, so this is a normal subscription
             $msg = "🎉 Subscription Successful!\nநீங்கள் வெற்றிகரமாக Subscribe செய்துவிட்டீர்கள்.\nஇப்போதே உங்கள் வாசிப்பு பயணத்தை தொடங்குங்கள் 📚\n🚀 Happy Reading! ❤️";
         }
-        $wpdb->insert($notification_table, [
-            'user_id' => $user_id,
-            'message' => $msg,
-            'is_read' => 0,
-            'created_at' => current_time('mysql')
-        ]);
+
+        createNotification($user_id, $msg);
 
         subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date);
     }
@@ -484,3 +478,16 @@ add_action('wp_ajax_mark_notifications_read', function() {
     }
     wp_send_json_success();
 });
+
+function createNotification($user_id, $message)
+{
+    global $wpdb;
+    $notification_table = $wpdb->prefix . 'user_notifications';
+
+    $wpdb->insert($notification_table, [
+        'user_id' => $user_id,
+        'message' => $message,
+        'is_read' => 0,
+        'created_at' => current_time('mysql')
+    ]);
+}

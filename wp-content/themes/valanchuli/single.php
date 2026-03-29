@@ -12,12 +12,15 @@
             <?php
                 $description = get_post_meta(get_the_ID(), 'description', true);
                 $cardClass = 'card ' . ($description ? 'border-0' : 'border-0 rounded');
+                $post_id     = get_the_ID();
+                $division_id = get_post_meta($post_id, 'division', true);
             ?>
 
-            <h4 class="text-primary-color fw-bold text-center"><?php the_title(); ?></h4>
+
+            <h4 class="text-primary-color fw-bold text-center"><?php echo the_title() . $division_id ? ' (VLN' . get_the_ID() . ')' : ''; ?></h4>
 
             <?php
-                $post_id     = get_the_ID();
+                $single_page_post_id = '';
                 $author_id   = get_post_field('post_author', $post_id);
                 $author_name = get_the_author_meta('display_name', $author_id);
                 $posted_date = get_the_date('d M Y', $post_id);
@@ -37,8 +40,6 @@
                 </a>
                 | <?php echo esc_html($posted_date); ?>
                 <?php 
-                    $division_id = get_post_meta($post_id, 'division', true);
-
                     if ($division_id) {
                         $division = get_term($division_id, 'division');
                         if (!is_wp_error($division) && $division) {
@@ -171,6 +172,7 @@
                                             <div class="my-2">
                                                 <button
                                                     type="button" class="btn btn-warning fw-bold lock-episode"
+                                                    data-author-id="<?php echo esc_attr($author_id); ?>"
                                                     data-lock-type="premium"
                                                     data-coin="<?php echo esc_attr($premium_rule->coin); ?>"
                                                     data-offer-coin="<?php echo esc_attr($premium_rule->offer_coin); ?>"
@@ -230,6 +232,7 @@
                                                                             data-episode-number="<?php echo $episodeNumber; ?>"
                                                                             data-lock-type="<?php echo is_array($lock_type) ? implode(',', $lock_type) : $lock_type; ?>"
                                                                             <?php if ($lock_type === 'premium'): ?>
+                                                                                data-author-id="<?php echo esc_attr($author_id); ?>"
                                                                                 data-coin="<?php echo esc_attr($lock_status['coin']); ?>"
                                                                                 data-offer-coin="<?php echo esc_attr($lock_status['offer_coin']); ?>"
                                                                             <?php endif; ?>
@@ -405,6 +408,7 @@
                                 <?php
                                     global $wpdb;
                                     $post_id = get_the_ID();
+                                    $single_page_post_id = $post_id;
                                     $user_id = get_current_user_id();
 
                                     // Get series info
@@ -558,7 +562,7 @@
                                     $current_user_id = get_current_user_id();
                                     $post_author_id = (int) get_post_field('post_author', $post_id);
 
-                                    if ($current_user_id !== $post_author_id) : ?>
+                                    if ($is_parent && $current_user_id !== $post_author_id) : ?>
                                         <div class="reward-key-box text-center mx-auto mb-4" style="max-width:420px;background:#fffbe8;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:24px 18px;">
                                             <div style="font-size:0.9rem;font-weight:bold;margin-bottom:8px;">இந்த episode பிடிச்சிருந்தா எழுத்தாளரை உற்சாகப்படுத்துங்க!!</div>
                                             <div class="reward-key-buttons" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
@@ -653,7 +657,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         var requiredSeconds = <?php echo $required_seconds; ?>;
-        var postId = <?php echo $post_id; ?>;
+        var postId = <?php echo json_encode((int) $single_page_post_id); ?>;
         var timer = null;
         var viewCountSent = false;
         var remainingSeconds = requiredSeconds;
@@ -662,6 +666,7 @@
 
         function startTimer() {
             timer = setInterval(function () {
+
                 remainingSeconds--;
                 if (remainingSeconds <= 0 && !viewCountSent) {
                     viewCountSent = true;

@@ -5,7 +5,7 @@
  * @param int $episode_id
  * @return array ['locked' => bool, 'type' => string|null]
  */
-function get_episode_lock_status($series_id, $episode_id, $episode_number) {
+function get_episode_lock_status($series_id, $episode_id, $episode_number, $checkSubscription = true) {
     global $wpdb;
 
     $user_id = get_current_user_id();
@@ -59,7 +59,7 @@ function get_episode_lock_status($series_id, $episode_id, $episode_number) {
     // 2. Existing logic for normal locks
 
     // If the user is logged in and has an active subscription, do not lock
-    if ($user_id) {
+    if ($user_id && $checkSubscription) {
         global $wpdb;
         $table = $wpdb->prefix . 'user_subscriptions';
         $now = current_time('mysql');

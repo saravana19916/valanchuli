@@ -157,7 +157,7 @@ function render_series_lock_tab() {
     echo '<div id="series-list-box" style="max-height:300px;overflow-y:auto;border:1px solid #ccc;padding:10px;width:350px;">';
     foreach ($series_list as $s) {
         $checked = in_array($s->ID, $selected_series) ? 'checked' : '';
-        echo "<label style='display:block'><input type='checkbox' class='series-checkbox' name='post_ids[]' value='{$s->ID}' $checked> {$s->post_title}</label>";
+        echo "<label style='display:block'><input type='checkbox' class='series-checkbox' name='post_ids[]' value='{$s->ID}' $checked> {$s->post_title} (VLN{$s->ID})</label>";
     }
     echo '</div><br>';
     echo '<input type="submit" class="button button-primary" value="Edit Selected">';
@@ -279,7 +279,7 @@ function render_story_lock_details_tab() {
         $no_lock       = get_post_meta($story->ID, '_no_lock', true);
         $series_terms = get_the_terms($story->ID, 'series');
         $series_name  = (!empty($series_terms) && !is_wp_error($series_terms))
-                        ? $series_terms[0]->name
+                        ? $series_terms[0]->name . ' (VLN' . $story->ID . ')'
                         : '-';
         $episode_lock_text = '-';
         if (is_array($locks) && !empty($locks)) {

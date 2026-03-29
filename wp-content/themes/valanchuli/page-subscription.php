@@ -164,11 +164,26 @@
                         <?php endif; ?>
                     </div>
                     <div class="w-100 mt-3 text-center">
+                        <?php
+                            global $wpdb, $current_user;
+                            $user_id = get_current_user_id();
+                            $plan_name = $plan['name'];
+                            $now = current_time('mysql');
+
+                            // Check if user has an active subscription for this plan
+                            $is_active = $wpdb->get_var($wpdb->prepare(
+                                "SELECT COUNT(*) FROM {$wpdb->prefix}user_subscriptions 
+                                WHERE user_id = %d AND plan_name = %s AND status = 1 AND payment_status = 'success' 
+                                AND start_date <= %s AND end_date >= %s",
+                                $user_id, $plan_name, $now, $now
+                            ));
+                            $button_text = $is_active ? 'Renew Now' : 'Subscribe Now';
+                        ?>
                         <button class="btn btn-primary mt-2 rounded-pill px-4 subscribe-btn"
                             data-plan="<?php echo esc_attr($plan['name']); ?>"
                             data-period="<?php echo esc_attr($plan['period']); ?>"
                             data-amount="<?php echo esc_attr(!empty($plan['offerprice']) ? $plan['offerprice'] : $plan['price']); ?>">
-                            Subscribe Now
+                            <?php echo esc_html($button_text); ?>
                         </button>
                     </div>
                 </div>
@@ -206,6 +221,21 @@
                         </div>
 
                         <div class="text-end">
+                            <?php
+                                global $wpdb, $current_user;
+                                $user_id = get_current_user_id();
+                                $plan_name = $plan['name'];
+                                $now = current_time('mysql');
+
+                                // Check if user has an active subscription for this plan
+                                $is_active = $wpdb->get_var($wpdb->prepare(
+                                    "SELECT COUNT(*) FROM {$wpdb->prefix}user_subscriptions 
+                                    WHERE user_id = %d AND plan_name = %s AND status = 1 AND payment_status = 'success' 
+                                    AND start_date <= %s AND end_date >= %s",
+                                    $user_id, $plan_name, $now, $now
+                                ));
+                                $button_text = $is_active ? 'Renew Now' : 'Subscribe Now';
+                            ?>
                             <button class="btn btn-link p-0 plan-icon"
                                     data-bs-toggle="collapse"
                                     data-bs-target="#<?php echo esc_attr($collapseId); ?>"
@@ -219,7 +249,7 @@
                                 data-plan="<?php echo esc_attr($plan['name']); ?>"
                                 data-period="<?php echo esc_attr($plan['period']); ?>"
                                 data-amount="<?php echo esc_attr(!empty($plan['offerprice']) ? $plan['offerprice'] : $plan['price']); ?>">
-                                Subscribe Now
+                                <?php echo esc_html($button_text); ?>
                             </button>
                         </div>
                     </div>
@@ -253,7 +283,6 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
             period: this.dataset.period,
             amount: this.dataset.amount
         };
-        console.log("plan", plan);
         var options = {
             "key": RazorpayConfig.key,
             "amount": plan.amount * 100,
@@ -288,7 +317,7 @@ function saveSubscription(method, payment_id, payment_status, plan) {
         })
     })
     .then(res => res.json())
-    .then(data => {
+    .then (data => {
         if(data.success && payment_status === 'success') {
             alert('Subscription added successfully!');
             if (redirectTo) {
@@ -304,36 +333,36 @@ function saveSubscription(method, payment_id, payment_status, plan) {
     });
 }
 
-document.getElementById('paypalBtn').onclick = function() {
-    document.getElementById('paypalBtn').style.display = 'none';
-    var container = document.getElementById('paypal-button-container');
-    container.style.display = 'block';
-    container.innerHTML = "";
+// document.getElementById('paypalBtn').onclick = function() {
+//     document.getElementById('paypalBtn').style.display = 'none';
+//     var container = document.getElementById('paypal-button-container');
+//     container.style.display = 'block';
+//     container.innerHTML = "";
 
-    paypal.Buttons({
-        createOrder: function(data, actions) {
-            return actions.order.create({
-                purchase_units: [{
-                    amount: {
-                        value: selectedPlan.amount
-                    },
-                    description: selectedPlan.name + " - " + selectedPlan.period
-                }]
-            });
-        },
-        onApprove: function(data, actions) {
-            return actions.order.capture().then(function(details) {
-                saveSubscription('paypal', details.id, 'success');
-            });
-        },
-        onCancel: function (data) {
-            saveSubscription('paypal', '', 'failed');
-        },
-        onError: function (err) {
-            saveSubscription('paypal', '', 'failed');
-        }
-    }).render('#paypal-button-container');
-};
+//     paypal.Buttons({
+//         createOrder: function(data, actions) {
+//             return actions.order.create({
+//                 purchase_units: [{
+//                     amount: {
+//                         value: selectedPlan.amount
+//                     },
+//                     description: selectedPlan.name + " - " + selectedPlan.period
+//                 }]
+//             });
+//         },
+//         onApprove: function(data, actions) {
+//             return actions.order.capture().then(function(details) {
+//                 saveSubscription('paypal', details.id, 'success');
+//             });
+//         },
+//         onCancel: function (data) {
+//             saveSubscription('paypal', '', 'failed');
+//         },
+//         onError: function (err) {
+//             saveSubscription('paypal', '', 'failed');
+//         }
+//     }).render('#paypal-button-container');
+// };
 
 function getRedirectTo() {
     const params = new URLSearchParams(window.location.search);

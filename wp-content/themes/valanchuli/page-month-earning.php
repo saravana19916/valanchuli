@@ -139,6 +139,8 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
     padding: 28px 22px;
     box-shadow: 0 4px 24px #0002;
     position: relative;
+    max-height: 80vh;         /* Add this line */
+    overflow-y: auto;         /* Add this line */
 }
 .bank-modal h2 {
     font-size: 1.4rem;

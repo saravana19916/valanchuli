@@ -74,7 +74,7 @@ function render_add_subscription_transaction_page() {
                 <tr>
                     <th><label for="payment_status">Payment Status</label></th>
                     <td>
-                        <input type="text" name="payment_status" id="payment_status" value="success" disabled required>
+                        <input type="text" name="payment_status" id="payment_status" value="success" readonly required>
                     </td>
                 </tr>
             </table>

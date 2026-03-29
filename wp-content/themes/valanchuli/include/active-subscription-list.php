@@ -35,6 +35,9 @@ function render_active_subscriptions_page() {
         case 'cancelled':
             $where .= " AND s.status=0";
             break;
+        case 'upcoming':
+            $where .= " AND s.status=1 AND s.start_date > '$now'";
+            break;
         default: // all
             // No extra filter
             break;
@@ -89,6 +92,7 @@ function render_active_subscriptions_page() {
     $total_active = $wpdb->get_var("SELECT COUNT(*) FROM $table s WHERE s.status=1 AND s.start_date <= '$now' AND s.end_date >= '$now'");
     $total_expired = $wpdb->get_var("SELECT COUNT(*) FROM $table s WHERE s.status=1 AND s.end_date < '$now'");
     $total_cancelled = $wpdb->get_var("SELECT COUNT(*) FROM $table s WHERE s.status=0");
+    $total_upcoming = $wpdb->get_var("SELECT COUNT(*) FROM $table s WHERE s.status=1 AND s.start_date > '$now'");
 
     $base_url = admin_url('admin.php?page=active-subscriptions');
     ?>
@@ -97,6 +101,7 @@ function render_active_subscriptions_page() {
         <div class="sub-tabs" style="display:flex;gap:12px;margin-bottom:18px;">
             <a href="<?php echo $base_url; ?>" class="tab<?php if($status=='all') echo ' active'; ?>">All Subscriptions <span class="tab-count"><?php echo $total_all; ?></span></a>
             <a href="<?php echo $base_url; ?>&status=active" class="tab<?php if($status=='active') echo ' active'; ?>">Active <span class="tab-count"><?php echo $total_active; ?></span></a>
+            <a href="<?php echo $base_url; ?>&status=upcoming" class="tab<?php if($status=='upcoming') echo ' active'; ?>">Upcoming <span class="tab-count"><?php echo $total_upcoming; ?></span></a>
             <a href="<?php echo $base_url; ?>&status=expired" class="tab<?php if($status=='expired') echo ' active'; ?>">Expired <span class="tab-count"><?php echo $total_expired; ?></span></a>
             <a href="<?php echo $base_url; ?>&status=cancelled" class="tab<?php if($status=='cancelled') echo ' active'; ?>">Cancelled <span class="tab-count"><?php echo $total_cancelled; ?></span></a>
         </div>
@@ -172,7 +177,7 @@ function render_active_subscriptions_page() {
                                     $status_color = '#28a745'; // success/green
                                 } else {
                                     // Future subscription (not started yet)
-                                    $status_label = 'Pending';
+                                    $status_label = 'Upcoming';
                                     $status_color = '#17a2b8'; // info/blue
                                 }
                             }
