@@ -168,6 +168,12 @@ function save_subscription_callback() {
         $end_date = date('Y-m-d H:i:s', strtotime("+$days days", strtotime($start_date)));
     }
 
+    $phone = '';
+    if ($payment_status === 'success' && $payment_id) {
+        $phone = get_razorpay_contact($payment_id);
+        $phone = preg_replace('/[^+\d]/', '', $phone);
+    }
+
     $wpdb->insert($table, [
         'user_id' => $user_id,
         'plan_name' => $plan_name,
@@ -175,6 +181,7 @@ function save_subscription_callback() {
         'plan_amount' => $plan_amount,
         'payment_id' => $payment_id,
         'payment_method' => $payment_method,
+        'phone_number' => $phone,
         'start_date' => $start_date,
         'end_date' => $end_date,
         'status' => $payment_status && $payment_status == 'success' ? 1 : 0,
@@ -185,7 +192,7 @@ function save_subscription_callback() {
     if ($payment_status == 'success') {
         if ($last && strtotime($last->end_date) > time()) {
             // Subscription is active, so this is a queued subscription
-            $msg = "🎉 Subscription Queued!\nஉங்கள் புதிய Subscription வெற்றிகரமாக Queue செய்யப்பட்டது.\nமுடிவடையும் பிறகு உங்கள் புதிய plan செயல்படும்.";
+            $msg = "🎉 Subscription Queued!\nஉங்கள் புதிய subscription வெற்றிகரமாக queue-ல் சேர்க்கப்பட்டது. தற்போதைய plan முடிவடைந்த பிறகு, புதிய plan செயல்படும்";
         } else {
             // First time or expired, so this is a normal subscription
             $msg = "🎉 Subscription Successful!\nநீங்கள் வெற்றிகரமாக Subscribe செய்துவிட்டீர்கள்.\nஇப்போதே உங்கள் வாசிப்பு பயணத்தை தொடங்குங்கள் 📚\n🚀 Happy Reading! ❤️";
@@ -193,7 +200,7 @@ function save_subscription_callback() {
 
         createNotification($user_id, $msg);
 
-        subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date);
+        subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date, $last);
     }
 
     wp_send_json_success();
@@ -346,38 +353,58 @@ function check_subscription_expired($user_id) {
     }
 }
 
-function subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date)
+function subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date, $last)
 {
     $site_url = site_url();
     // Send email to user
     $user = get_userdata($user_id);
     if ($user && $user->user_email) {
-        $subject = "🎉 உங்கள் Valanchuli Subscription செயல்படுத்தப்பட்டது!";
-        $body = <<<EOT
-            Dear Reader,
-            
-            வாழ்த்துகள்!
+        if ($last && strtotime($last->end_date) > time()) {
+            $subject = "🎉 உங்கள் Valanchuli Subscription வெற்றிகரமாக queue-ல் சேர்க்கப்பட்டது";
+            $body = <<<EOT
+                Dear Reader,
+                
+                வாழ்த்துகள்!
 
-            உங்கள் Valanchuli Subscription ($plan_name) வெற்றிகரமாக செயல்படுத்தப்பட்டுள்ளது. உங்கள் Subscription காலம் $start_date முதல் $end_date வரை செல்லும். இனி நீங்கள் Valanchuli-யில் உள்ள பல கதைகளையும் தடையின்றி வாசிக்கலாம்.
+                உங்கள் Valanchuli Subscription ($plan_name) வெற்றிகரமாக queue-ல் சேர்க்கப்பட்டுள்ளது.
+                
+                உங்கள் புதிய Subscription காலம் $start_date முதல் $end_date வரை தற்போதைய Subscription முடிவடைந்த பிறகு, உங்கள் புதிய Subscription தானாக செயல்படும்.
 
-            📚 Subscription மூலம் கிடைக்கும் சலுகைகள்:
-            * Subscription Stories அனைத்தையும் எந்த தடையுமின்றி முழுமையாக வாசிக்கலாம் 
-            * புதிய Episodes உடனடியாக வாசிக்கும் வாய்ப்பு!
-            * Ads இல்லாமல் Smooth Reading Experience
-            இவை அனைத்தும் உங்களுக்காக காத்திருக்கின்றது!!!
+                இதுவரை, நீங்கள் உங்கள் தற்போதைய திட்டத்தின் அனைத்து அம்சங்களையும் தொடர்ந்து பயன்படுத்தலாம். Valanchuli-யில் தொடர்ந்து வாசித்து மகிழுங்கள் !
 
-            🔐 valanchuli Premium Stories பற்றி:
-            Valanchuli-யில் உள்ள Premium Stories முழுவதையும் unlock செய்ய, அந்தக் கதைக்கு தேவையான Keys பயன்படுத்த வேண்டும். Keys பயன்படுத்தினால் அந்த முழு கதையையும் Unlock செய்து வாசிக்கலாம்.
+                Happy Reading!
 
-            கீழே உள்ள லிங்கை கிளிக் செய்து இப்பொழுதே உங்கள் வாசிப்பு அனுபவத்தை தொடங்குங்கள்
+                Thanks & Regards,
+                Valanchuli – உங்கள் கதைகளின் உலகம்
+                EOT;
+        } else {
+            $subject = "🎉 உங்கள் Valanchuli Subscription செயல்படுத்தப்பட்டது!";
+            $body = <<<EOT
+                Dear Reader,
+                
+                வாழ்த்துகள்!
 
-            <a href="{$site_url}" style="color:#005d67;font-weight:600;text-decoration:underline;">{$site_url}</a>
+                உங்கள் Valanchuli Subscription ($plan_name) வெற்றிகரமாக செயல்படுத்தப்பட்டுள்ளது. உங்கள் Subscription காலம் $start_date முதல் $end_date வரை செல்லும். இனி நீங்கள் Valanchuli-யில் உள்ள பல கதைகளையும் தடையின்றி வாசிக்கலாம்.
 
-            Happy Reading!
+                📚 Subscription மூலம் கிடைக்கும் சலுகைகள்:
+                * Subscription Stories அனைத்தையும் எந்த தடையுமின்றி முழுமையாக வாசிக்கலாம் 
+                * புதிய Episodes உடனடியாக வாசிக்கும் வாய்ப்பு!
+                * Ads இல்லாமல் Smooth Reading Experience
+                இவை அனைத்தும் உங்களுக்காக காத்திருக்கின்றது!!!
 
-            Thanks & Regards,
-            Valanchuli – உங்கள் கதைகளின் உலகம்
-            EOT;
+                🔐 valanchuli Premium Stories பற்றி:
+                Valanchuli-யில் உள்ள Premium Stories முழுவதையும் unlock செய்ய, அந்தக் கதைக்கு தேவையான Keys பயன்படுத்த வேண்டும். Keys பயன்படுத்தினால் அந்த முழு கதையையும் Unlock செய்து வாசிக்கலாம்.
+
+                கீழே உள்ள லிங்கை கிளிக் செய்து இப்பொழுதே உங்கள் வாசிப்பு அனுபவத்தை தொடங்குங்கள்
+
+                <a href="{$site_url}" style="color:#005d67;font-weight:600;text-decoration:underline;">{$site_url}</a>
+
+                Happy Reading!
+
+                Thanks & Regards,
+                Valanchuli – உங்கள் கதைகளின் உலகம்
+                EOT;
+        }
 
         $headers = ['Content-Type: text/html; charset=UTF-8'];
         wp_mail($user->user_email, $subject, nl2br($body), $headers);

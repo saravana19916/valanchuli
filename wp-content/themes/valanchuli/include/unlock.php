@@ -30,7 +30,7 @@ add_action('wp_ajax_unlock_premium_series', function() {
     update_user_meta($user_id, 'wallet_keys', $wallet_keys - $key_count);
 
     // Unlock duration
-    $years = intval(get_option('psm_unlock_duration_years', 1));
+    $years = intval(get_option('psm_unlock_duration_years', 0));
     $unlock_until = date('Y-m-d H:i:s', strtotime("+$years years"));
 
     // Track unlock (create table if not exists: wp_premium_story_unlocks)
@@ -41,7 +41,6 @@ add_action('wp_ajax_unlock_premium_series', function() {
         'author_id' => $author_id,
         'series_id' => $series_id,
         'episodes_locked_count' => $locked_count,
-        'validity_period' => $years,
         'unlocked_at' => current_time('mysql'),
         'unlock_until' => $unlock_until,
         'key_count' => $key_count

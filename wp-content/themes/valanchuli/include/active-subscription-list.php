@@ -139,6 +139,7 @@ function render_active_subscriptions_page() {
                 <tr>
                     <th>User</th>
                     <th>Email</th>
+                    <th>Phone Number</th>
                     <th>Plan Name</th>
                     <th>Revenue</th>
                     <th>Subscription Date</th>
@@ -150,13 +151,14 @@ function render_active_subscriptions_page() {
             <tbody>
                 <?php if ($results): foreach ($results as $row): ?>
                     <tr>
-                        <td><?php echo esc_html($row->display_name); ?></td>
+                        <td><?php echo esc_html($row->display_name . " ({$row->user_id})"); ?></td>
                         <td><?php echo esc_html($row->user_email); ?></td>
+                        <td><?php echo esc_html($row->phone_number); ?></td>
                         <td><?php echo esc_html($row->plan_name); ?></td>
                         <td><?php echo esc_html($row->plan_amount); ?></td>
                         <td><?php echo esc_html(date('Y-m-d', strtotime($row->created_at))); ?></td>
-                        <td><?php echo esc_html(date('Y-m-d', strtotime($row->start_date))); ?></td>
-                        <td><?php echo esc_html(date('Y-m-d', strtotime($row->end_date))); ?></td>
+                        <td><?php echo esc_html($row->start_date); ?></td>
+                        <td><?php echo esc_html($row->end_date); ?></td>
                         <td>
                             <?php
                             $now = current_time('mysql');

@@ -443,3 +443,135 @@ function render_subscription_revenue_dashboard() {
     </script>
     <?php
 }
+
+/**
+ * Register activation/deactivation hooks for the cron
+ */
+register_activation_hook(__FILE__, 'subscription_revenue_activate_cron');
+register_deactivation_hook(__FILE__, 'subscription_revenue_deactivate_cron');
+
+function subscription_revenue_activate_cron() {
+    if (!wp_next_scheduled('subscription_revenue_monthly_auto_save')) {
+        $timestamp = strtotime('first day of next month 00:05:00');
+        wp_schedule_event($timestamp, 'monthly', 'subscription_revenue_monthly_auto_save');
+    }
+}
+
+function subscription_revenue_deactivate_cron() {
+    wp_clear_scheduled_hook('subscription_revenue_monthly_auto_save');
+}
+
+/**
+ * Register monthly cron interval if not already registered
+ */
+add_filter('cron_schedules', function ($schedules) {
+    if (!isset($schedules['monthly'])) {
+        $schedules['monthly'] = [
+            'interval' => 30 * DAY_IN_SECONDS,
+            'display'  => __('Once Monthly'),
+        ];
+    }
+    return $schedules;
+});
+
+/**
+ * Auto-save previous month's subscription writer payment data
+ */
+add_action('subscription_revenue_monthly_auto_save', 'subscription_revenue_auto_save_previous_month');
+
+function subscription_revenue_auto_save_previous_month() {
+    global $wpdb;
+
+    // Previous month date range
+    $from = date('Y-m-01', strtotime('first day of last month'));
+    $to   = date('Y-m-t',  strtotime('last day of last month'));
+
+    $from_date = $from . ' 00:00:00';
+    $to_date   = $to   . ' 23:59:59';
+
+    $writerPer   = floatval(get_option('writer_revenue_percentage', 30));
+    $platformPer = floatval(get_option('platform_revenue_percentage', 70));
+
+    // Get all successful subscriptions in the period
+    $subscriptions = $wpdb->get_results($wpdb->prepare(
+        "SELECT user_id, plan_amount, start_date, end_date
+         FROM {$wpdb->prefix}user_subscriptions
+         WHERE status = 1
+           AND payment_status = 'success'
+           AND end_date >= %s AND start_date <= %s",
+        $from_date, $to_date
+    ));
+
+    $total_subscription_amount = 0;
+    foreach ($subscriptions as $sub) {
+        $sub_start    = strtotime($sub->start_date);
+        $sub_end      = strtotime($sub->end_date);
+        $plan_days    = ($sub_end > $sub_start) ? round(($sub_end - $sub_start) / 86400) : 0;
+        $per_day      = $plan_days > 0 ? ($sub->plan_amount / $plan_days) : 0;
+
+        $period_start  = strtotime($from_date);
+        $period_end    = strtotime($to_date);
+        $overlap_start = max($sub_start, $period_start);
+        $overlap_end   = min($sub_end,   $period_end);
+        $days          = ($overlap_end >= $overlap_start) ? (floor(($overlap_end - $overlap_start) / 86400) + 1) : 0;
+
+        $total_subscription_amount += $days * $per_day;
+    }
+
+    // Writer reads for the period
+    $writer_reads = $wpdb->get_results($wpdb->prepare(
+        "SELECT author_id, SUM(view_count) as total_reads
+         FROM {$wpdb->prefix}daily_story_views
+         WHERE view_date BETWEEN %s AND %s
+         GROUP BY author_id",
+        $from, $to
+    ));
+
+    $total_reads = array_sum(array_column((array) $writer_reads, 'total_reads'));
+    $writers_pool = $total_reads > 0
+        ? $total_subscription_amount * ($writerPer / 100)
+        : 0;
+
+    $history_table = $wpdb->prefix . 'writer_payment_history';
+
+    foreach ($writer_reads as $wr) {
+        $revenue = $total_reads > 0
+            ? round(($wr->total_reads / $total_reads) * $writers_pool)
+            : 0;
+
+        if ($revenue > 0) {
+            // Check if already exists
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $history_table
+                WHERE user_id = %d AND revenue_type = %s AND from_date = %s AND to_date = %s",
+                $wr->author_id, 'subscription', $from, $to
+            ));
+
+            $record = [
+                'user_id'         => $wr->author_id,
+                'from_date'       => $from,
+                'to_date'         => $to,
+                'revenue_type'    => 'subscription',
+                'payment_status'  => 'Processing',
+                'transaction_id'  => '',
+                'unpaid_reason'   => '',
+                'revenue_payment' => $revenue,
+                'updated_at'      => current_time('mysql'),
+            ];
+
+            if ($exists) {
+                // Only update revenue_payment, do not overwrite existing payment_status
+                $wpdb->update(
+                    $history_table,
+                    [
+                        'revenue_payment' => $revenue,
+                        'updated_at'      => current_time('mysql'),
+                    ],
+                    ['id' => $exists]
+                );
+            } else {
+                $wpdb->insert($history_table, $record);
+            }
+        }
+    }
+}

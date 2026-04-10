@@ -147,17 +147,30 @@ function render_premium_stories_revenue_page() {
                     $is_active = strtotime($row->unlock_until) >= strtotime($now);
                     $status_label = $is_active ? 'Active' : 'Expired';
                     $status_color = $is_active ? '#28a745' : '#dc3545';
+
+                        $episodesCount = getEpisodeCount($row->series_id);
+
+                        $rule = $wpdb->get_row( $wpdb->prepare(
+                            "SELECT episode_from, validity_period FROM {$wpdb->prefix}premium_story_rules WHERE post_id = %d", $row->series_id
+                        ) );
+
+                        $validityPeriod = $rule ? intval($rule->validity_period) : 0;
+
+                        $episode_from = $rule ? intval($rule->episode_from) : 0;
+
+                        $locked_count = $episodesCount - $episode_from + 1;
+                        if ($locked_count < 0) $locked_count = 0;
                     ?>
                     <tr>
                         <td><?php echo esc_html($row->display_name . " ({$row->user_id})"); ?></td>
                         <td><?php echo esc_html($row->user_email); ?></td>
                         <td><?php echo esc_html($row->post_title . ' (VLN' . $row->post_id . ')'); ?></td>
                         <td><?php echo esc_html($division_name); ?></td>
-                        <td><?php echo esc_html($row->episodes_locked_count); ?></td>
+                        <td><?php echo esc_html($locked_count); ?></td>
                         <td><?php echo esc_html($writer_name . " ({$row->author_id})"); ?></td>
                         <td><?php echo esc_html($row->key_count); ?></td>
                         <td><?php echo esc_html(number_format($amount, 2)); ?></td>
-                        <td><?php echo esc_html($row->validity_period); ?></td>
+                        <td><?php echo esc_html($validityPeriod) . ' Years'; ?></td>
                         <td><?php echo esc_html(date('Y-m-d H:i:s', strtotime($row->unlocked_at))); ?></td>
                         <td>
                             <span style="background:<?php echo $status_color; ?>;color:#fff;padding:3px 10px;border-radius:12px;font-size:90%;">

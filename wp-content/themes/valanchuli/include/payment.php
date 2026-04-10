@@ -15,9 +15,8 @@ add_action('wp_ajax_save_coin_purchase', function() {
     $phone = '';
     if ($payment_status === 'success' && $payment_id) {
         $phone = get_razorpay_contact($payment_id);
+        $phone = preg_replace('/[^+\d]/', '', $phone);
     }
-
-    $phone = preg_replace('/[^+\d]/', '', $phone);
 
     $table = $wpdb->prefix . 'coin_purchases';
     $wpdb->insert($table, [

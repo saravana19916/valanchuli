@@ -17,7 +17,7 @@
             ?>
 
 
-            <h4 class="text-primary-color fw-bold text-center"><?php echo the_title() . $division_id ? ' (VLN' . get_the_ID() . ')' : ''; ?></h4>
+            <h4 class="text-primary-color fw-bold text-center"><?php echo the_title(); ?></h4>
 
             <?php
                 $single_page_post_id = '';
@@ -39,6 +39,9 @@
                     <?php echo esc_html($author_name); ?>
                 </a>
                 | <?php echo esc_html($posted_date); ?>
+                <?php if ($division_id) : ?>
+                | ID: <?php echo 'VLN' . get_the_ID(); ?>
+                <?php endif; ?>
                 <?php 
                     if ($division_id) {
                         $division = get_term($division_id, 'division');

@@ -24,6 +24,7 @@ function psm_create_table() {
         episode_from INT NULL,
         coin INT NOT NULL,
         offer_coin INT NULL,
+        validity_period VARCHAR(100) NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
 
@@ -89,6 +90,9 @@ function psm_admin_page() {
                 return;
             }
 
+            // Unlock duration
+            $years = intval(get_option('psm_unlock_duration_years', 0));
+
             foreach ($_POST['story_ids'] as $story_id) {
                 $wpdb->insert(
                     $table,
@@ -96,6 +100,7 @@ function psm_admin_page() {
                         'post_id'      => intval($story_id),
                         'episode_from' => $episode_from,
                         'coin'         => intval($_POST['coin']),
+                        'validity_period' => $years,
                         'offer_coin'   => ($_POST['offer_coin'] !== '') ? intval($_POST['offer_coin']) : null,
                     ],
                     ['%d','%d','%d','%d']
@@ -273,15 +278,17 @@ function psm_admin_page() {
             </select>
 
             <button class="button" type="submit" style="margin-right:8px;">Filter</button>
+            <button type="button" id="premium-rules-csv" class="button">Download CSV</button>
         </form>
 
-        <table class="widefat striped">
+        <table id="premium-rules-table" class="widefat striped">
             <thead>
                 <tr>
                     <th>Story</th>
                     <th>Episodes</th>
                     <th>Key</th>
                     <th>Offer Key</th>
+                    <th>Validity Period</th>
                     <th>Created</th>
                     <th>Action</th>
                 </tr>
@@ -293,6 +300,7 @@ function psm_admin_page() {
                         <td><?= esc_html($rule->episode_from); ?></td>
                         <td><?= esc_html($rule->coin); ?></td>
                         <td><?= esc_html($rule->offer_coin); ?></td>
+                        <td><?= esc_html($rule->validity_period); ?></td>
                         <td><?= esc_html($rule->created_at); ?></td>
                         <td>
                             <a href="<?= admin_url('admin.php?page=premium-stories&edit=' . $rule->id); ?>">
@@ -406,5 +414,29 @@ function psm_admin_page() {
             }
         });
     });
+
+    function downloadPremiumRulesCSV() {
+        const table = document.getElementById('premium-rules-table');
+        if (!table) return;
+
+        const rows = [];
+        const headerCells = Array.from(table.querySelectorAll('thead th')).slice(0, -1);
+        rows.push(headerCells.map(th => `"${th.innerText.trim()}"`).join(','));
+
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const cols = Array.from(tr.children).slice(0, -1).map(td => `"${td.innerText.trim()}"`);
+            rows.push(cols.join(','));
+        });
+
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'premium-stories.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    document.getElementById('premium-rules-csv')?.addEventListener('click', downloadPremiumRulesCSV);
     </script>
 <?php } ?>

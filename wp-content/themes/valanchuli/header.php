@@ -47,10 +47,10 @@
 
                 <!-- User Icon -->
                 <div class="position-relative">
-                    <button id="userToggle" class="btn btn-link text-white p-0">
+                    <button class="userToggle btn btn-link text-white p-0 ">
                         <i class="fas fa-user fa-lg"></i>
                     </button>
-                    <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
+                    <div class="userDropdown dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
                         style="min-width: 200px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                         <?php if (is_user_logged_in()) : $current_user = wp_get_current_user(); ?>
                             <span class="dropdown-item text-center">Welcome <?php echo esc_html( $current_user->user_login ); ?> </span>
@@ -156,10 +156,10 @@
 
             <!-- User Icon -->
             <div class="position-relative">
-                <button id="userToggle" class="btn btn-link text-white p-0">
+                <button class="userToggle btn btn-link text-white p-0">
                     <i class="fas fa-user fa-lg"></i>
                 </button>
-                <div id="userDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
+                <div class="userDropdown dropdown-menu dropdown-menu-end p-2 shadow border-0 fs-13px"
                     style="min-width: 200px; display: none; position: absolute; top: 17px; right: 0; z-index: 1000;">
                     <?php if (is_user_logged_in()) : $current_user = wp_get_current_user(); ?>
                         <span class="dropdown-item text-center">Welcome <?php echo esc_html( $current_user->user_login ); ?> </span>
@@ -180,7 +180,7 @@
                 $notification_table = $wpdb->prefix . 'user_notifications';
                 $user_id = get_current_user_id();
                 $unread_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $notification_table WHERE user_id=%d AND is_read=0", $user_id));
-                $notifications = $wpdb->get_results($wpdb->prepare("SELECT * FROM $notification_table WHERE user_id=%d ORDER BY created_at DESC LIMIT 10", $user_id));
+                $notifications = $wpdb->get_results($wpdb->prepare("SELECT * FROM $notification_table WHERE user_id=%d ORDER BY created_at DESC LIMIT 100", $user_id));
             ?>
                 <div class="notification-container" style="position:relative;display:inline-block;">
                     <div class="notification-icon" style="position:relative;display:inline-block;cursor:pointer;">

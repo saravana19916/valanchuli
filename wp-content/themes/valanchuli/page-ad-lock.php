@@ -22,7 +22,7 @@ $ad_lock = get_ads_lock_for_episode($parent_id, $episode_number);
 $total_seconds = isset($ad_lock['ads_time_sec']) ? intval($ad_lock['ads_time_sec']) : 0;
 $ads_content = isset($ad_lock['ads_content']) ? $ad_lock['ads_content'] : '';
 ?>
-<div class="ad-lock-container" style="max-width:600px;margin:40px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.08); border: 2px solid #005d67">
+<div class="ad-lock-container" style="max-width:900px;margin:40px auto;padding-top:24px;padding-bottom:24px;padding-left:12px;padding-right:12px;background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.08); border: 2px solid #005d67">
     <!-- <h3 class="mb-4 text-center fw-bold" style="text-align:center;">Watch Ad to Unlock</h3> -->
     <p class="mb-4 text-center" style="font-size:1.1rem;color:#555;text-align:center;">எபிசோட் தயார் ஆகிறது… சில விநாடிகள் காத்திருக்கவும்</p>
     <div class="text-center mb-3">
@@ -156,20 +156,105 @@ $ads_content = isset($ad_lock['ads_content']) ? $ad_lock['ads_content'] : '';
     });
 
     // After ads_content is rendered
-    document.querySelectorAll('.ad-lock-content video').forEach(function(video) {
-        video.muted = false; // Start muted
-        video.volume = 0.05; // Low volume (0.0 to 1.0)
-        video.autoplay = true;
-        video.controls = true; // Show controls so user can adjust volume
-        // Try to play (some browsers require user interaction)
-        video.play().catch(function(){});
+    document.querySelectorAll('.ad-lock-content video').forEach(function(video, idx) {
+        video.controls = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.volume = 0.5;
+
+        // Create wrapper with position relative
+        var videoWrapper = document.createElement('div');
+        videoWrapper.style.cssText = 'position: relative; display: block; width: 100%; margin-bottom: 15px;';
+        video.parentNode.insertBefore(videoWrapper, video);
+        videoWrapper.appendChild(video);
+
+        // Create play overlay inside wrapper
+        var playOverlay = document.createElement('div');
+        playOverlay.className = 'play-overlay';
+        playOverlay.style.cssText = `
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        `;
+        playOverlay.innerHTML = '<span style="font-size:60px;">▶</span>';
+        videoWrapper.appendChild(playOverlay);
+
+        // Stagger autoplay by video index (500ms + 300ms per video)
+        setTimeout(function() {
+            video.muted = false;
+            var playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(function(error) {
+                    console.log('Autoplay failed for video ' + idx + ':', error);
+                    video.muted = true;
+                    video.play().catch(function(){});
+                });
+            }
+        }, 500 + (idx * 300));
+
+        // Custom volume slider
+        var wrap = document.createElement('div');
+        wrap.className = 'custom-video-volume';
+        wrap.innerHTML = `
+            <button type="button" class="vol-toggle">🔊</button>
+            <input type="range" min="0" max="1" step="0.05" value="0.5" class="vol-range" />
+        `;
+        videoWrapper.insertAdjacentElement('afterend', wrap);
+
+        var toggle = wrap.querySelector('.vol-toggle');
+        var range = wrap.querySelector('.vol-range');
+
+        toggle.addEventListener('click', function() {
+            video.muted = !video.muted;
+            toggle.textContent = video.muted ? '🔇' : '🔊';
+        });
+
+        range.addEventListener('input', function() {
+            var v = parseFloat(this.value);
+            video.volume = v;
+            video.muted = (v === 0);
+            toggle.textContent = video.muted ? '🔇' : '🔊';
+        });
     });
 })();
 </script>
+
 <style>
+.ad-lock-content video{
+    width:100% !important;
+    max-width:100% !important;
+    height:auto !important;
+    display:block;
+    border-radius:10px;
+}
+.custom-video-volume{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:10px 0 18px;
+}
+.custom-video-volume .vol-toggle{
+    border:1px solid #ccc;
+    background:#fff;
+    border-radius:6px;
+    padding:4px 8px;
+}
+.custom-video-volume .vol-range{
+    flex:1;
+}
 @media (max-width: 600px) {
     .ad-lock-container {
-        margin: 20px !important;
+        margin: 12px !important;
+        max-width: 100% !important;
     }
 }
 </style>

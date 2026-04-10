@@ -449,23 +449,165 @@ function getEpisodeCount($post_id) {
     return count($episodes);
 }
 
-function get_locked_stories_count_by_author($author_id) {
-    global $wpdb;
-    // Get all post IDs by this author
-    $post_ids = get_posts([
-        'author'         => $author_id,
-        'post_type'      => 'post',
-        'post_status'    => 'publish',
-        'fields'         => 'ids',
-        'posts_per_page' => -1
-    ]);
-    $count = 0;
-    foreach ($post_ids as $post_id) {
-        $locks = get_post_meta($post_id, '_episode_locks', true);
-        if (is_array($locks) && !empty($locks)) {
-            $count++;
+// Add user ID column to user list in admin
+add_filter('manage_users_columns', function ($columns) {
+    $ordered = [];
+    foreach ($columns as $key => $label) {
+        $ordered[$key] = $label;
+        if ('username' === $key) {
+            $ordered['user_id'] = __('User ID');
         }
     }
+    return $ordered;
+});
+
+add_filter('manage_users_custom_column', function ($value, $column_name, $user_id) {
+    if ($column_name === 'user_id') {
+        return $user_id;
+    }
+    return $value;
+}, 10, 3);
+
+add_filter('manage_users_sortable_columns', function ($columns) {
+    $columns['user_id'] = 'ID';
+    return $columns;
+});
+
+// Add post ID column to post list in admin
+add_filter('manage_posts_columns', function ($columns) {
+    $ordered = [];
+    foreach ($columns as $key => $label) {
+        $ordered[$key] = $label;
+        if ('title' === $key) {
+            $ordered['post_id'] = __('Post ID');
+        }
+    }
+    return $ordered;
+});
+
+add_action('manage_posts_custom_column', function ($column, $post_id) {
+    if ($column === 'post_id') {
+        echo (int) $post_id;
+    }
+}, 10, 2);
+
+add_filter('manage_edit-post_sortable_columns', function ($columns) {
+    $columns['post_id'] = 'ID';
+    return $columns;
+});
+
+function get_locked_stories_count_by_author($author_id) {
+    global $wpdb;
+
+    $series = get_posts([
+        'author'      => $author_id,
+        'post_type'   => 'post',
+        'numberposts' => -1,
+        'meta_query'  => [[
+            'key'     => 'division',
+            'compare' => 'EXISTS'
+        ]],
+    ]);
+
+    $premium_table = $wpdb->prefix . 'premium_story_rules';
+    $locked_ids = array_map('intval', (array) $wpdb->get_col("SELECT DISTINCT post_id FROM {$premium_table}"));
+    $common_episode_lock = (int) get_option('common_episode_lock');
+
+    $count = 0; // total locked episode count
+
+    foreach ($series as $post) {
+        $postId = (int) $post->ID;
+        $is_premium_rule = in_array($postId, $locked_ids, true);
+
+        if (!empty($is_premium_rule)) {
+            continue;
+        }
+
+        $no_lock            = get_post_meta($postId, '_no_lock', true);
+        $default_lock_after = (int) get_post_meta($postId, '_default_lock_after', true);
+        $episode_locks      = get_post_meta($postId, '_episode_locks', true);
+
+        if (!empty($no_lock)) {
+            continue;
+        }
+
+        $has_default_lock  = ($default_lock_after > 0);
+        $has_episode_locks = (is_array($episode_locks) && !empty($episode_locks));
+
+        // Fallback to common lock ONLY for non-premium + no specific lock meta
+        $effective_default_lock_after = 0;
+        if ($has_default_lock) {
+            $effective_default_lock_after = $default_lock_after;
+        } elseif (!$is_premium_rule && !$has_episode_locks && $common_episode_lock > 0) {
+            $effective_default_lock_after = $common_episode_lock;
+        }
+
+        // no lock config at all
+        if ($effective_default_lock_after <= 0 && !$has_episode_locks) {
+            continue;
+        }
+
+        $terms = get_the_terms($postId, 'series');
+        if (empty($terms) || is_wp_error($terms)) {
+            continue;
+        }
+
+        $series_term = $terms[0];
+
+        $query = new WP_Query([
+            'post_type'      => 'post',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'orderby'        => 'date',
+            'order'          => 'ASC',
+            'post__not_in'   => [$postId],
+            'tax_query'      => [
+                [
+                    'taxonomy' => 'series',
+                    'field'    => 'term_id',
+                    'terms'    => [$series_term->term_id],
+                ],
+            ],
+        ]);
+
+        $episodes = $query->posts;
+        $total_episodes = count($episodes);
+
+        if ($effective_default_lock_after > 0 && $total_episodes >= $effective_default_lock_after) {
+            $count += ($total_episodes - $effective_default_lock_after + 1);
+        }
+
+        if ($has_episode_locks) {
+            foreach ($episode_locks as $lock) {
+                if (!is_array($lock)) {
+                    continue;
+                }
+
+                $from = isset($lock['from']) ? (int) $lock['from'] : 0;
+                $to   = isset($lock['to']) && $lock['to'] !== '' ? (int) $lock['to'] : $from;
+
+                if ($from <= 0) {
+                    continue;
+                }
+
+                if ($to < $from) {
+                    $to = $from;
+                }
+
+                if ($total_episodes > 0) {
+                    $from = min($from, $total_episodes);
+                    $to   = min($to, $total_episodes);
+                }
+
+                if ($to >= $from) {
+                    $count += ($to - $from + 1);
+                }
+            }
+        }
+
+        wp_reset_postdata();
+    }
+
     return $count;
 }
 

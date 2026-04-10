@@ -435,3 +435,123 @@ function render_key_revenue_dashboard() {
     </script>
     <?php
 }
+
+/**
+ * Register activation/deactivation hooks for the cron
+ */
+register_activation_hook(__FILE__, 'key_revenue_activate_cron');
+register_deactivation_hook(__FILE__, 'key_revenue_deactivate_cron');
+
+function key_revenue_activate_cron() {
+    if (!wp_next_scheduled('key_revenue_monthly_auto_save')) {
+        // Schedule for 1st of every month at 00:05
+        $timestamp = strtotime('first day of next month 00:05:00');
+        wp_schedule_event($timestamp, 'monthly', 'key_revenue_monthly_auto_save');
+    }
+}
+
+function key_revenue_deactivate_cron() {
+    wp_clear_scheduled_hook('key_revenue_monthly_auto_save');
+}
+
+/**
+ * Register monthly cron interval
+ */
+add_filter('cron_schedules', function ($schedules) {
+    if (!isset($schedules['monthly'])) {
+        $schedules['monthly'] = [
+            'interval' => 30 * DAY_IN_SECONDS,
+            'display'  => __('Once Monthly'),
+        ];
+    }
+    return $schedules;
+});
+
+/**
+ * Auto-save previous month's writer payment data
+ */
+add_action('key_revenue_monthly_auto_save', 'key_revenue_auto_save_previous_month');
+
+function key_revenue_auto_save_previous_month() {
+    global $wpdb;
+
+    // Previous month date range
+    $from = date('Y-m-01', strtotime('first day of last month'));
+    $to   = date('Y-m-t',  strtotime('last day of last month'));
+
+    $key_value            = floatval(get_option('common_single_key_amount', 0.5));
+    $keysToUnlockEpisode  = floatval(get_option('common_coin_unlock', 0));
+    $writerPer            = floatval(get_option('writer_revenue_percentage', 30));
+    $writer_share_per_key = $key_value * ($writerPer / 100);
+
+    $reward_table = $wpdb->prefix . 'writer_key_rewards';
+    $history_table = $wpdb->prefix . 'writer_payment_history';
+
+    // Get unlocks per writer
+    $writerwise = $wpdb->get_results($wpdb->prepare(
+        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes
+         FROM {$wpdb->prefix}user_episode_unlocks
+         WHERE lock_type = 'key' AND unlocked_at BETWEEN %s AND %s
+         GROUP BY author_id",
+        $from . ' 00:00:00', $to . ' 23:59:59'
+    ));
+
+    // Get reward keys per writer
+    $reward_rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT author_id, SUM(`key`) as reward_keys
+         FROM $reward_table
+         WHERE rewarded_at BETWEEN %s AND %s
+         GROUP BY author_id",
+        $from . ' 00:00:00', $to . ' 23:59:59'
+    ));
+
+    // Merge
+    $all_author_ids = [];
+    foreach ($writerwise as $row) {
+        $all_author_ids[$row->author_id] = ['episodes' => (int) $row->episodes, 'reward_keys' => 0];
+    }
+    foreach ($reward_rows as $row) {
+        if (!isset($all_author_ids[$row->author_id])) {
+            $all_author_ids[$row->author_id] = ['episodes' => 0, 'reward_keys' => 0];
+        }
+        $all_author_ids[$row->author_id]['reward_keys'] = (int) $row->reward_keys;
+    }
+
+    foreach ($all_author_ids as $author_id => $data) {
+        $total_keys_purchase = $data['episodes'] * $keysToUnlockEpisode;
+        $reward_keys         = $data['reward_keys'];
+        $revenue_share       = ($total_keys_purchase * $writer_share_per_key) + ($reward_keys * $writer_share_per_key);
+
+        if ($revenue_share > 0) {
+            // Check if already exists
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $history_table
+                WHERE user_id = %d AND revenue_type = %s AND from_date = %s AND to_date = %s",
+                $author_id, 'key', $from, $to
+            ));
+
+            $record = [
+                'user_id'         => $author_id,
+                'from_date'       => $from,
+                'to_date'         => $to,
+                'revenue_type'    => 'key',
+                'payment_status'  => 'Processing',
+                'transaction_id'  => '',
+                'unpaid_reason'   => '',
+                'revenue_payment' => $revenue_share,
+                'updated_at'      => current_time('mysql'),
+            ];
+
+            if ($exists) {
+                // Only update revenue_payment, do not overwrite payment_status
+                $wpdb->update(
+                    $history_table,
+                    ['revenue_payment' => $revenue_share, 'updated_at' => current_time('mysql')],
+                    ['id' => $exists]
+                );
+            } else {
+                $wpdb->insert($history_table, $record);
+            }
+        }
+    }
+}

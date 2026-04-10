@@ -269,46 +269,48 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Mobile
-        document.getElementById('searchToggle').onclick = function(e) {
-            e.stopPropagation();
-            let dropdown = document.getElementById('searchDropdown');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        };
-        document.getElementById('searchDropdown').onclick = function(e) {
-            e.stopPropagation(); // Prevent closing when clicking inside
-        };
+        const searchToggle = document.getElementById('searchToggle');
+        const searchDropdown = document.getElementById('searchDropdown');
+        const searchToggleDesktop = document.getElementById('searchToggleDesktop');
+        const searchDropdownDesktop = document.getElementById('searchDropdownDesktop');
 
-        // Desktop
-        document.getElementById('searchToggleDesktop').onclick = function(e) {
-            e.stopPropagation();
-            let dropdown = document.getElementById('searchDropdownDesktop');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        };
-        document.getElementById('searchDropdownDesktop').onclick = function(e) {
-            e.stopPropagation();
-        };
+        if (searchToggle && searchDropdown) {
+            searchToggle.onclick = function(e) {
+                e.stopPropagation();
+                searchDropdown.style.display = searchDropdown.style.display === 'block' ? 'none' : 'block';
+            };
 
-        // Hide dropdowns when clicking outside
-        document.addEventListener('click', function() {
-            document.getElementById('searchDropdown').style.display = 'none';
-            document.getElementById('searchDropdownDesktop').style.display = 'none';
-        });
+            searchDropdown.onclick = function(e) {
+                e.stopPropagation();
+            };
+        }
 
-        // Handle all user toggles
-        document.querySelectorAll('#userToggle').forEach(function(btn, idx) {
+        if (searchToggleDesktop && searchDropdownDesktop) {
+            searchToggleDesktop.onclick = function(e) {
+                e.stopPropagation();
+                searchDropdownDesktop.style.display = searchDropdownDesktop.style.display === 'block' ? 'none' : 'block';
+            };
+
+            searchDropdownDesktop.onclick = function(e) {
+                e.stopPropagation();
+            };
+        }
+
+        document.querySelectorAll('.userToggle').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                var dropdown = btn.parentElement.querySelector('#userDropdown');
+                const dropdown = btn.parentElement.querySelector('.userDropdown');
                 if (dropdown) {
-                    dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+                    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
                 }
             });
         });
 
-        // Hide dropdowns when clicking outside
         document.addEventListener('click', function() {
-            document.querySelectorAll('#searchDropdown, #userDropdown').forEach(function(dropdown) {
+            if (searchDropdown) searchDropdown.style.display = 'none';
+            if (searchDropdownDesktop) searchDropdownDesktop.style.display = 'none';
+
+            document.querySelectorAll('.userDropdown').forEach(function(dropdown) {
                 dropdown.style.display = 'none';
             });
         });
