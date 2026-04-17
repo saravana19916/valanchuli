@@ -666,9 +666,11 @@
         var remainingSeconds = requiredSeconds;
         var lastHiddenTime = null;
         var timerPaused = false;
+        remainingSeconds = 5;
 
         function startTimer() {
             timer = setInterval(function () {
+                console.log("Remaining seconds: " + remainingSeconds);
 
                 remainingSeconds--;
                 if (remainingSeconds <= 0 && !viewCountSent) {

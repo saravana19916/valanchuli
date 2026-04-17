@@ -283,26 +283,41 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
             period: this.dataset.period,
             amount: this.dataset.amount
         };
+
         var options = {
             "key": RazorpayConfig.key,
             "amount": plan.amount * 100,
             "currency": "INR",
             "name": plan.name,
             "description": plan.period,
-            "handler": function (response){
-                saveSubscription('razorpay', response.razorpay_payment_id, 'success', plan);
+            "handler": function (response) {
+                saveSubscription('razorpay', response.razorpay_payment_id || '', 'success', plan);
+            },
+            "modal": {
+                "ondismiss": function () {
+                    saveSubscription('razorpay', '', 'cancelled', plan);
+                }
             }
         };
+
         var rzp1 = new Razorpay(options);
-        rzp1.on('payment.failed', function (response){
-            saveSubscription('razorpay', response.error.metadata.payment_id || '', 'failed', plan);
+
+        rzp1.on('payment.failed', function (response) {
+            var paymentId = '';
+            if (response && response.error && response.error.metadata && response.error.metadata.payment_id) {
+                paymentId = response.error.metadata.payment_id;
+            }
+
+            saveSubscription('razorpay', paymentId, 'failed', plan);
         });
+
         rzp1.open();
     });
 });
 
 function saveSubscription(method, payment_id, payment_status, plan) {
     const redirectTo = getRedirectTo();
+
     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -317,19 +332,23 @@ function saveSubscription(method, payment_id, payment_status, plan) {
         })
     })
     .then(res => res.json())
-    .then (data => {
-        if(data.success && payment_status === 'success') {
+    .then(data => {
+
+        if (data.success && payment_status === 'success') {
             alert('Subscription added successfully!');
             if (redirectTo) {
                 window.location.href = redirectTo;
             } else {
                 location.reload();
             }
-        } else if(payment_status === 'failed') {
+        } else if (payment_status === 'failed' || payment_status === 'cancelled') {
             alert('Payment failed or cancelled.');
         } else {
             alert('Subscription failed!');
         }
+    })
+    .catch(err => {
+        console.error('saveSubscription error:', err);
     });
 }
 

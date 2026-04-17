@@ -13,9 +13,10 @@ add_action('wp_ajax_unlock_premium_series', function() {
     $episodesCount = getEpisodeCount($series_id);
 
     $rule = $wpdb->get_row( $wpdb->prepare(
-        "SELECT episode_from FROM {$wpdb->prefix}premium_story_rules WHERE post_id = %d", $story_id
+        "SELECT episode_from, validity_period FROM {$wpdb->prefix}premium_story_rules WHERE post_id = %d", $series_id
     ) );
     $episode_from = $rule ? intval($rule->episode_from) : 0;
+    $years = $rule ? intval($rule->validity_period) : 0;
 
     $locked_count = $episodesCount - $episode_from + 1;
     if ($locked_count < 0) $locked_count = 0;
@@ -30,7 +31,6 @@ add_action('wp_ajax_unlock_premium_series', function() {
     update_user_meta($user_id, 'wallet_keys', $wallet_keys - $key_count);
 
     // Unlock duration
-    $years = intval(get_option('psm_unlock_duration_years', 0));
     $unlock_until = date('Y-m-d H:i:s', strtotime("+$years years"));
 
     // Track unlock (create table if not exists: wp_premium_story_unlocks)

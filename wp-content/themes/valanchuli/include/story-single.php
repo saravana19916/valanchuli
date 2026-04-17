@@ -119,74 +119,78 @@ function increase_story_view_count($post_id = null) {
         $post_id = get_the_ID();
     }
 
-    // Only track if user is logged in
     $user_id = get_current_user_id();
     if (!$post_id || !$user_id) {
         return;
     }
 
-    // Check if this user has already viewed this post (ever)
     global $wpdb;
-    $table = $wpdb->prefix . 'daily_story_views';
-    $already_viewed = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $table WHERE post_id = %d AND user_id = %d",
+    $view_table = $wpdb->prefix . 'user_story_views';
+
+    $already_viewed = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$view_table} WHERE post_id = %d AND user_id = %d",
         $post_id, $user_id
     ));
 
-    if ($already_viewed) {
-        // Already tracked, do nothing
+    if ($already_viewed > 0) {
         return;
     }
 
-    // Update post meta (legacy, count unique user views)
+    // Insert into new tracking table
+    $wpdb->insert($view_table, [
+        'post_id'   => (int) $post_id,
+        'user_id'   => (int) $user_id,
+        'viewed_at' => current_time('mysql'),
+    ]);
+
+    // Update post meta count
     $count = (int) get_post_meta($post_id, 'story_view_count', true);
     update_post_meta($post_id, 'story_view_count', $count + 1);
-
-    $parent_post_id = getParentPostId($post_id);
-    $author_id = (int) get_post_field('post_author', $post_id);
-
-    // Insert new view record (no need for view_date)
-    $wpdb->insert($table, [
-        'post_id'    => $post_id,
-        'series_id'  => $parent_post_id,
-        'author_id'  => $author_id,
-        'user_id'    => $user_id,
-        'view_count' => 1,
-        'view_date'  => current_time('Y-m-d'),
-    ]);
 }
 
 add_action('wp_ajax_increase_story_view_count_ajax', 'increase_story_view_count_ajax');
 add_action('wp_ajax_nopriv_increase_story_view_count_ajax', 'increase_story_view_count_ajax');
+
 function increase_story_view_count_ajax() {
-    $post_id = intval($_POST['post_id'] ?? 0);
-    if (!$post_id && is_singular('post')) {
-        $post_id = get_the_ID();
+    $post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+    $user_id = get_current_user_id();
+
+    if (!$post_id || !$user_id || $post_id == 0) {
+        wp_send_json_error(['reason' => 'invalid_post_or_user']);
     }
 
-    // Only track if user is logged in
-    $user_id = get_current_user_id();
-    if (!$post_id || !$user_id) {
-        return;
+    global $wpdb;
+    $view_table = $wpdb->prefix . 'user_story_views';
+
+    $already_story_viewed = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$view_table} WHERE post_id = %d AND user_id = %d",
+        $post_id, $user_id
+    ));
+
+    if ($already_story_viewed == 0) {
+        // Insert into new tracking table
+        $wpdb->insert($view_table, [
+            'post_id'   => (int) $post_id,
+            'user_id'   => (int) $user_id,
+            'viewed_at' => current_time('mysql'),
+        ]);
+
+        // Update post meta count
+        $count = (int) get_post_meta($post_id, 'story_view_count', true);
+        update_post_meta($post_id, 'story_view_count', $count + 1);
     }
 
     // Check if this user has already viewed this post (ever)
-    global $wpdb;
     $table = $wpdb->prefix . 'daily_story_views';
     $already_viewed = $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM $table WHERE post_id = %d AND user_id = %d",
         $post_id, $user_id
     ));
 
-    if ($already_viewed || $post_id == 0) {
+    if ($already_viewed > 0) {
         // Already tracked, do nothing
         return;
     }
-
-    // Update post meta (legacy, count unique user views)
-    $count = (int) get_post_meta($post_id, 'story_view_count', true);
-    update_post_meta($post_id, 'story_view_count', $count + 1);
-
 
     $parent_post_id = getParentPostId($post_id);
     $author_id = (int) get_post_field('post_author', $post_id);

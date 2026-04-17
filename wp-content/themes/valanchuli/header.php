@@ -71,7 +71,7 @@
                     $notification_table = $wpdb->prefix . 'user_notifications';
                     $user_id = get_current_user_id();
                     $unread_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $notification_table WHERE user_id=%d AND is_read=0", $user_id));
-                    $notifications = $wpdb->get_results($wpdb->prepare("SELECT * FROM $notification_table WHERE user_id=%d ORDER BY created_at DESC LIMIT 10", $user_id));
+                    $notifications = $wpdb->get_results($wpdb->prepare("SELECT * FROM $notification_table WHERE user_id=%d ORDER BY created_at DESC LIMIT 100", $user_id));
                 ?>
                     <div class="notification-container" style="position:relative;display:inline-block;">
                         <div class="notification-icon" style="position:relative;display:inline-block;cursor:pointer;">

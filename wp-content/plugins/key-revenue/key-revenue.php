@@ -118,7 +118,7 @@ function render_key_revenue_dashboard() {
     // Writerwise revenue
     // 1. Get unlocks
     $writerwise = $wpdb->get_results($wpdb->prepare(
-        "SELECT author_id, COUNT(DISTINCT episode_id) as episodes
+        "SELECT author_id, COUNT(episode_id) as episodes
          FROM {$wpdb->prefix}user_episode_unlocks
          WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s
          GROUP BY author_id",
@@ -185,7 +185,7 @@ function render_key_revenue_dashboard() {
     // Storywise revenue
     // 1. Get unlocks per story
     $storywise = $wpdb->get_results($wpdb->prepare(
-        "SELECT series_id, author_id, COUNT(DISTINCT episode_id) as episodes
+        "SELECT series_id, author_id, COUNT(episode_id) as episodes
          FROM {$wpdb->prefix}user_episode_unlocks
          WHERE lock_type='key' AND unlocked_at BETWEEN %s AND %s
          GROUP BY series_id, author_id",

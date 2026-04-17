@@ -40,22 +40,33 @@
 
 <script>
     function paymentProcess(amount, coins) {
-
         var options = {
             "key": RazorpayConfig.key,
             "amount": amount * 100,
             "currency": "INR",
             "name": "Buy Keys",
             "description": amount + " Keys",
-            "handler": function (response){
-                // AJAX to save coin purchase
-                saveCoinPurchase(response.razorpay_payment_id, 'success', amount, coins);
+            "handler": function (response) {
+                saveCoinPurchase(response.razorpay_payment_id || '', 'success', amount, coins);
+            },
+            "modal": {
+                "ondismiss": function () {
+                    saveCoinPurchase('', 'cancelled', amount, coins);
+                }
             }
         };
+
         var rzp = new Razorpay(options);
-        rzp.on('payment.failed', function (response){
-            saveCoinPurchase(response.error.metadata.payment_id || '', 'failed', amount, coins);
+
+        rzp.on('payment.failed', function (response) {
+            var paymentId = '';
+            if (response && response.error && response.error.metadata && response.error.metadata.payment_id) {
+                paymentId = response.error.metadata.payment_id;
+            }
+
+            saveCoinPurchase(paymentId, 'failed', amount, coins);
         });
+
         rzp.open();
     }
 
@@ -74,7 +85,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.success && payment_status === 'success') {
+            if (data.success && payment_status === 'success') {
                 alert('Purchase successful! Keys will be added to your wallet.');
                 <?php
                     $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : '';
@@ -87,11 +98,14 @@
                     }
                 ?>
                 window.location.href = "<?php echo esc_url($redirect_url); ?>";
-            } else if(payment_status === 'failed') {
+            } else if (payment_status === 'failed' || payment_status === 'cancelled') {
                 alert('Payment failed or cancelled.');
             } else {
                 alert('Purchase failed!');
             }
+        })
+        .catch(err => {
+            console.error('saveCoinPurchase error:', err);
         });
     }
 

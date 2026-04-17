@@ -139,20 +139,29 @@ add_action('admin_init', function () {
 add_action('wp_ajax_save_subscription', 'save_subscription_callback');
 function save_subscription_callback() {
     global $wpdb;
+
     $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error(['message' => 'User not logged in']);
+    }
+
     if (current_user_can('manage_options') && !empty($_POST['user_id'])) {
         $user_id = intval($_POST['user_id']);
     }
-    $plan_name = sanitize_text_field($_POST['plan_name']);
-    $plan_period = sanitize_text_field($_POST['plan_period']);
-    $plan_amount = floatval($_POST['plan_amount']);
-    $payment_method = sanitize_text_field($_POST['payment_method']);
-    $payment_id = sanitize_text_field($_POST['payment_id']);
+
+    $plan_name = sanitize_text_field($_POST['plan_name'] ?? '');
+    $plan_period = sanitize_text_field($_POST['plan_period'] ?? '');
+    $plan_amount = floatval($_POST['plan_amount'] ?? 0);
+    $payment_method = sanitize_text_field($_POST['payment_method'] ?? '');
+    $payment_id = sanitize_text_field($_POST['payment_id'] ?? '');
     $payment_status = isset($_POST['payment_status']) ? sanitize_text_field($_POST['payment_status']) : 'success';
 
-    // Calculate start and end date
+    if (!$plan_name || !$plan_period || !$plan_amount || !$payment_status) {
+        wp_send_json_error(['message' => 'Missing required fields']);
+    }
+
     $start_date = current_time('mysql');
-    $days = 30; // default for 1 month
+    $days = 30;
 
     if (stripos($plan_period, '3') !== false) $days = 90;
     if (stripos($plan_period, '6') !== false) $days = 180;
@@ -160,10 +169,13 @@ function save_subscription_callback() {
 
     $end_date = date('Y-m-d H:i:s', strtotime("$days days", strtotime($start_date)));
 
-    // Check for existing active subscription and queue if needed
     $table = $wpdb->prefix . 'user_subscriptions';
-    $last = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_id=%d AND status=1 ORDER BY end_date DESC LIMIT 1", $user_id));
-    if ($last && strtotime($last->end_date) > time()) {
+    $last = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table WHERE user_id = %d AND status = 1 ORDER BY end_date DESC LIMIT 1",
+        $user_id
+    ));
+
+    if ($payment_status === 'success' && $last && strtotime($last->end_date) > time()) {
         $start_date = $last->end_date;
         $end_date = date('Y-m-d H:i:s', strtotime("+$days days", strtotime($start_date)));
     }
@@ -174,7 +186,11 @@ function save_subscription_callback() {
         $phone = preg_replace('/[^+\d]/', '', $phone);
     }
 
-    $wpdb->insert($table, [
+    if (empty($payment_id) && in_array($payment_status, ['failed', 'cancelled'], true)) {
+        $payment_id = 'local_' . $payment_status . '_' . $user_id . '_' . time();
+    }
+
+    $inserted = $wpdb->insert($table, [
         'user_id' => $user_id,
         'plan_name' => $plan_name,
         'plan_period' => $plan_period,
@@ -184,26 +200,32 @@ function save_subscription_callback() {
         'phone_number' => $phone,
         'start_date' => $start_date,
         'end_date' => $end_date,
-        'status' => $payment_status && $payment_status == 'success' ? 1 : 0,
+        'status' => ($payment_status === 'success') ? 1 : 0,
         'payment_status' => $payment_status,
         'created_at' => current_time('mysql')
     ]);
 
-    if ($payment_status == 'success') {
+    if ($inserted === false) {
+        wp_send_json_error([
+            'message' => 'DB insert failed',
+            'db_error' => $wpdb->last_error
+        ]);
+    }
+
+    if ($payment_status === 'success') {
         if ($last && strtotime($last->end_date) > time()) {
-            // Subscription is active, so this is a queued subscription
             $msg = "🎉 Subscription Queued!\nஉங்கள் புதிய subscription வெற்றிகரமாக queue-ல் சேர்க்கப்பட்டது. தற்போதைய plan முடிவடைந்த பிறகு, புதிய plan செயல்படும்";
         } else {
-            // First time or expired, so this is a normal subscription
             $msg = "🎉 Subscription Successful!\nநீங்கள் வெற்றிகரமாக Subscribe செய்துவிட்டீர்கள்.\nஇப்போதே உங்கள் வாசிப்பு பயணத்தை தொடங்குங்கள் 📚\n🚀 Happy Reading! ❤️";
         }
 
         createNotification($user_id, $msg);
-
         subscriptionEmailSend($user_id, $plan_name, $start_date, $end_date, $last);
     }
 
-    wp_send_json_success();
+    wp_send_json_success([
+        'payment_status' => $payment_status
+    ]);
 }
 
 function check_subscription_reminder($user_id) {
