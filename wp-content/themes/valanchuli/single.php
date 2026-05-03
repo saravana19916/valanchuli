@@ -659,103 +659,123 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        var requiredSeconds = <?php echo $required_seconds; ?>;
+        var requiredSeconds = <?php echo (int) $required_seconds; ?>;
         var postId = <?php echo json_encode((int) $single_page_post_id); ?>;
+        var isLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+        console.log("requiredSeconds:", requiredSeconds, "postId:", postId);
+
+        if (!isLoggedIn || !postId || requiredSeconds <= 0) return;
+
         var timer = null;
-        var viewCountSent = false;
-        var remainingSeconds = requiredSeconds;
-        var lastHiddenTime = null;
-        var timerPaused = false;
-        remainingSeconds = 5;
+        var completed = false;
 
-        function startTimer() {
+        var alreadySpent = 0; // from DB
+        var sessionSpent = 0; // this visit only
+
+        function ajax(action, payload) {
+            return fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams(Object.assign({ action: action, post_id: postId }, payload || {}))
+            }).then(r => r.json());
+        }
+
+        function saveProgress(useBeacon) {
+            var total = alreadySpent + sessionSpent;
+            console.log('sessionSpent:', sessionSpent, 'alreadySpent:', alreadySpent, 'total:', total);
+            var params = new URLSearchParams({
+                action: 'update_story_reading_progress_ajax',
+                post_id: postId,
+                seconds_spent: total,
+                required_seconds: requiredSeconds
+            });
+
+            // best-effort on leave
+            if (useBeacon && navigator.sendBeacon) {
+                var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
+                navigator.sendBeacon('<?php echo admin_url('admin-ajax.php'); ?>', blob);
+                return;
+            }
+
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: params,
+                keepalive: true
+            }).catch(function(){});
+        }
+
+        function remaining() {
+            return Math.max(requiredSeconds - (alreadySpent + sessionSpent), 0);
+        }
+
+        function stop() {
+            if (timer) clearInterval(timer);
+            timer = null;
+        }
+
+        function completeOnce() {
+            if (completed) return;
+            completed = true;
+            stop();
+
+            ajax('increase_story_view_count_ajax', {
+                post_id: postId,
+                seconds_spent: alreadySpent + sessionSpent,
+                required_seconds: requiredSeconds
+            }).catch(function(){});
+        }
+
+        function start() {
+            if (timer || completed) return;
+
             timer = setInterval(function () {
-                console.log("Remaining seconds: " + remainingSeconds);
+                sessionSpent += 1;
+                console.log('sessionSpent incremented:', sessionSpent);
 
-                remainingSeconds--;
-                if (remainingSeconds <= 0 && !viewCountSent) {
-                    viewCountSent = true;
-                    clearInterval(timer);
-                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'action=increase_story_view_count_ajax&post_id=' + postId
-                    }).then(response => response.text())
-                    .then(data => {
-                        console.log(data);
-                    });
+                // save every 5s
+                if (sessionSpent % 5 === 0) {
+                    saveProgress(false);
+                }
+
+                if (remaining() <= 0) {
+                    saveProgress(false);
+                    completeOnce();
                 }
             }, 1000);
         }
 
-        function stopTimer() {
-            if (timer) clearInterval(timer);
+        function pause() {
+            stop();
+            saveProgress(true);
         }
 
-        // Start timer when page loads
-        startTimer();
+        function resume() {
+            if (!completed && remaining() > 0) start();
+        }
 
-        // Pause timer when tab is hidden or window loses focus
-        function pauseTimer() {
-            if (!timerPaused) {
-                lastHiddenTime = Date.now();
-                stopTimer();
-                timerPaused = true;
+        // Load stored progress, then start
+        ajax('get_story_reading_progress_ajax', {}).then(function(resp){
+            if (resp && resp.success && resp.data) {
+                alreadySpent = parseInt(resp.data.seconds_spent || 0, 10) || 0;
+                completed = parseInt(resp.data.is_completed || 0, 10) === 1;
             }
-        }
-
-        // Resume timer when tab is visible or window regains focus
-        function resumeTimer() {
-            if (timerPaused) {
-                lastHiddenTime = null;
-                timerPaused = false;
-                if (!viewCountSent && remainingSeconds > 0) {
-                    startTimer();
-                }
-            }
-        }
+            resume();
+        }).catch(function(){
+            resume();
+        });
 
         document.addEventListener('visibilitychange', function () {
-            if (document.hidden) {
-                pauseTimer();
-            } else {
-                resumeTimer();
-            }
+            if (document.hidden) pause();
+            else resume();
         });
 
-        window.addEventListener('blur', pauseTimer);
-        window.addEventListener('focus', resumeTimer);
+        window.addEventListener('blur', pause);
+        window.addEventListener('focus', resume);
 
-        window.addEventListener('beforeunload', function () {
-            stopTimer();
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.reward-key-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var keyAmount = btn.getAttribute('data-key');
-                var postId = <?php echo $post_id; ?>;
-                var authorId = <?php echo $author_id; ?>;
-                // Confirm action
-                if (confirm(keyAmount + ' Key will be sent to the writer. Continue?')) {
-                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'action=reward_keys_to_writer&post_id=' + postId + '&author_id=' + authorId + '&key_amount=' + keyAmount
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Keys sent successfully!');
-                        } else {
-                            alert(data.data || 'Failed to send keys.');
-                        }
-                    });
-                }
-            });
-        });
+        // better than beforeunload on mobile
+        window.addEventListener('pagehide', pause);
     });
 </script>

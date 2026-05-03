@@ -159,7 +159,20 @@ function increase_story_view_count_ajax() {
         wp_send_json_error(['reason' => 'invalid_post_or_user']);
     }
 
+    $seconds_spent = isset($_POST['seconds_spent']) ? max(0, (int) $_POST['seconds_spent']) : 0;
+    $required_seconds = isset($_POST['required_seconds']) ? max(0, (int) $_POST['required_seconds']) : 0;
+
     global $wpdb;
+    $progress_table = $wpdb->prefix . 'story_reading_progress';
+    $completed_now = (int) $wpdb->query($wpdb->prepare(
+        "UPDATE {$progress_table}
+         SET is_completed = 1, completed_at = %s
+         WHERE post_id = %d AND user_id = %d AND is_completed = 0",
+        current_time('mysql'),
+        $post_id,
+        $user_id
+    ));
+
     $view_table = $wpdb->prefix . 'user_story_views';
 
     $already_story_viewed = (int) $wpdb->get_var($wpdb->prepare(
@@ -224,6 +237,96 @@ function increase_story_view_count_ajax() {
             'view_date'  => current_time('Y-m-d'),
         ]);
     }
+}
+
+add_action('wp_ajax_get_story_reading_progress_ajax', 'get_story_reading_progress_ajax');
+function get_story_reading_progress_ajax() {
+    global $wpdb;
+
+    $post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+    $user_id = get_current_user_id();
+
+    if (!$post_id || !$user_id) {
+        wp_send_json_error(['reason' => 'invalid_post_or_user']);
+    }
+
+    $progress_table = $wpdb->prefix . 'story_reading_progress';
+
+    $row = $wpdb->get_row($wpdb->prepare(
+        "SELECT seconds_spent, required_seconds, is_completed
+         FROM {$progress_table}
+         WHERE post_id = %d AND user_id = %d
+         LIMIT 1",
+        $post_id, $user_id
+    ));
+
+    wp_send_json_success([
+        'seconds_spent'    => $row ? (int) $row->seconds_spent : 0,
+        'required_seconds' => $row ? (int) $row->required_seconds : 0,
+        'is_completed'     => $row ? (int) $row->is_completed : 0,
+    ]);
+}
+
+add_action('wp_ajax_update_story_reading_progress_ajax', 'update_story_reading_progress_ajax');
+function update_story_reading_progress_ajax() {
+    global $wpdb;
+
+    $post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+    $user_id = get_current_user_id();
+
+    $seconds_spent = isset($_POST['seconds_spent']) ? max(0, (int) $_POST['seconds_spent']) : 0;
+    $required_seconds = isset($_POST['required_seconds']) ? max(0, (int) $_POST['required_seconds']) : 0;
+
+    if (!$post_id || !$user_id) {
+        wp_send_json_error(['reason' => 'invalid_post_or_user']);
+    }
+
+    $progress_table = $wpdb->prefix . 'story_reading_progress';
+
+    $existing = $wpdb->get_row($wpdb->prepare(
+        "SELECT id, seconds_spent, is_completed
+         FROM {$progress_table}
+         WHERE post_id = %d AND user_id = %d
+         LIMIT 1",
+        $post_id, $user_id
+    ));
+
+    if (!$existing) {
+        $ok = $wpdb->insert($progress_table, [
+            'post_id'          => $post_id,
+            'user_id'          => $user_id,
+            'seconds_spent'    => $seconds_spent,
+            'required_seconds' => $required_seconds,
+            'is_completed'     => 0,
+            'last_seen'        => current_time('mysql'),
+            'created_at'       => current_time('mysql'),
+        ]);
+
+        if ($ok === false) {
+            wp_send_json_error(['reason' => 'db_insert_failed', 'db_error' => $wpdb->last_error]);
+        }
+
+        wp_send_json_success(['saved_seconds' => $seconds_spent]);
+    }
+
+    // store max progress only
+    $new_seconds = max((int) $existing->seconds_spent, $seconds_spent);
+
+    $ok = $wpdb->update(
+        $progress_table,
+        [
+            'seconds_spent'    => $new_seconds,
+            'required_seconds' => $required_seconds,
+            'last_seen'        => current_time('mysql'),
+        ],
+        ['id' => (int) $existing->id]
+    );
+
+    if ($ok === false) {
+        wp_send_json_error(['reason' => 'db_update_failed', 'db_error' => $wpdb->last_error]);
+    }
+
+    wp_send_json_success(['saved_seconds' => $new_seconds]);
 }
 
 function get_average_series_views($post_id, $term_id) {
