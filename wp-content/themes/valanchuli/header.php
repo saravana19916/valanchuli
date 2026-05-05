@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
 
     <!-- <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=INR"></script> -->
+
+     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body <?php body_class(); ?> class="height: 100%">
 <div class="wrapper" style="min-height: 95vh; /* Full viewport height */

@@ -58,6 +58,31 @@
                     </div>
                 </div>
                 <div class="row mb-4">
+                    <div class="col-12">
+                        <?php
+                        $google_client_id = defined('VALANCHULI_GOOGLE_CLIENT_ID') ? VALANCHULI_GOOGLE_CLIENT_ID : '';
+                        ?>
+
+                        <?php if (!empty($google_client_id)) : ?>
+                            <div id="g_id_onload" class="mt-3"
+                                data-client_id="<?php echo esc_attr($google_client_id); ?>"
+                                data-callback="onGoogleSignIn"
+                                data-auto_prompt="false">
+                            </div>
+                            <div class="g_id_signin"
+                                data-type="standard"
+                                data-size="large"
+                                data-theme="outline"
+                                data-text="login_with"
+                                data-shape="rectangular"
+                                data-logo_alignment="left">
+                            </div>
+                        <?php else: ?>
+                            <!-- Google Client ID not configured -->
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="row mb-4">
                     <p> <span>புதிய உறுப்பினராக? </span>
                         <a href="<?php echo site_url('/signup'); ?>" class="text-primary-color"><span class="fs-14px fw-bold">Register</span></a>
                     </p>
@@ -85,5 +110,31 @@
             togglePasswordIcon.classList.toggle("fa-eye-slash");
         });
     });
+
+    function onGoogleSignIn(response) {
+        // Send the ID token to your server for verification
+        jQuery.ajax({
+            url: ajax_login_object.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'google_login',
+                id_token: response.credential
+            },
+            beforeSend: function () {
+                jQuery('#login-message').html('<div class="alert alert-info">Processing Google login...</div>');
+            },
+            success: function (res) {
+                if (res.status === 'success') {
+                    jQuery('#login-message').html('<div class="alert alert-success">' + res.message + '</div>');
+                    setTimeout(function () {
+                        const rt = (document.getElementById('redirect_to')?.value || '').trim();
+                        window.location.href = rt ? rt : "<?php echo esc_url(home_url('/')); ?>";
+                    }, 100);
+                } else {
+                    jQuery('#login-message').html('<div class="alert alert-danger">' + res.message + '</div>');
+                }
+            }
+        });
+    }
 </script>
 

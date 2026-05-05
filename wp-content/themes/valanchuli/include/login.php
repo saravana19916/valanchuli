@@ -55,3 +55,49 @@ add_filter('authenticate', function($user, $username, $password) {
     }
     return $user;
 }, 30, 3);
+
+add_action('wp_ajax_nopriv_google_login', 'ajax_google_login_handler');
+add_action('wp_ajax_google_login', 'ajax_google_login_handler');
+
+function ajax_google_login_handler() {
+    if (empty($_POST['id_token'])) {
+        wp_send_json(['status' => 'error', 'message' => 'No token received.']);
+    }
+
+    $google_client_id = defined('VALANCHULI_GOOGLE_CLIENT_ID') ? VALANCHULI_GOOGLE_CLIENT_ID : '';
+    if (empty($google_client_id)) {
+        wp_send_json(['status' => 'error', 'message' => 'Google Client ID not configured.']);
+    }
+
+    $id_token = sanitize_text_field($_POST['id_token']);
+
+    // Verify token with Google
+    $response = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($id_token));
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+
+    if (empty($body['email']) || empty($body['aud']) || $body['aud'] !== $google_client_id) {
+        wp_send_json(['status' => 'error', 'message' => 'Invalid Google token.']);
+    }
+
+    $email = sanitize_email($body['email']);
+    $user = get_user_by('email', $email);
+
+    if (!$user) {
+        // Register new user
+        $username = sanitize_user(current(explode('@', $email)));
+        $random_password = wp_generate_password(12, false);
+        $user_id = wp_create_user($username, $random_password, $email);
+        if (is_wp_error($user_id)) {
+            wp_send_json(['status' => 'error', 'message' => 'Could not create user.']);
+        }
+        $user = get_user_by('id', $user_id);
+    }
+
+    // Log in the user
+    wp_clear_auth_cookie();
+    wp_set_current_user($user->ID);
+    wp_set_auth_cookie($user->ID, true);
+    update_user_meta($user->ID, 'email_verified', true);
+
+    wp_send_json(['status' => 'success', 'message' => 'Logged in with Google Success!']);
+}
