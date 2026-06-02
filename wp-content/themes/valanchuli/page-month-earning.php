@@ -234,8 +234,26 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
         <button class="bank-btn" id="openBankModal">Bank Details</button>
         <div class="earning-card">
             <div class="fw-semibold mb-2" style="font-size:1.1rem;">Current Month Key Revenue</div>
-            <div class="earning-amount">₹ <?php echo (isset(getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]) ? getWriterKeyEarning(get_current_user_id(), date('Y-m-01'), date('Y-m-t'))[0]['revenue_share'] : 0); ?></div>
-            <!-- <div class="earning-row">
+            <div class="earning-amount">
+              ₹ <?php
+                // Use WP timezone (set it to Asia/Kolkata in WP Settings -> General)
+                $tz = wp_timezone(); // should be Asia/Kolkata if configured
+                // If you want to force IST regardless of WP settings, use:
+                // $tz = new DateTimeZone('Asia/Kolkata');
+
+                // IST "now"
+                $now = new DateTimeImmutable('now', $tz);
+
+                // Month range in IST (so it flips at 12:01 AM IST)
+                $monthStart = $now->modify('first day of this month')->format('Y-m-d');
+                $monthEnd   = $now->modify('last day of this month')->format('Y-m-d');
+
+                // Use these instead of date('Y-m-01') / date('Y-m-t')
+                $cur = getWriterKeyEarning(get_current_user_id(), $monthStart, $monthEnd);
+                echo (isset($cur[0]) ? $cur[0]['revenue_share'] : 0);
+              ?>
+            </div>
+            <!-- <div class="earning-row>
                 <div style="display:flex;align-items:center;">
                     <span class="icon">🔑</span>
                     <span class="label" style="margin-left:8px;">
@@ -294,10 +312,12 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
             "SELECT * FROM $table WHERE user_id = %d ORDER BY from_date DESC", $user_id
         ));
 
-        // Group by month and sum revenue
+        // Group by month in IST
         $monthly_history = [];
         foreach ($history as $row) {
-            $month = date('Y-m', strtotime($row->from_date));
+            $from_dt = new DateTimeImmutable($row->from_date, $tz);
+            $month = $from_dt->format('Y-m');
+
             if (!isset($monthly_history[$month])) {
                 $monthly_history[$month] = [
                     'from_date' => $row->from_date,
@@ -309,6 +329,7 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                     'unpaid_reason' => [],
                 ];
             }
+
             if ($row->revenue_type == 'key') {
                 $monthly_history[$month]['key'] += $row->revenue_payment;
                 $monthly_history[$month]['status']['key'] = $row->payment_status;
@@ -337,12 +358,19 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                 $i = 0;
                 foreach ($months as $month):
                     $data = $monthly_history[$month];
-                    $total = $data['key'] + $data['subscription'];
+
+                    // ✅ total for this month
+                    $total = (float) ($data['key'] ?? 0) + (float) ($data['subscription'] ?? 0);
+
+                    // Format display dates in IST
+                    $from_disp = new DateTimeImmutable($data['from_date'], $tz);
+                    $to_disp   = new DateTimeImmutable($data['to_date'], $tz);
                 ?>
                     <div class="earning-history-card" style="<?= $i >= $show_count ? 'display:none;' : '' ?>">
                         <div class="earning-history-row">
                             <span class="fw-bold">
-                                <?php echo date('F Y', strtotime($data['from_date'])); ?> (<?= date('d-m-Y', strtotime($data['from_date'])); ?> to <?= date('d-m-Y', strtotime($data['to_date'])); ?>)
+                                <?php echo esc_html($from_disp->format('F Y')); ?>
+                                (<?= esc_html($from_disp->format('d-m-Y')); ?> to <?= esc_html($to_disp->format('d-m-Y')); ?>)
                             </span>
                             <span class="amount">₹<?= number_format($total, 2); ?></span>
                         </div>

@@ -215,6 +215,7 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                     <?php 
                     if (comments_open($episode_id)) {
                         comment_form([
+                            'id_form'      => 'comment-reply-form',
                             'fields' => [],
                             'submit_field' => '',
                             'submit_button' => '',
@@ -278,6 +279,12 @@ function handle_ajax_comment() {
         }
     }
 
+    $raw_comment = isset($_POST['comment']) ? (string) wp_unslash($_POST['comment']) : '';
+
+    if (valanchuli_comment_contains_url($raw_comment)) {
+        wp_send_json_error('Links/URLs are not allowed in comments.');
+    }
+
     $comment_data = wp_handle_comment_submission(wp_unslash($_POST));
 
     if (is_wp_error($comment_data)) {
@@ -302,45 +309,92 @@ function handle_ajax_comment() {
 add_action('wp_ajax_ajax_reply_comment', 'handle_ajax_reply_comment');
 add_action('wp_ajax_nopriv_ajax_reply_comment', 'handle_ajax_reply_comment');
 
-function handle_ajax_reply_comment() {
-    $comment_data = [
-        'comment_post_ID' => intval($_POST['comment_post_ID']),
-        'comment_content' => sanitize_text_field($_POST['comment']),
-        'comment_parent' => intval($_POST['comment_parent']),
-        'user_id' => get_current_user_id(),
-        'comment_author' => wp_get_current_user()->display_name,
-        'comment_author_email' => wp_get_current_user()->user_email,
-    ];
+function valanchuli_render_child_comment_html($child_comment) {
+    $child_comment_id = $child_comment->comment_ID;
+    $child_user_id    = (int) $child_comment->user_id;
 
-    $comment_id = wp_new_comment($comment_data);
+    $attachment_id = get_user_meta($child_user_id, 'profile_photo', true);
+    if ($attachment_id) {
+        $child_image_url = wp_get_attachment_url($attachment_id);
+    } else {
+        $child_image_url = get_avatar_url($child_user_id, ['size' => 50]);
+    }
 
-    if ($comment_id) {
-        $comment = get_comment($comment_id);
-        ob_start();
-        // Render your single comment HTML structure
-        ?>
-        <div class="row">
-            <div class="col-2">
-                <?php echo get_avatar($comment, 64, '', '', ['class' => 'rounded-circle img-fluid']); ?>
+    ob_start();
+    ?>
+    <hr/>
+    <div class="row">
+        <div class="col-3 col-sm-2">
+            <img src="<?php echo esc_url($child_image_url); ?>" class="rounded-circle" width="64" height="64" alt="Author">
+        </div>
+        <div class="col-9 col-sm-10 text-start">
+            <div class="d-flex align-items-center justify-content-between">
+                <h6 class="mb-0"><?php echo esc_html(get_comment_author($child_comment)); ?></h6>
+                <small class="text-muted"><?php echo esc_html(date('F j, Y', strtotime($child_comment->comment_date))); ?></small>
             </div>
-            <div class="col-10 text-start">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0"><?php echo get_comment_author($comment); ?></h6>
-                    <small class="text-muted"><?php echo date('F j, Y', strtotime($comment->comment_date)); ?></small>
+
+            <div id="comment-content-<?php echo (int) $child_comment_id; ?>">
+                <div class="mt-2 d-inline-block p-2 border rounded comment-text text-white" style="background-color: #005d67cf;">
+                    <span class="mb-0 text-wrap content-text"><?php echo esc_html($child_comment->comment_content); ?></span>
                 </div>
-                <div class="mt-2 d-inline-block p-2 border rounded comment-text" style="background-color: #f3f3f3;">
-                    <p class="mb-0 text-wrap"><?php echo esc_html($comment->comment_content); ?></p>
-                </div>
+            </div>
+
+            <div id="edit-comment-form-<?php echo (int) $child_comment_id; ?>" style="display: none;">
+                <textarea id="edit-comment-text-<?php echo (int) $child_comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
+                <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo (int) $child_comment_id; ?>)">Save</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo (int) $child_comment_id; ?>)">Cancel</button>
+            </div>
+
+            <div class="d-flex align-items-center gap-4 mt-3">
+                <?php if (is_user_logged_in() && get_current_user_id() === (int) $child_comment->user_id): ?>
+                    <div id="edit-button-wrapper-<?php echo (int) $child_comment_id; ?>">
+                        <button class="btn btn-sm btn-outline-light text-primary-color" onclick="toggleEditForm(<?php echo (int) $child_comment_id; ?>)">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </div>
+                <?php endif; ?>
+
+                <?php echo get_like_button($child_comment_id); ?>
             </div>
         </div>
-        <hr/>
-        <?php
-        $html = ob_get_clean();
+    </div>
+    <?php
+    return ob_get_clean();
+}
 
-        wp_send_json_success(['comment_html' => $html]);
-    } else {
-        wp_send_json_error('Failed to add comment');
+function handle_ajax_reply_comment() {
+    if (!is_user_logged_in()) {
+        wp_send_json_error('You must be logged in to reply.');
     }
+
+    $raw_comment = isset($_POST['comment']) ? (string) wp_unslash($_POST['comment']) : '';
+
+    if (valanchuli_comment_contains_url($raw_comment)) {
+        wp_send_json_error('Links/URLs are not allowed in comments.');
+    }
+
+    $submission = wp_handle_comment_submission(wp_unslash($_POST));
+    if (is_wp_error($submission)) {
+        wp_send_json_error($submission->get_error_message());
+    }
+
+    $comment = $submission; // WP_Comment
+    if (!$comment || empty($comment->comment_ID)) {
+        wp_send_json_error('Failed to add reply');
+    }
+
+    // IMPORTANT: render as CHILD markup, not via bootstrap5_comment_callback (parent-only)
+    $html = valanchuli_render_child_comment_html($comment);
+
+    if (trim($html) === '') {
+        wp_send_json_error('Reply saved, but rendering returned empty HTML.');
+    }
+
+    wp_send_json_success([
+        'comment_html' => $html,
+        'comment_id'   => (int) $comment->comment_ID,
+        'parent_id'    => (int) $comment->comment_parent,
+    ]);
 }
 
 // comment edit
@@ -359,6 +413,10 @@ function save_edited_comment_callback() {
 
     if (get_current_user_id() !== (int) $comment->user_id) {
         wp_send_json_error('Unauthorized.');
+    }
+
+    if (valanchuli_comment_contains_url($new_content)) {
+        wp_send_json_error('Links/URLs are not allowed in comments.');
     }
 
     // Update comment text
@@ -466,3 +524,27 @@ function enqueue_glightbox_scripts() {
     ' );
 }
 add_action( 'wp_enqueue_scripts', 'enqueue_glightbox_scripts' );
+
+/**
+ * Returns true if the given text contains a URL/link-ish pattern.
+ */
+function valanchuli_comment_contains_url($text) {
+    $text = (string) $text;
+
+    // Quick checks
+    if (stripos($text, 'http://') !== false || stripos($text, 'https://') !== false || stripos($text, 'www.') !== false) {
+        return true;
+    }
+
+    // Anchor tags
+    if (preg_match('~<\s*a\b[^>]*href\s*=~i', $text)) {
+        return true;
+    }
+
+    // Domain-like patterns (example.com/path)
+    if (preg_match('~\b[a-z0-9][a-z0-9\-]{1,62}(\.[a-z0-9\-]{2,63})+\b([/?#][^\s]*)?~i', $text)) {
+        return true;
+    }
+
+    return false;
+}

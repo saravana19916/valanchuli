@@ -66,6 +66,10 @@ if (!empty($banners)) :
     <?php get_template_part('template-parts/premium-stories'); ?>
     <!-- Premium stories end -->
 
+    <!-- Exclusive stories start -->
+    <?php get_template_part('template-parts/exclusive-stories'); ?>
+    <!-- Exclusive stories end -->
+
     <!-- நாவல்கள் stories start -->
     <?php get_template_part('template-parts/novel-stories'); ?>
     <!-- நாவல்கள் stories end -->

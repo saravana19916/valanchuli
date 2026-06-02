@@ -13,6 +13,11 @@
             பகிரவும் 'எனது பக்கம்' ஐகானை கிளிக் செய்யுங்கள்!
             <a href="my-creations" class="alert-link">Click Here</a> to continue writing
         </div>
+    <?php elseif ($status === 'future') : ?>
+        <div class="alert alert-success">
+            உங்கள் படைப்பு வெற்றிகரமாக schedule-ல் பதிவேற்றப்பட்டது!
+            <a href="my-creations" class="alert-link">Click Here</a> to continue writing
+        </div>
     <?php elseif ($status === 'series') : ?>
         <div class="alert alert-success">
             வாழ்த்துக்கள் ! உங்கள் தொடர்கதையின் தலைப்பு வெற்றிகரமாக

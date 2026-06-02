@@ -1,6 +1,7 @@
 <?php 
     global $wpdb;
-    $premium_table = $wpdb->prefix . 'premium_story_rules';
+    $premium_table   = $wpdb->prefix . 'premium_story_rules';
+    $exclusive_table = $wpdb->prefix . 'exclusive_stories';
 
     $context = $args['context'] ?? '';
     $current_user = $args['user_id'] ?? '';
@@ -100,19 +101,34 @@
             $is_premium = $wpdb->get_var(
                 $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
             ) > 0;
+
+            $is_exclusive = $wpdb->get_var(
+                $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
+            ) > 0;
+
+            // Build permalink correctly (avoid the_permalink() here)
+            $permalink = get_permalink($post_id);
+            if ($context === 'my-creations') {
+                $permalink = add_query_arg('from', 'mycreation', $permalink);
+            }
         ?>
         <div style="width: 180px;">
                 <div class="position-relative">
                     <?php if ($is_premium): ?>
                         <span class="premium-tag">PREMIUM</span>
                     <?php endif; ?>
-                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
+
+                    <?php if ($is_exclusive): ?>
+                        <span class="exclusive-tag">EXCLUSIVE</span>
+                    <?php endif; ?>
+
+                    <a href="<?php echo esc_url($permalink); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
                             ]); ?>
                         <?php else : ?>
-                            <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                            <img src="<?php echo esc_url(get_template_directory_uri() . '/images/no-image.jpeg'); ?>"
                                     class="d-block rounded post-image-size"
                                     alt="Default Image">
                         <?php endif; ?>
@@ -178,7 +194,7 @@
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo esc_url($permalink); ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -248,19 +264,34 @@
                 $is_premium = $wpdb->get_var(
                     $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
                 ) > 0;
+
+                $is_exclusive = $wpdb->get_var(
+                    $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
+                ) > 0;
+
+                // Build permalink correctly (avoid the_permalink() here)
+                $permalink = get_permalink($post_id);
+                if ($context === 'my-creations') {
+                    $permalink = add_query_arg('from', 'mycreation', $permalink);
+                }
             ?>
             <div class="swiper-slide" style="width: 180px;">
                 <div class="position-relative">
                     <?php if ($is_premium): ?>
                         <span class="premium-tag">PREMIUM</span>
                     <?php endif; ?>
-                    <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>">
+
+                    <?php if ($is_exclusive): ?>
+                        <span class="exclusive-tag">EXCLUSIVE</span>
+                    <?php endif; ?>
+
+                    <a href="<?php echo esc_url($permalink); ?>">
                         <?php if (has_post_thumbnail()) : ?>
                             <?php the_post_thumbnail('medium', [
                                 'class' => 'd-block rounded post-image-size',
                             ]); ?>
                         <?php else : ?>
-                            <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
+                            <img src="<?php echo esc_url(get_template_directory_uri() . '/images/no-image.jpeg'); ?>"
                                     class="d-block rounded post-image-size"
                                     alt="Default Image">
                         <?php endif; ?>
@@ -326,7 +357,7 @@
                 </div>
                 <div class="card-body p-2">
                     <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                        <a href="<?php echo the_permalink() . ($context === 'my-creations') ? '?from=mycreation' : ''; ?>" class="text-decoration-none text-truncate text-story-title">
+                        <a href="<?php echo esc_url($permalink); ?>" class="text-decoration-none text-truncate text-story-title">
                             <?php echo esc_html(get_the_title()); ?>
                         </a>
                     </p>
@@ -373,20 +404,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
-<style>
-.premium-tag {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: linear-gradient(90deg, #fbb034 0%, #ffdd00 100%);
-    color: #222;
-    font-weight: bold;
-    font-size: 13px;
-    padding: 4px 16px 4px 8px;
-    border-top-left-radius: 8px;
-    border-bottom-right-radius: 16px;
-    z-index: 2;
-    letter-spacing: 1px;
-}
-</style>

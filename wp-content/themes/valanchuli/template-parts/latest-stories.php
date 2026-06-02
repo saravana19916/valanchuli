@@ -1,6 +1,7 @@
 <?php
     global $wpdb;
     $premium_table = $wpdb->prefix . 'premium_story_rules';
+    $exclusive_table = $wpdb->prefix . 'exclusive_stories';
 
     $stories = new WP_Query([
         'post_type'      => ['post'],
@@ -110,6 +111,7 @@
             
             $division = get_post_meta($post_id, 'division', true);
             $is_premium = false;
+            $is_exclusive = false;
             if (!empty($description) || !empty($division)) {
                 $total_views = get_average_series_views($post_id, $series_id);
                 $average_rating = get_custom_average_rating($post_id, $series_id);
@@ -118,6 +120,10 @@
 
                 $is_premium = $wpdb->get_var(
                     $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                ) > 0;
+
+                $is_exclusive = $wpdb->get_var(
+                    $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
                 ) > 0;
 
                 if ($series_id) {
@@ -145,6 +151,10 @@
                 <div class="position-relative">
                     <?php if ($is_premium): ?>
                         <span class="premium-tag">PREMIUM</span>
+                    <?php endif; ?>
+
+                    <?php if ($is_exclusive): ?>
+                        <span class="exclusive-tag">EXCLUSIVE</span>
                     <?php endif; ?>
 
                     <a href="<?php the_permalink(); ?>">
@@ -257,6 +267,7 @@
                 
                 $division = get_post_meta($post_id, 'division', true);
                 $is_premium = false;
+                $is_exclusive = false;
                 if (!empty($description) || !empty($division)) {
                     $total_views = get_average_series_views($post_id, $series_id);
                     $average_rating = get_custom_average_rating($post_id, $series_id);
@@ -265,6 +276,10 @@
 
                     $is_premium = $wpdb->get_var(
                         $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                    ) > 0;
+                    
+                    $is_exclusive = $wpdb->get_var(
+                        $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
                     ) > 0;
 
                     if ($series_id) {
@@ -292,6 +307,10 @@
                 <div class="position-relative">
                     <?php if ($is_premium): ?>
                         <span class="premium-tag">PREMIUM</span>
+                    <?php endif; ?>
+
+                    <?php if ($is_exclusive): ?>
+                        <span class="exclusive-tag">EXCLUSIVE</span>
                     <?php endif; ?>
 
                     <a href="<?php the_permalink(); ?>">

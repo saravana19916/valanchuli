@@ -129,6 +129,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/custom_product/') !== false) {
 
 <script>
 jQuery(document).ready(function($) {
+
     // Emoji Picker
     $('#comment').emojioneArea({
         pickerPosition: "top",
@@ -142,45 +143,11 @@ jQuery(document).ready(function($) {
         autogrow: true
     });
 
-    jQuery(document).on("click", ".send-comment", function (e) {
-        e.preventDefault();
-
-        let form = jQuery("#ajax-comment-form")[0];
-        let formData = new FormData(form);
-
-        let editor = $('.emojionearea-editor');
-        let hasText = $.trim(editor.text()) !== '';
-        let hasEmoji = editor.find('img.emojioneemoji').length > 0;
-
-        if (!hasText && !hasEmoji) {
-            alert("Please type your comment.");
-        } else {
-            formData.append("action", "ajax_comment");
-
-            jQuery.ajax({
-                url: '<?php echo admin_url("admin-ajax.php"); ?>',
-                type: "POST",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    if (response.success) {
-                        jQuery(".comment-list").prepend(response.data.comment_html);
-                        $('.emojionearea-editor').text('');
-                        form.reset();
-                    } else {
-                        alert(response.data);
-                    }
-                },
-                error: function () {
-                    alert("Something went wrong!");
-                },
-            });
-        }
-    });
-
     function initializeEmojiAreas(scope) {
         $(scope).find('.reply-form-text').each(function () {
+            // avoid double-init
+            if ($(this).data('emojioneArea')) return;
+
             $(this).emojioneArea({
                 pickerPosition: "top",
                 tonesStyle: "radio",
@@ -189,59 +156,113 @@ jQuery(document).ready(function($) {
         });
     }
 
+    $(document).on("click", ".send-comment", function (e) {
+        e.preventDefault();
+
+        const $form = $("#ajax-comment-form");
+        const formEl = $form[0];
+        if (!formEl) return;
+
+        const formData = new FormData(formEl);
+
+        // IMPORTANT: scope editor to the main comment form only
+        const $editor = $form.find('.emojionearea-editor').first();
+        const hasText = $.trim($editor.text()) !== '';
+        const hasEmoji = $editor.find('img.emojioneemoji').length > 0;
+
+        if (!hasText && !hasEmoji) {
+            alert("Please type your comment.");
+            return;
+        }
+
+        formData.append("action", "ajax_comment");
+
+        $.ajax({
+            url: '<?php echo admin_url("admin-ajax.php"); ?>',
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success) {
+                    // Insert and then init emoji on any reply boxes inside the new comment HTML
+                    const $new = $(response.data.comment_html);
+                    $(".comment-list").prepend($new);
+                    initializeEmojiAreas($new);
+
+                    // Clear ONLY the main comment emojionearea (don't clear all editors globally)
+                    const instance = $('#comment').data('emojioneArea');
+                    if (instance) instance.setText('');
+                    formEl.reset();
+                } else {
+                    alert(response.data);
+                }
+            },
+            error: function () {
+                alert("Something went wrong!");
+            }
+        });
+    });
+
     // Reply save
     $(document).on('click', '.send-comment-reply', function (e) {
         e.preventDefault();
 
-        const button = $(this);
-        const formContainer = button.closest('.comment-box');
-        const commentText = formContainer.find('textarea[name="comment"]').val();
-        const postID = formContainer.find('input[name="comment_post_ID"]').val();
-        const parentID = formContainer.find('input[name="comment_parent"]').val();
+        const $btn = $(this);
+        const $form = $btn.closest('form');
+        const formEl = $form[0];
 
-        if (!commentText.trim()) {
-            alert('Please enter your reply.');
+        if (!formEl) {
+            alert('Reply form not found.');
             return;
         }
 
-        const formData = {
-            action: 'ajax_reply_comment',
-            comment: commentText,
-            comment_post_ID: postID,
-            comment_parent: parentID
-        };
+        const formData = new FormData(formEl);
+        formData.append("action", "ajax_reply_comment");
+
+        // If emojionearea not initialized yet (newly inserted comment), fallback to textarea value
+        const $editor = $form.find('.emojionearea-editor').first();
+        const $textarea = $form.find('textarea.reply-form-text, textarea[name="comment"]').first();
+
+        const textValue = $editor.length ? $editor.text() : ($textarea.val() || '');
+        const hasText = $.trim(textValue) !== '';
+        const hasEmoji = $editor.length ? ($editor.find('img.emojioneemoji').length > 0) : false;
+
+        if (!hasText && !hasEmoji) {
+            alert("Please type your comment.");
+            return;
+        }
+
+        const parentID = formData.get('comment_parent');
 
         $.ajax({
             type: 'POST',
             url: '<?php echo admin_url("admin-ajax.php"); ?>',
             data: formData,
+            processData: false,
+            contentType: false,
             success: function (response) {
                 if (response.success) {
                     const childContainer = $('#child-comments-' + parentID);
                     childContainer.removeClass('d-none');
+
                     const replyBox = childContainer.find('.comment-box').first();
+                    const $new = $(response.data.comment_html);
+
                     if (replyBox.length) {
-                        $(response.data.comment_html).insertBefore(replyBox);
+                        $new.insertBefore(replyBox);
                     } else {
-                        childContainer.append(response.data.comment_html);
+                        childContainer.append($new);
                     }
 
-                    // Clear the reply input
-                    const textarea = formContainer.find('.reply-form-text');
-                    const emojioneInstance = textarea.data('emojioneArea');
-                    if (emojioneInstance) {
-                        emojioneInstance.setText('');
-                    }
+                    // init emoji areas for any reply forms inside the inserted reply block
+                    initializeEmojiAreas($new);
 
-                    $('.reply-form-text').val('');
+                    // Clear reply editor/textarea
+                    const emojioneInstance = $textarea.data('emojioneArea');
+                    if (emojioneInstance) emojioneInstance.setText('');
+                    $textarea.val('');
 
-                    // Update reply count
-                    let count = parseInt($('.reply-count-' + parentID).text());
-                    count = count ? count : 0;
-                    count++;
-                    $('.reply-count-' + parentID).text(count);
-
-                    $('.reply-count-text-' + parentID).text(count == 1 ? 'Reply' : 'Replies');
                 } else {
                     alert('Error: ' + response.data);
                 }
@@ -251,144 +272,81 @@ jQuery(document).ready(function($) {
             }
         });
     });
-});
 
-// comment edit option
-function toggleEditForm(commentId) {
-    const commentText = document.getElementById(`comment-content-${commentId}`);
-    const editForm = document.getElementById(`edit-comment-form-${commentId}`);
-    const editButton = document.getElementById(`edit-button-wrapper-${commentId}`);
+    // comment edit option
+    // function toggleEditForm(commentId) {
+    //     const commentText = document.getElementById(`comment-content-${commentId}`);
+    //     const editForm = document.getElementById(`edit-comment-form-${commentId}`);
+    //     const editButton = document.getElementById(`edit-button-wrapper-${commentId}`);
 
-    if (editForm.style.display === 'none') {
-        commentText.style.display = 'none';
-        editForm.style.display = 'block';
-        editButton.style.display = 'none';
-    } else {
-        commentText.style.display = 'block';
-        editForm.style.display = 'none';
-        editButton.style.display = 'block';
-    }
-}
+    //     if (editForm.style.display === 'none') {
+    //         commentText.style.display = 'none';
+    //         editForm.style.display = 'block';
+    //         editButton.style.display = 'none';
+    //     } else {
+    //         commentText.style.display = 'block';
+    //         editForm.style.display = 'none';
+    //         editButton.style.display = 'block';
+    //     }
+    // }
 
-// function saveEditedComment(commentId) {
-//     const newContent = document.getElementById(`edit-comment-text-${commentId}`).value;
+    // function saveEditedComment(commentId) {
+    //     const newContent = document.getElementById(`edit-comment-text-${commentId}`).value;
 
-//     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded'
-//         },
-//         body: new URLSearchParams({
-//             action: 'save_edited_comment',
-//             comment_id: commentId,
-//             comment_content: newContent,
-//             _ajax_nonce: '<?php echo wp_create_nonce('save_edited_comment_nonce'); ?>'
-//         })
-//     })
-//     .then(response => response.json())
-//     .then(data => {
-//         if (data.success) {
-//             document.querySelector(`#comment-content-${commentId} .content-text`).innerText = newContent;
-//             toggleEditForm(commentId);
-//         }
-//     });
-// }
+    //     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/x-www-form-urlencoded'
+    //         },
+    //         body: new URLSearchParams({
+    //             action: 'save_edited_comment',
+    //             comment_id: commentId,
+    //             comment_content: newContent,
+    //             _ajax_nonce: '<?php echo wp_create_nonce('save_edited_comment_nonce'); ?>'
+    //         })
+    //     })
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         if (data.success) {
+    //             document.querySelector(`#comment-content-${commentId} .content-text`).innerText = newContent;
+    //             toggleEditForm(commentId);
+    //         }
+    //     });
+    // }
 
-function saveEditedComment(commentId) {
-    const newContent = document.getElementById(`edit-comment-text-${commentId}`).value;
-    const fileInput = document.querySelector(`#edit-comment-form-${commentId} input[type="file"]`);
-    const files = fileInput.files;
 
-    let formData = new FormData();
-    formData.append('action', 'save_edited_comment');
-    formData.append('comment_id', commentId);
-    formData.append('comment_content', newContent);
-    formData.append('_ajax_nonce', '<?php echo wp_create_nonce('save_edited_comment_nonce'); ?>');
+    jQuery(document).on("click", ".remove-comment-image", function (e) {
+        e.preventDefault();
 
-    // Append uploaded files if any
-    if (files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-            formData.append('edit_comment_image[]', files[i]);
+        if (!confirm("Are you sure you want to remove this image?")) {
+            return;
         }
-    }
 
-    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update comment text
-            document.querySelector(`#comment-content-${commentId} .content-text`).innerText = newContent;
+        let button = jQuery(this);
+        let commentId = button.data("comment-id");
+        let imageUrl = button.data("image-url");
 
-            // Append new images after existing ones
-            if (data.data && data.data.new_images && data.data.new_images.length > 0) {
-                const imageContainer = document.querySelector(`#comment-images-${commentId}`);
-                if (imageContainer) {
-                    data.data.new_images.forEach(img => {
-                        const wrapper = document.createElement('div');
-                        wrapper.classList.add('position-relative', 'me-2');
-                        wrapper.style.display = 'inline-block';
-
-                        wrapper.innerHTML = `
-                            <a href="${img}" class="comment-lightbox" data-gallery="comment-gallery-${commentId}">
-                                <img src="${img}" alt="Comment Image" style="max-width: 80px; max-height: 80px; margin:5px; border-radius:6px;">
-                            </a>
-                            <button class="remove-comment-image position-absolute top-0 end-0"
-                                data-comment-id="${commentId}"
-                                data-image-url="${img}"
-                                style="background:none;border:none;color:#ff0000;font-size:22px;font-weight:bold;line-height:1;cursor:pointer;">
-                                &times;
-                            </button>
-                        `;
-
-                        imageContainer.appendChild(wrapper);
+        jQuery.ajax({
+            url: '<?php echo admin_url("admin-ajax.php"); ?>',
+            type: "POST",
+            data: {
+                action: "remove_comment_image",
+                comment_id: commentId,
+                image_url: imageUrl,
+            },
+            success: function (response) {
+                if (response.success) {
+                    button.closest("div.position-relative").fadeOut(300, function () {
+                        jQuery(this).remove();
                     });
+                } else {
+                    alert(response.data);
                 }
-            }
-
-            fileInput.value = '';
-
-            toggleEditForm(commentId);
-        } else {
-            alert(data.data || 'Something went wrong!');
-        }
-    });
-}
-
-
-jQuery(document).on("click", ".remove-comment-image", function (e) {
-    e.preventDefault();
-
-    if (!confirm("Are you sure you want to remove this image?")) {
-        return;
-    }
-
-    let button = jQuery(this);
-    let commentId = button.data("comment-id");
-    let imageUrl = button.data("image-url");
-
-    jQuery.ajax({
-        url: '<?php echo admin_url("admin-ajax.php"); ?>',
-        type: "POST",
-        data: {
-            action: "remove_comment_image",
-            comment_id: commentId,
-            image_url: imageUrl,
-        },
-        success: function (response) {
-            if (response.success) {
-                button.closest("div.position-relative").fadeOut(300, function () {
-                    jQuery(this).remove();
-                });
-            } else {
-                alert(response.data);
-            }
-        },
-        error: function () {
-            alert("Something went wrong!");
-        },
+            },
+            error: function () {
+                alert("Something went wrong!");
+            },
+        });
     });
 });
 </script>

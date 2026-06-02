@@ -2,8 +2,9 @@
 get_header(); ?>
 
 <?php 
-global $wpdb;
-$premium_table = $wpdb->prefix . 'premium_story_rules';
+    global $wpdb;
+    $premium_table = $wpdb->prefix . 'premium_story_rules';
+    $exclusive_table = $wpdb->prefix . 'exclusive_stories';
 
     $stories = new WP_Query([
         'post_type' => ['post'],
@@ -111,6 +112,7 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
                     
                     $division = get_post_meta($post_id, 'division', true);
                     $is_premium = false;
+                    $is_exclusive = false;
                     if (!empty($description) || !empty($division)) {
                         $total_views = get_average_series_views($post_id, $series_id);
                         $average_rating = get_custom_average_rating($post_id, $series_id);
@@ -119,6 +121,10 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
 
                         $is_premium = $wpdb->get_var(
                             $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                        ) > 0;
+
+                        $is_exclusive = $wpdb->get_var(
+                            $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
                         ) > 0;
 
                         if ($series_id) {
@@ -146,6 +152,10 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
                     <div class="position-relative">
                         <?php if ($is_premium): ?>
                             <span class="premium-tag">PREMIUM</span>
+                        <?php endif; ?>
+
+                        <?php if ($is_exclusive): ?>
+                            <span class="exclusive-tag">EXCLUSIVE</span>
                         <?php endif; ?>
 
                         <a href="<?php the_permalink(); ?>">
@@ -212,20 +222,3 @@ $premium_table = $wpdb->prefix . 'premium_story_rules';
 </div>
 
 <?php get_footer(); ?>
-
-<style>
-.premium-tag {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: linear-gradient(90deg, #fbb034 0%, #ffdd00 100%);
-    color: #222;
-    font-weight: bold;
-    font-size: 13px;
-    padding: 4px 16px 4px 8px;
-    border-top-left-radius: 8px;
-    border-bottom-right-radius: 16px;
-    z-index: 2;
-    letter-spacing: 1px;
-}
-</style>

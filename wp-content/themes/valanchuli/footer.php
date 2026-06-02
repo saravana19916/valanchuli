@@ -685,5 +685,84 @@
     //         });
     //     }
     // });
+
+    function toggleEditForm(commentId) {
+        const commentText = document.getElementById(`comment-content-${commentId}`);
+        const editForm = document.getElementById(`edit-comment-form-${commentId}`);
+        const editButton = document.getElementById(`edit-button-wrapper-${commentId}`);
+
+        if (editForm.style.display === 'none') {
+            commentText.style.display = 'none';
+            editForm.style.display = 'block';
+            editButton.style.display = 'none';
+        } else {
+            commentText.style.display = 'block';
+            editForm.style.display = 'none';
+            editButton.style.display = 'block';
+        }
+    }
+
+    function saveEditedComment(commentId) {
+        const newContent = document.getElementById(`edit-comment-text-${commentId}`)?.value || '';
+        const fileInput = document.querySelector(`#edit-comment-form-${commentId} input[type="file"]`);
+        const files = fileInput ? fileInput.files : null;
+
+        let formData = new FormData();
+        formData.append('action', 'save_edited_comment');
+        formData.append('comment_id', commentId);
+        formData.append('comment_content', newContent);
+        formData.append('_ajax_nonce', '<?php echo wp_create_nonce('save_edited_comment_nonce'); ?>');
+
+        // Append uploaded files if any
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                formData.append('edit_comment_image[]', files[i]);
+            }
+        }
+
+        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update comment text
+                document.querySelector(`#comment-content-${commentId} .content-text`).innerText = newContent;
+
+                // Append new images after existing ones
+                if (data.data && data.data.new_images && data.data.new_images.length > 0) {
+                    const imageContainer = document.querySelector(`#comment-images-${commentId}`);
+                    if (imageContainer) {
+                        data.data.new_images.forEach(img => {
+                            const wrapper = document.createElement('div');
+                            wrapper.classList.add('position-relative', 'me-2');
+                            wrapper.style.display = 'inline-block';
+
+                            wrapper.innerHTML = `
+                                <a href="${img}" class="comment-lightbox" data-gallery="comment-gallery-${commentId}">
+                                    <img src="${img}" alt="Comment Image" style="max-width: 80px; max-height: 80px; margin:5px; border-radius:6px;">
+                                </a>
+                                <button class="remove-comment-image position-absolute top-0 end-0"
+                                    data-comment-id="${commentId}"
+                                    data-image-url="${img}"
+                                    style="background:none;border:none;color:#ff0000;font-size:22px;font-weight:bold;line-height:1;cursor:pointer;">
+                                    &times;
+                                </button>
+                            `;
+
+                            imageContainer.appendChild(wrapper);
+                        });
+                    }
+                }
+
+                if (fileInput) fileInput.value = '';
+
+                toggleEditForm(commentId);
+            } else {
+                alert(data.data || 'Something went wrong!');
+            }
+        });
+    }
 </script>
 

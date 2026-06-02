@@ -35,9 +35,9 @@
                     <i class="fa-solid fa-plus fa-lg"></i>&nbsp; படைப்பை சேர்க்க
                 </button>
             <?php } else { ?>
-                <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
+                <!-- <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
                     போட்டிகள் விரைவில் அறிவிக்கப்படும்.
-                </div>
+                </div> -->
             <?php } ?>
         <?php } else {
             $currentUrl = get_permalink();
@@ -74,15 +74,7 @@
                         'operator' => 'IN',
                     ],
                 ],
-                'post_status' => 'publish',
-                'meta_query'     => [
-                    [
-                        'key'     => '_competition_end_date',
-                        'value'   => $today,
-                        'compare' => '>=',
-                        'type'    => 'DATE',
-                    ],
-                ],
+                'post_status' => 'publish'
             );
             $query = new WP_Query($args);
 

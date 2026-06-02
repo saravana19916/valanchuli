@@ -445,34 +445,55 @@ function render_subscription_revenue_dashboard() {
 }
 
 /**
- * Register activation/deactivation hooks for the cron
+ * Monthly (true): schedule SINGLE event for 1st day 00:01 (WP site timezone),
+ * then reschedule again after it runs.
  */
 register_activation_hook(__FILE__, 'subscription_revenue_activate_cron');
 register_deactivation_hook(__FILE__, 'subscription_revenue_deactivate_cron');
 
-function subscription_revenue_activate_cron() {
-    if (!wp_next_scheduled('subscription_revenue_monthly_auto_save')) {
-        $timestamp = strtotime('first day of next month 00:05:00');
-        wp_schedule_event($timestamp, 'monthly', 'subscription_revenue_monthly_auto_save');
+function subscription_revenue_tz(): DateTimeZone {
+    if (function_exists('wp_timezone')) {
+        return wp_timezone(); // WP Settings timezone (ex: Asia/Kolkata)
     }
+    $tz_string = get_option('timezone_string') ?: 'UTC';
+    return new DateTimeZone($tz_string);
+}
+
+function subscription_revenue_next_month_timestamp(): int {
+    $tz = subscription_revenue_tz();
+    $dt = new DateTimeImmutable('first day of next month 00:01:00', $tz);
+    return $dt->getTimestamp();
+}
+
+function subscription_revenue_ensure_next_run_scheduled(): void {
+    if (!wp_next_scheduled('subscription_revenue_monthly_auto_save')) {
+        wp_schedule_single_event(subscription_revenue_next_month_timestamp(), 'subscription_revenue_monthly_auto_save');
+    }
+}
+
+function subscription_revenue_activate_cron() {
+    wp_clear_scheduled_hook('subscription_revenue_monthly_auto_save');
+    subscription_revenue_ensure_next_run_scheduled();
 }
 
 function subscription_revenue_deactivate_cron() {
     wp_clear_scheduled_hook('subscription_revenue_monthly_auto_save');
 }
 
-/**
- * Register monthly cron interval if not already registered
- */
-add_filter('cron_schedules', function ($schedules) {
-    if (!isset($schedules['monthly'])) {
-        $schedules['monthly'] = [
-            'interval' => 30 * DAY_IN_SECONDS,
-            'display'  => __('Once Monthly'),
-        ];
-    }
-    return $schedules;
+// Safety: if activation hook didn’t run (migration etc.), ensure it exists
+add_action('init', function () {
+    subscription_revenue_ensure_next_run_scheduled();
 });
+
+function subscription_revenue_previous_month_range_ymd(): array {
+    $tz  = subscription_revenue_tz();
+    $now = new DateTimeImmutable('now', $tz);
+
+    $from = $now->modify('first day of last month')->format('Y-m-d');
+    $to   = $now->modify('last day of last month')->format('Y-m-d');
+
+    return [$from, $to];
+}
 
 /**
  * Auto-save previous month's subscription writer payment data
@@ -482,9 +503,8 @@ add_action('subscription_revenue_monthly_auto_save', 'subscription_revenue_auto_
 function subscription_revenue_auto_save_previous_month() {
     global $wpdb;
 
-    // Previous month date range
-    $from = date('Y-m-01', strtotime('first day of last month'));
-    $to   = date('Y-m-t',  strtotime('last day of last month'));
+    // Previous month date range (WP timezone)
+    [$from, $to] = subscription_revenue_previous_month_range_ymd();
 
     $from_date = $from . ' 00:00:00';
     $to_date   = $to   . ' 23:59:59';
@@ -574,4 +594,7 @@ function subscription_revenue_auto_save_previous_month() {
             }
         }
     }
+
+    // ✅ Reschedule for next month 1st 00:01 (avoid duplicates)
+    subscription_revenue_ensure_next_run_scheduled();
 }

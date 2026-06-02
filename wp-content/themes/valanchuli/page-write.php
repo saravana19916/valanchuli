@@ -57,22 +57,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 											'posts_per_page' => -1,
 											'post_status' => 'publish',
 											'orderby' => 'title',
-											'order' => 'ASC',
-											'meta_query'     => [
-												'relation' => 'AND',
-												[
-													'key'     => '_competition_start_date',
-													'value'   => $today,
-													'compare' => '<=',
-													'type'    => 'DATE',
-												],
-												[
-													'key'     => '_competition_end_date',
-													'value'   => $today,
-													'compare' => '>=',
-													'type'    => 'DATE',
-												],
-											],
+											'order' => 'ASC'
 										]);
 									?>
 
@@ -263,7 +248,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 				<div class="my-3">
 					<label class="form-label">
-						படைப்பை சேர்க்கவும் <span style="color: red;">*</span>
+						படைப்பை சேர்க்கவும் <span class="color-red">*</span>
 						<span class="spinner-border text-success ms-2 align-middle" role="status" id="content-loader" style="display: none; width: 1rem; height: 1rem;" aria-hidden="true"></span>
 					</label>
 					<textarea id="story-content" class="form-control tamilwriter story-content" rows="6"></textarea>
@@ -279,15 +264,38 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				</div>
 
 
-				<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp;
-					முந்தையது</button>
-				<button type="submit" class="btn btn-primary me-2" id="step2Submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
-					சமர்ப்பிக்க</button>
-				<button type="button" class="btn btn-primary" id="saveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp;
-					Save Draft</button>
+				<button type="button" class="btn btn-secondary me-2" id="prev-step"><i class="fa-solid fa-arrow-left"></i>&nbsp; முந்தையது</button>
+				<button type="submit" class="btn btn-primary me-2" id="step2Submit"><i class="fa-solid fa-floppy-disk"></i>&nbsp; சமர்ப்பிக்க</button>
+				<button type="button" class="btn btn-warning me-2 d-none" id="scheduleBtn"><i class="fa-solid fa-clock"></i>&nbsp; Schedule</button>
+				<button type="button" class="btn btn-primary" id="saveDraft"><i class="fa-solid fa-floppy-disk"></i>&nbsp; Save Draft</button>
 			</div>
 		</form>
 	<?php } ?>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleModalLabel"><i class="fa-solid fa-clock me-2"></i>Schedule Story</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">தேதி மற்றும் நேரம் தேர்வு செய்க <span style="color:red;">*</span></label>
+                    <input type="datetime-local" class="form-control" id="scheduleDateTime"
+                        min="<?php echo date('Y-m-d\TH:i', strtotime('+5 minutes')); ?>">
+                    <p class="text-muted mt-1 fs-12px"><i>குறைந்தது 5 நிமிடம் எதிர்காலத்தில் இருக்க வேண்டும்.</i></p>
+                </div>
+                <div id="scheduleError" class="text-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmScheduleBtn"><i class="fa-solid fa-clock me-1"></i> Schedule</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php get_footer(); ?>
@@ -897,6 +905,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 				formData.append('division', division);
 				formData.append('description', description);
 				formData.append('content', content);
+				formData.append('post_status', 'publish');
 
 				if (postId) {
 					formData.append('post_id', postId);
@@ -959,127 +968,327 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 		// form save end
 
 		// draft save start
-		jQuery('#story-content').on('tbwchange', function () {
-			startAutoSave();
-		});
-
 		let autoSaveInterval = null;
-		function startAutoSave() {
-			autoSaveInterval = setInterval(function () {
-				autoSaveDraft(true);
-			}, 2 * 60 * 1000);
-		}
+        let autoSaveDebounce = null;
+        let isDraftSaving = false;
 
-		startAutoSave();
+        function startAutoSaveOnce() {
+            if (autoSaveInterval) return; // IMPORTANT: do not create multiple intervals
+            autoSaveInterval = setInterval(function () {
+                autoSaveDraft(true);
+            }, 2 * 60 * 1000);
+        }
 
-		jQuery('#saveDraft').click(function() {
-			autoSaveDraft(false);
-		});
+        function scheduleAutoSave() {
+            startAutoSaveOnce();
 
-		jQuery('#step1SaveDraft').click(function() {
-			autoSaveDraft(false);
-		});
+            // Debounce: if user keeps typing, don't spam saves
+            if (autoSaveDebounce) clearTimeout(autoSaveDebounce);
+            autoSaveDebounce = setTimeout(function () {
+                autoSaveDraft(true);
+            }, 5000);
+        }
 
-		let autoSaveTimeout;
-		let lastDraftId = null;
-		let currentPostId = null;
+        // When editor changes, schedule autosave (instead of creating a new interval)
+        jQuery('#story-content').on('tbwchange tbwinit', function () {
+            scheduleAutoSave();
+        });
 
-		function autoSaveDraft(isAutoSave) {
-			const storyCompetition = document.getElementById('story-competition')?.value || '';
-			const isCompetitionPage = document.getElementById('story-from-competition')?.value;
+        // Start periodic autosave once on page load
+        startAutoSaveOnce();
 
-			const storyType = document.getElementById('story-type')?.value;
-			const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
+        jQuery('#saveDraft').click(function() {
+            autoSaveDraft(false);
+        });
 
-			const title    = document.getElementById('story-title').value;
-			const content  = document.getElementById('story-content').value;
-			const category = document.getElementById('story-category')?.value || '';
-			const series = document.getElementById('my-series').value;
-			const division = (storySubType == "series") ? document.getElementById('story-division').value : '';
-			const description = (storySubType == "series") ? document.getElementById('story-description').value : '';
-			const imageInput = document.getElementById('story-image');
-			let postId = document.getElementById('editPostId').value;
+        jQuery('#step1SaveDraft').click(function() {
+            autoSaveDraft(false);
+        });
 
-			if (currentPostId) {
-				postId = currentPostId;
-			};
+        let lastDraftId = null;
+        let currentPostId = null;
 
-			if (!title && !content) return;
+        function getEditorContent() {
+            const $el = jQuery('#story-content');
+            if ($el.data('trumbowyg')) {
+                return $el.trumbowyg('html') || '';
+            }
+            return document.getElementById('story-content')?.value || '';
+        }
 
-			const wordCount = jQuery('#word-count').text();
+        function autoSaveDraft(isAutoSave) {
+            if (isDraftSaving) return; // IMPORTANT: prevent overlapping requests
+            isDraftSaving = true;
 
-			if (storySubType == "episode") {
-				if (isCompetitionPage || isCompetitionPage == 'true') {
-					const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
-					const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+            const storyCompetition = document.getElementById('story-competition')?.value || '';
+            const isCompetitionPage = document.getElementById('story-from-competition')?.value;
 
-					if (wordCount < minWords || wordCount > maxWords) {
-						console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-						return;
-					}
-				} else {
-					const minWords = <?php echo (int) get_option('series_min_words'); ?>;
-					const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+            const storyType = document.getElementById('story-type')?.value;
+            const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
 
-					if (wordCount < minWords || wordCount > maxWords) {
-						console.log(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
-						return;
-					}
-				}
-			}
+            const title    = document.getElementById('story-title')?.value || '';
+            const content  = getEditorContent();
+            const category = document.getElementById('story-category')?.value || '';
+            const series   = document.getElementById('my-series')?.value || '';
+            const division = (storySubType == "series") ? (document.getElementById('story-division')?.value || '') : '';
+            const description = (storySubType == "series") ? (document.getElementById('story-description')?.value || '') : '';
 
-			const formData = new FormData();
-			formData.append('action', 'save_draft');
-			formData.append('competition', storyCompetition);
-			formData.append('storyType', storyType);
-			formData.append('storySubType', storySubType);
-			formData.append('title', title);
-			formData.append('content', content);
-			formData.append('category', category);
-			formData.append('series', series);
-			formData.append('division', division);
-			formData.append('description', description);
-			formData.append('status', 'draft');
+            const imageInput = document.getElementById('story-image');
 
-			if (postId) {
-				formData.append('post_id', postId);
-			}
+            let postId = document.getElementById('editPostId')?.value || '';
+            if (currentPostId) postId = currentPostId;
 
-			if (imageInput && imageInput.files.length > 0) {
-				formData.append('story_image', imageInput.files[0]);
-			}
+            if (!title && !content) {
+                isDraftSaving = false;
+                return;
+            }
 
-			fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-				method: 'POST',
-				body: formData
-			})
-			.then(res => res.json())
-			.then(response => {
-				if (response.success && response.data.post_id) {
-					currentPostId = response.data.post_id;
-					document.getElementById('editPostId').value = response.data.post_id;
-				}
+            const wordCount = jQuery('#word-count').text();
 
-				if (response.success && !isAutoSave) {
-					lastDraftId = response.data.post_id;
-					var element = document.getElementById("draftAlert");
-					element.classList.remove("d-none");
+            if (storySubType == "episode") {
+                if (isCompetitionPage || isCompetitionPage == 'true') {
+                    const minWords = <?php echo (int) get_option('competition_min_words'); ?>;
+                    const maxWords = <?php echo (int) get_option('competition_max_words'); ?>;
+                    if (wordCount < minWords || wordCount > maxWords) {
+                        isDraftSaving = false;
+                        return;
+                    }
+                } else {
+                    const minWords = <?php echo (int) get_option('series_min_words'); ?>;
+                    const maxWords = <?php echo (int) get_option('series_max_words'); ?>;
+                    if (wordCount < minWords || wordCount > maxWords) {
+                        isDraftSaving = false;
+                        return;
+                    }
+                }
+            }
 
-					if (postId) {
-						window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
-					} else {
-						// location.reload();
-						window.location.href = "<?php echo esc_url( site_url('/story-success/?status=draft') ); ?>";
-					}
-				}
+            const formData = new FormData();
+            formData.append('action', 'save_draft');
+            formData.append('competition', storyCompetition);
+            formData.append('storyType', storyType);
+            formData.append('storySubType', storySubType);
+            formData.append('title', title);
+            formData.append('content', content);
+            formData.append('category', category);
+            formData.append('series', series);
+            formData.append('division', division);
+            formData.append('description', description);
+            formData.append('status', 'draft');
 
-				if (!response.success) {
-					jQuery('#step-2').hide();
-					jQuery('#step-1').show();
-					jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
-				}
-			});
-		}
-		// draft save end
+            if (postId) {
+                formData.append('post_id', postId);
+            }
+
+            if (imageInput && imageInput.files.length > 0) {
+                formData.append('story_image', imageInput.files[0]);
+            }
+
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response.success && response.data && response.data.post_id) {
+                    currentPostId = response.data.post_id;
+                    document.getElementById('editPostId').value = response.data.post_id;
+                }
+
+                if (response.success && !isAutoSave) {
+                    lastDraftId = response.data.post_id;
+
+                    var element = document.getElementById("draftAlert");
+                    element.classList.remove("d-none");
+
+                    if (postId) {
+                        window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
+                    } else {
+                        window.location.href = "<?php echo esc_url( site_url('/story-success/?status=draft') ); ?>";
+                    }
+                }
+
+                if (!response.success) {
+                    jQuery('#step-2').hide();
+                    jQuery('#step-1').show();
+                    jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
+                }
+            })
+            .finally(() => {
+                isDraftSaving = false;
+            });
+        }
+        // draft save end
+
+		// ----------------------------------------Schedule start--------------------------------------------
+        // Show Schedule button only for episode subtype
+        function toggleScheduleButton() {
+            const storyType = document.getElementById('story-type')?.value;
+            const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
+
+            if (storyType === 'தொடர்கதை' && storySubType === 'episode') {
+                jQuery('#scheduleBtn').removeClass('d-none');
+            } else {
+                jQuery('#scheduleBtn').addClass('d-none');
+            }
+        }
+
+        jQuery('#story-type, #episodeStory, #seriesStory').on('change', function () {
+            toggleScheduleButton();
+        });
+
+        toggleScheduleButton();
+
+        // Schedule button click -> open modal
+        jQuery('#scheduleBtn').on('click', function () {
+            // Set min datetime to now + 5 min
+            const now = new Date(Date.now() + 5 * 60 * 1000);
+            const pad = n => String(n).padStart(2, '0');
+            const minVal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            document.getElementById('scheduleDateTime').min = minVal;
+            document.getElementById('scheduleDateTime').value = '';
+            jQuery('#scheduleError').addClass('d-none').text('');
+
+            var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+            scheduleModal.show();
+        });
+
+        // Confirm schedule
+        jQuery('#confirmScheduleBtn').on('click', function () {
+            const dtVal = document.getElementById('scheduleDateTime').value;
+            const $error = jQuery('#scheduleError');
+
+            if (!dtVal) {
+                $error.removeClass('d-none').text('தேதி மற்றும் நேரம் தேர்வு செய்க.');
+                return;
+            }
+
+            const chosenDate = new Date(dtVal);
+            const now = new Date();
+
+            if (chosenDate <= now) {
+                $error.removeClass('d-none').text('எதிர்காலத்தில் ஒரு நேரம் தேர்வு செய்க.');
+                return;
+            }
+
+            $error.addClass('d-none').text('');
+
+            // Close modal and submit form with schedule date
+            bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+            submitStory('future', dtVal);
+        });
+
+        // Existing submit button -> publish immediately
+        // document.getElementById('write-story-form').addEventListener('submit', function (e) {
+        //     e.preventDefault();
+        //     submitStory('publish', null);
+        // });
+
+        // Central submit function
+        function submitStory(postStatus, scheduleDate) {
+            const storyCompetition = document.getElementById('story-competition')?.value || '';
+            const isCompetitionPage = document.getElementById('story-from-competition')?.value;
+            const storyType = document.getElementById('story-type')?.value;
+            const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
+            const title = document.getElementById('story-title').value;
+            const category = document.getElementById('story-category').value;
+            const series = document.getElementById('my-series').value;
+            const division = (storySubType === 'series') ? document.getElementById('story-division').value : '';
+            const description = (storySubType === 'series') ? document.getElementById('story-description').value : '';
+            const content = document.getElementById('story-content').value;
+            const imageInput = document.getElementById('story-image');
+            const postId = document.getElementById('editPostId').value;
+
+            jQuery('.error-message').remove();
+            jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', true);
+
+            let errors = [];
+
+            if (isCompetitionPage === 'true' && storyCompetition === '') {
+                errors.push({ field: 'competition', message: 'போட்டிகள் is required.' });
+            }
+            if (!storyType) errors.push({ field: 'type', message: 'கதையின் வகை is required.' });
+            if (storyType === 'தொடர்கதை' && (!storySubType || storySubType === '')) {
+                errors.push({ field: 'sub-type', message: 'கதையின் வகையை தேர்வுசெய்க is required.' });
+            }
+            if (!title) errors.push({ field: 'title', message: 'தலைப்பு is required.' });
+            if (!document.getElementById('categoryDropdown').classList.contains('d-none') && !category) {
+                errors.push({ field: 'category', message: 'வகை is required.' });
+            }
+            if (storyType === 'தொடர்கதை' && storySubType === 'episode' && !series) {
+                errors.push({ field: 'series', message: 'தொடர்கதை is required.' });
+            }
+            if (storyType === 'தொடர்கதை' && storySubType === 'series' && !division) {
+                errors.push({ field: 'division', message: 'பிரிவுகள் is required.' });
+            }
+
+            jQuery.each(errors, function (index, error) {
+                jQuery('.story-' + error.field).after(
+                    '<p class="text-danger error-message mt-2 small">' + error.message + '</p>'
+                );
+            });
+
+            if (errors.length > 0) {
+                jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', false);
+                return;
+            }
+
+            // Word count check for episode
+            if (storySubType === 'episode') {
+                const wordCount = parseInt(jQuery('#word-count').text(), 10) || 0;
+                const isComp = isCompetitionPage === 'true';
+                const minWords = isComp ? <?php echo (int) get_option('competition_min_words'); ?> : <?php echo (int) get_option('series_min_words'); ?>;
+                const maxWords = isComp ? <?php echo (int) get_option('competition_max_words'); ?> : <?php echo (int) get_option('series_max_words'); ?>;
+
+                if (wordCount < minWords || wordCount > maxWords) {
+                    alert(`Your story must be between ${minWords} and ${maxWords} words. You wrote ${wordCount}.`);
+                    jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', false);
+                    return;
+                }
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'save_story');
+            formData.append('competition', storyCompetition);
+            formData.append('storyType', storyType);
+            formData.append('storySubType', storySubType);
+            formData.append('title', title);
+            formData.append('category', category);
+            formData.append('series', series);
+            formData.append('division', division);
+            formData.append('description', description);
+            formData.append('content', content);
+            formData.append('post_status', postStatus);
+            if (scheduleDate) formData.append('schedule_date', scheduleDate);
+            if (postId) formData.append('post_id', postId);
+            if (imageInput.files.length > 0) formData.append('story_image', imageInput.files[0]);
+
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(response => {
+                jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', false);
+
+                if (response.success) {
+                    if (postId) {
+                        window.location.href = '<?php echo esc_url(home_url('/my-creations')); ?>';
+                    } else if (postStatus === 'future') {
+                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=scheduled')); ?>';
+                    } else if (storySubType === 'series') {
+                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=series')); ?>';
+                    } else {
+                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=other')); ?>';
+                    }
+                } else {
+                    if (typeof response.data === 'object' && response.data.title) {
+                        jQuery('.story-title').after('<p class="text-danger error-message mt-2 small">' + response.data.title + '</p>');
+                    }
+                    jQuery('#step-2').hide();
+                    jQuery('#step-1').show();
+                }
+            });
+        }
     });
 </script>

@@ -3,6 +3,11 @@
     if ( isset($_GET['from']) && $_GET['from'] === 'mycreation' ) {
         $pageMyCreation = true;
     }
+
+    $pageCompetition = false;
+    if ( isset($_GET['from']) && $_GET['from'] === 'competition' ) {
+        $pageCompetition = true;
+    }
 ?>
 
 <div class="container my-5">
@@ -14,8 +19,12 @@
                 $cardClass = 'card ' . ($description ? 'border-0' : 'border-0 rounded');
                 $post_id     = get_the_ID();
                 $division_id = get_post_meta($post_id, 'division', true);
-            ?>
 
+                $seriesCheck = get_the_terms($post_id, 'series');
+                $series_checkname = ($seriesCheck && !is_wp_error($seriesCheck)) ? $seriesCheck[0]->name : '';
+                $series_id = ($seriesCheck && !is_wp_error($seriesCheck)) ? $seriesCheck[0]->term_id : 0;
+                $check_have_parent = $series_checkname == 'தொடர்கதை அல்ல' ? false : true;
+            ?>
 
             <h4 class="text-primary-color fw-bold text-center"><?php echo the_title(); ?></h4>
 
@@ -57,6 +66,20 @@
                     data-bs-target="#shareModal">
                         <i class="fa-solid fa-share-nodes me-1"></i> Share
                 </a>
+
+                <?php if (is_user_logged_in()) : ?>
+                    <!-- | <label class="text-muted text-decoration-none" style="cursor:pointer;">
+                        <input
+                            type="checkbox"
+                            id="completeStoryToggle"
+                            <?php checked(1, (int) $is_completed_story); ?>
+                            data-story-id="<?php echo esc_attr(get_the_ID()); ?>"
+                            data-nonce="<?php echo esc_attr($complete_story_nonce); ?>"
+                            style="margin-right:6px;"
+                        />
+                        Complete Story
+                    </label> -->
+                <?php endif; ?>
             </p>
 
             <div class="<?= esc_attr($cardClass); ?>">
@@ -152,7 +175,7 @@
                                     ?>
                                         <div style="background:#004d4d;color:#fff;padding:10px;border-radius:0 0 10px 10px;margin-top:-4px;" class="text-center">
                                             <div style="font-size:1.1rem;">
-                                                முழுகதையும் படிக்க இப்பொழுதே unlock செய்யுங்கள்
+                                                முழுகதையை படிக்க இப்பொழுதே unlock செய்யுங்கள்
                                             </div>
                                             <div style="font-size:1.1rem;" class="mt-2">
                                                 UnLock full story:
@@ -303,25 +326,40 @@
                                                                         </span>
                                                                     </div>
                                                                     <?php
-                                                                    $post_id    = get_the_ID();
-                                                                    $author_id  = get_post_field('post_author', $post_id);
-                                                                    $current_id = get_current_user_id();
+                                                                    $author_id  = (int) get_post_field('post_author', $post_id);
+                                                                    $current_id = (int) get_current_user_id();
 
-                                                                    if ($pageMyCreation && $current_id === (int) $author_id) :
+                                                                    $is_owner = ($current_id === $author_id);
+
+                                                                    // competition context: either opened from competition page OR this story belongs to competition series (meta)
+                                                                    $is_competition_context = ($pageCompetition || !empty($competitionParam));
+
+                                                                    // 24 hours check
+                                                                    $post_time    = (int) get_post_time('U', true, $post_id);
+                                                                    $current_time = (int) current_time('timestamp');
+                                                                    $hours_diff   = ($post_time > 0) ? (($current_time - $post_time) / 3600) : 999999;
+
+                                                                    // show actions only in these pages
+                                                                    $is_allowed_page = ($pageMyCreation || $pageCompetition);
+
+                                                                    // apply 24h rule only for competition context
+                                                                    $can_show_actions = $is_owner && $is_allowed_page && ( !$is_competition_context || ($hours_diff <= 24) );
+
+                                                                    if ($can_show_actions) :
                                                                     ?>
                                                                         <div>
                                                                             <a 
-                                                                                href="<?php echo esc_url(home_url('/write?id=' . $post_id . $competitionParam)); ?>" 
+                                                                                href="<?php echo esc_url(home_url('/write?id=' . $episode_id . $competitionParam)); ?>" 
                                                                                 class="p-1" 
                                                                                 title="Edit">
                                                                                 <i class="fa-solid fa-pen-to-square fa-lg"></i>
                                                                             </a>
 
                                                                             <?php 
-                                                                                $nonce = wp_create_nonce('frontend_delete_post_' . $post_id);
+                                                                                $nonce = wp_create_nonce('frontend_delete_post_' . $episode_id);
                                                                                 $delete_url = add_query_arg([
                                                                                     'action'   => 'frontend_delete_post',
-                                                                                    'post_id'  => $post_id,
+                                                                                    'post_id'  => $episode_id,
                                                                                     'nonce'    => $nonce,
                                                                                 ], admin_url('admin-post.php'));
                                                                             ?>
@@ -579,7 +617,7 @@
                                         </div>
                                     <?php endif; ?>
                                     
-                                    <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto responsive-rating login-shadow"
+                                    <div class="star-rating sec-comment text-center d-flex flex-column align-items-center justify-content-center text-primary-color mt-4 mx-auto"
                                         data-post-id="<?php the_ID(); ?>"
                                         data-series-id="<?php echo esc_attr($series_id); ?>"Add commentMore actions
                                         data-post-parent="<?php echo $is_parent; ?>">
@@ -656,126 +694,211 @@
         window.episodeNumberToIdForKey = <?php echo json_encode($episode_map_for_Key); ?>;
         window.episodeNumberToIdForAll = <?php echo json_encode($episode_map_for_All); ?>;
         window.episodeIdToLockType = <?php echo json_encode($episodeIdToLockType); ?>;
+
+        document.querySelectorAll('.reward-key-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var keyAmount = btn.getAttribute('data-key');
+                var postId = <?php echo $post_id; ?>;
+                var authorId = <?php echo $author_id; ?>;
+                // Confirm action
+                if (confirm(keyAmount + ' Key will be sent to the writer. Continue?')) {
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=reward_keys_to_writer&post_id=' + postId + '&author_id=' + authorId + '&key_amount=' + keyAmount
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Keys sent successfully!');
+                        } else {
+                            alert(data.data || 'Failed to send keys.');
+                        }
+                    });
+                }
+            });
+        });
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        var requiredSeconds = <?php echo (int) $required_seconds; ?>;
-        var postId = <?php echo json_encode((int) $single_page_post_id); ?>;
         var isLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
-        console.log("requiredSeconds:", requiredSeconds, "postId:", postId);
+        var postId = <?php echo json_encode((int) $single_page_post_id); ?>;
+        var isParent = <?php echo json_encode($check_have_parent); ?>;
+        if (isLoggedIn && isParent) {
+            var requiredSeconds = <?php echo (int) $required_seconds; ?>;
+            console.log("requiredSeconds:", requiredSeconds, "postId:", postId);
 
-        if (!isLoggedIn || !postId || requiredSeconds <= 0) return;
+            if (!postId || requiredSeconds <= 0) return;
 
-        var timer = null;
-        var completed = false;
+            var timer = null;
+            var completed = false;
 
-        var alreadySpent = 0; // from DB
-        var sessionSpent = 0; // this visit only
+            var alreadySpent = 0; // from DB
+            var sessionSpent = 0; // this visit only
 
-        function ajax(action, payload) {
-            return fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: new URLSearchParams(Object.assign({ action: action, post_id: postId }, payload || {}))
-            }).then(r => r.json());
-        }
-
-        function saveProgress(useBeacon) {
-            var total = alreadySpent + sessionSpent;
-            console.log('sessionSpent:', sessionSpent, 'alreadySpent:', alreadySpent, 'total:', total);
-            var params = new URLSearchParams({
-                action: 'update_story_reading_progress_ajax',
-                post_id: postId,
-                seconds_spent: total,
-                required_seconds: requiredSeconds
-            });
-
-            // best-effort on leave
-            if (useBeacon && navigator.sendBeacon) {
-                var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
-                navigator.sendBeacon('<?php echo admin_url('admin-ajax.php'); ?>', blob);
-                return;
+            function ajax(action, payload) {
+                return fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams(Object.assign({ action: action, post_id: postId }, payload || {}))
+                }).then(r => r.json());
             }
 
+            function saveProgress(useBeacon) {
+                var total = alreadySpent + sessionSpent;
+                console.log('sessionSpent:', sessionSpent, 'alreadySpent:', alreadySpent, 'total:', total);
+                var params = new URLSearchParams({
+                    action: 'update_story_reading_progress_ajax',
+                    post_id: postId,
+                    seconds_spent: total,
+                    required_seconds: requiredSeconds
+                });
+
+                // best-effort on leave
+                if (useBeacon && navigator.sendBeacon) {
+                    var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
+                    navigator.sendBeacon('<?php echo admin_url('admin-ajax.php'); ?>', blob);
+                    return;
+                }
+
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: params,
+                    keepalive: true
+                }).catch(function(){});
+            }
+
+            function remaining() {
+                return Math.max(requiredSeconds - (alreadySpent + sessionSpent), 0);
+            }
+
+            function stop() {
+                if (timer) clearInterval(timer);
+                timer = null;
+            }
+
+            function completeOnce() {
+                if (completed) return;
+                completed = true;
+                stop();
+
+                ajax('increase_story_view_count_ajax', {
+                    post_id: postId,
+                    seconds_spent: alreadySpent + sessionSpent,
+                    required_seconds: requiredSeconds
+                }).catch(function(){});
+            }
+
+            function start() {
+                if (timer || completed) return;
+
+                timer = setInterval(function () {
+                    sessionSpent += 1;
+                    console.log('sessionSpent incremented:', sessionSpent);
+
+                    // save every 5s
+                    if (sessionSpent % 5 === 0) {
+                        saveProgress(false);
+                    }
+
+                    if (remaining() <= 0) {
+                        saveProgress(false);
+                        completeOnce();
+                    }
+                }, 1000);
+            }
+
+            function pause() {
+                stop();
+                saveProgress(true);
+            }
+
+            function resume() {
+                if (!completed && remaining() > 0) start();
+            }
+
+            // Load stored progress, then start
+            ajax('get_story_reading_progress_ajax', {}).then(function(resp){
+                if (resp && resp.success && resp.data) {
+                    alreadySpent = parseInt(resp.data.seconds_spent || 0, 10) || 0;
+                    completed = parseInt(resp.data.is_completed || 0, 10) === 1;
+                }
+                resume();
+            }).catch(function(){
+                resume();
+            });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) pause();
+                else resume();
+            });
+
+            window.addEventListener('blur', pause);
+            window.addEventListener('focus', resume);
+
+            // better than beforeunload on mobile
+            window.addEventListener('pagehide', pause);
+        } else {
+            if (!postId) return;
             fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: params,
-                keepalive: true
-            }).catch(function(){});
+                body: new URLSearchParams(Object.assign({ action: 'increase_story_view_count_for_not_logged_in', post_id: postId }, {} || {}))
+            }).then(r => r.json());
         }
-
-        function remaining() {
-            return Math.max(requiredSeconds - (alreadySpent + sessionSpent), 0);
-        }
-
-        function stop() {
-            if (timer) clearInterval(timer);
-            timer = null;
-        }
-
-        function completeOnce() {
-            if (completed) return;
-            completed = true;
-            stop();
-
-            ajax('increase_story_view_count_ajax', {
-                post_id: postId,
-                seconds_spent: alreadySpent + sessionSpent,
-                required_seconds: requiredSeconds
-            }).catch(function(){});
-        }
-
-        function start() {
-            if (timer || completed) return;
-
-            timer = setInterval(function () {
-                sessionSpent += 1;
-                console.log('sessionSpent incremented:', sessionSpent);
-
-                // save every 5s
-                if (sessionSpent % 5 === 0) {
-                    saveProgress(false);
-                }
-
-                if (remaining() <= 0) {
-                    saveProgress(false);
-                    completeOnce();
-                }
-            }, 1000);
-        }
-
-        function pause() {
-            stop();
-            saveProgress(true);
-        }
-
-        function resume() {
-            if (!completed && remaining() > 0) start();
-        }
-
-        // Load stored progress, then start
-        ajax('get_story_reading_progress_ajax', {}).then(function(resp){
-            if (resp && resp.success && resp.data) {
-                alreadySpent = parseInt(resp.data.seconds_spent || 0, 10) || 0;
-                completed = parseInt(resp.data.is_completed || 0, 10) === 1;
-            }
-            resume();
-        }).catch(function(){
-            resume();
-        });
-
-        document.addEventListener('visibilitychange', function () {
-            if (document.hidden) pause();
-            else resume();
-        });
-
-        window.addEventListener('blur', pause);
-        window.addEventListener('focus', resume);
-
-        // better than beforeunload on mobile
-        window.addEventListener('pagehide', pause);
     });
+
+    // document.addEventListener('DOMContentLoaded', function () {
+    //   var el = document.getElementById('completeStoryToggle');
+    //   if (!el) return;
+
+    //   el.addEventListener('change', function () {
+    //     var storyId = el.getAttribute('data-story-id');
+    //     var nonce = el.getAttribute('data-nonce');
+    //     var newStatus = el.checked ? 1 : 0;
+
+    //     var msg = el.checked
+    //       ? 'Mark this story as completed?'
+    //       : 'Unmark this story as completed?';
+
+    //     if (!confirm(msg)) {
+    //       el.checked = !el.checked;
+    //       return;
+    //     }
+
+    //     el.disabled = true;
+
+    //     var params = new URLSearchParams();
+    //     params.set('action', 'valanchuli_set_completed_story');
+    //     params.set('story_id', storyId);
+    //     params.set('status', newStatus);
+    //     params.set('nonce', nonce);
+
+    //     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+    //       method: 'POST',
+    //       credentials: 'same-origin',
+    //       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    //       body: params.toString()
+    //     })
+    //     .then(r => r.json())
+    //     .then(function (resp) {
+    //       if (!resp || !resp.success) {
+    //         alert((resp && resp.data) ? resp.data : 'Failed to update.');
+    //         el.checked = !el.checked;
+    //       }
+    //     })
+    //     .catch(function () {
+    //       alert('Network error.');
+    //       el.checked = !el.checked;
+    //     })
+    //     .finally(function () {
+    //       el.disabled = false;
+    //     });
+    //   });
+    // });
 </script>

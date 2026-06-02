@@ -611,6 +611,20 @@ function get_locked_stories_count_by_author($author_id) {
     return $count;
 }
 
+// Allow continuous commenting (disable flood protection).
+// Safer: only for logged-in users.
+add_filter('comment_flood_filter', function ($flood, $lasttime, $time_newcomment) {
+    if (is_user_logged_in()) {
+        return false; // no flood block
+    }
+    return $flood; // keep protection for guests
+}, 10, 3);
+
+// Optional: customize the message (when flood protection applies)
+add_filter('comment_flood_message', function ($msg) {
+    return 'Please wait a few seconds and try again.';
+});
+
 // add episode number
 function assign_episode_number_to_series() {
     $series = get_posts([

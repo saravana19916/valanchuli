@@ -2,30 +2,42 @@
 get_header(); ?>
 
 <?php 
-    global $wpdb;
-    $premium_table = $wpdb->prefix . 'premium_story_rules';
-    $exclusive_table = $wpdb->prefix . 'exclusive_stories';
+global $wpdb;
 
-    $context = $_GET['context'] ?? '';
-    $user_id = $_GET['user_id'] ?? '';
+$context = $args['context'] ?? '';
+$current_user = $args['user_id'] ?? '';
 
+$table = $wpdb->prefix . 'exclusive_stories';
+
+// Get all unique post_ids from the exclusive_stories table
+$post_ids = $wpdb->get_col( "SELECT DISTINCT post_id FROM $table" );
+
+// If context is "my-creations", filter by current user
+if ($current_user) {
+    $author_post_ids = get_posts([
+        'post_type'      => 'post',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'author'         => $current_user,
+        'fields'         => 'ids',
+        'include'        => $post_ids,
+    ]);
+    $post_ids = $author_post_ids;
+}
+
+$exclusive_stories = [];
+if (!empty($post_ids)) {
     $args = [
-        'post_type'      => ['post'],
+        'post_type'      => 'post',
+        'post__in'       => $post_ids,
         'posts_per_page' => -1,
         'post_status'    => 'publish',
     ];
-    
-    if (!empty($user_id)) {
-        $args['author'] = (int) $user_id;
-    }
-    
-    $novel_query = new WP_Query($args);
-    
-    $novel_stories = [];
-    
-    if ($novel_query->have_posts()) {
-        while ($novel_query->have_posts()) {
-            $novel_query->the_post();
+    $query = new WP_Query($args);
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
             $post_id = get_the_ID();
             $description = get_post_meta($post_id, 'description', true);
             $division = get_post_meta($post_id, 'division', true);
@@ -35,8 +47,8 @@ get_header(); ?>
                 $series_name = ($series && !is_wp_error($series)) ? $series[0]->name : '';
 
                 $views = get_average_series_views($post_id, $series_id);
-        
-                $novel_stories[] = [
+
+                $exclusive_stories[] = [
                     'post' => get_post(),
                     'views' => $views,
                 ];
@@ -44,17 +56,27 @@ get_header(); ?>
         }
         wp_reset_postdata();
     }
+}
 
-    usort($novel_stories, function ($a, $b) {
-        return $b['views'] <=> $a['views'];
-    });
+usort($exclusive_stories, function ($a, $b) {
+    return $b['views'] <=> $a['views'];
+});
+
+// $total_premium_count = count($exclusive_stories);
+
+// $premiumUrl = add_query_arg([
+//     'context' => $context,
+//     'user_id'  => $current_user
+// ], get_permalink(get_page_by_path('novels')));
+
+// Now use $exclusive_stories instead of $novel_stories for your display logic
 ?>
 
 <div class="container my-4">
 	<div class="row">
-        <h4 class="py-2 fw-bold m-0">🔥 நாவல்கள்</h4>
+        <h4 class="py-2 fw-bold m-0">🔥 Exclusive Stories</h4>
         <div class="row col-12 mt-4 d-lg-flex flex-wrap justify-content-center justify-content-sm-start" style="gap: 2rem;">
-            <?php foreach ($novel_stories as $index => $item): ?>
+            <?php foreach ($exclusive_stories as $index => $item): ?>
                 <?php
                     $post = $item['post'];
                     setup_postdata($post);
@@ -65,6 +87,8 @@ get_header(); ?>
                     $average_rating = get_custom_average_rating($post_id, $series_id);
 
                     $episode_count = 0;
+                    
+                    $is_competition = get_post_meta($post_id, 'competition', true);
 
                     if ($series_id) {
                         $related_stories = new WP_Query([
@@ -85,25 +109,9 @@ get_header(); ?>
 
                         $episode_count = $related_stories->found_posts;
                     }
-
-                    $is_premium = $wpdb->get_var(
-                        $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
-                    ) > 0;
-
-                    $is_exclusive = $wpdb->get_var(
-                        $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
-                    ) > 0;
                 ?>
                 <div class="page-post-image-size-div">
                         <div class="position-relative">
-                            <?php if ($is_premium): ?>
-                                <span class="premium-tag">PREMIUM</span>
-                            <?php endif; ?>
-
-                            <?php if ($is_exclusive): ?>
-                                <span class="exclusive-tag">EXCLUSIVE</span>
-                            <?php endif; ?>
-
                             <a href="<?php the_permalink(); ?>">
                                 <?php if (has_post_thumbnail()) : ?>
                                     <?php the_post_thumbnail('medium', [

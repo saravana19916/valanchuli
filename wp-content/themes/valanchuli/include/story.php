@@ -367,6 +367,9 @@ function save_story_ajax() {
     $division = sanitize_text_field($_POST['division']);
     $description = sanitize_text_field($_POST['description']);
     $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    $post_status    = isset($_POST['post_status']) ? sanitize_text_field($_POST['post_status']) : 'publish';
+    $schedule_date  = isset($_POST['schedule_date']) ? sanitize_text_field($_POST['schedule_date']) : '';
+    print_r($post_status);exit;
 
     $errors = [];
 
@@ -374,9 +377,36 @@ function save_story_ajax() {
         $errors['title'] = 'தலைப்பு is required.';
     }
 
+    if ($post_status === 'future') {
+        if (empty($schedule_date)) {
+            wp_send_json_error('Schedule date is required.');
+        }
+
+        // Use WordPress site timezone (not PHP server timezone)
+        $wp_timezone = wp_timezone();                                           // WP site timezone
+        $dt = new DateTime($schedule_date, $wp_timezone);                       // parse as WP local time
+
+        // Validate: must be in the future
+        $now = new DateTime('now', $wp_timezone);
+        if ($dt <= $now) {
+            wp_send_json_error('Schedule date must be in the future.');
+        }
+
+        // post_date = WP local time (what wp_insert_post expects)
+        $post_date = $dt->format('Y-m-d H:i:s');
+
+        // post_date_gmt = UTC time
+        $dt->setTimezone(new DateTimeZone('UTC'));
+        $post_date_gmt = $dt->format('Y-m-d H:i:s');
+
+    } else {
+        $post_date     = current_time('mysql');
+        $post_date_gmt = current_time('mysql', 1);
+    }
+
     $postExists = new WP_Query([
         'post_type'   => 'post',
-        'post_status' => ['publish', 'draft'],
+        'post_status' => ['publish', 'draft', 'future'],
         'title'       => $title,
         'fields'      => 'ids',
         'posts_per_page' => 1,
@@ -400,20 +430,34 @@ function save_story_ajax() {
     }
 
     $post_data = [
-        'post_title'   => $title,
-        'post_content' => $content,
-        'post_status'  => 'publish',
-        'post_type'    => 'post',
+        'post_title'    => sanitize_text_field($title),
+        'post_content'  => wp_kses_post($content),
+        'post_status'   => $post_status,
+        'post_type'     => 'post',
+        'post_date'     => $post_date,
+        'post_date_gmt' => $post_date_gmt,
         'post_category'=> [$category_id],
         'post_author'  => get_current_user_id(),
     ];
 
+    if ($post_status === 'future') {
+        $post_data['edit_date'] = true;
+    }
+
     if ($post_id) {
         $post_data['ID'] = $post_id;
-        $post_id = wp_update_post($post_data);
+        $post_id = wp_update_post($post_data, true);
+
+        if (is_wp_error($post_id)) {
+            wp_send_json_error('Update failed: ' . $post_id->get_error_message());
+        }
     } else {
-        $post_id = wp_insert_post($post_data);
-    }   
+        $post_id = wp_insert_post($post_data, true);
+
+        if (is_wp_error($post_id)) {
+            wp_send_json_error('Insert failed: ' . $post_id->get_error_message());
+        }
+    }
 
     // Handle image upload
     if (!empty($_FILES['story_image']['tmp_name'])) {

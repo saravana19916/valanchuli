@@ -437,35 +437,56 @@ function render_key_revenue_dashboard() {
 }
 
 /**
- * Register activation/deactivation hooks for the cron
+ * Monthly: schedule a SINGLE event for the 1st day 00:01 (site timezone),
+ * and reschedule the next month after it runs.
  */
 register_activation_hook(__FILE__, 'key_revenue_activate_cron');
 register_deactivation_hook(__FILE__, 'key_revenue_deactivate_cron');
 
-function key_revenue_activate_cron() {
-    if (!wp_next_scheduled('key_revenue_monthly_auto_save')) {
-        // Schedule for 1st of every month at 00:05
-        $timestamp = strtotime('first day of next month 00:05:00');
-        wp_schedule_event($timestamp, 'monthly', 'key_revenue_monthly_auto_save');
+function key_revenue_tz(): DateTimeZone {
+    // WP timezone (ex: Asia/Kolkata if configured in WP)
+    if (function_exists('wp_timezone')) {
+        return wp_timezone();
     }
+    $tz_string = get_option('timezone_string') ?: 'UTC';
+    return new DateTimeZone($tz_string);
+}
+
+function key_revenue_next_month_timestamp(): int {
+    $tz = key_revenue_tz();
+    $dt = new DateTimeImmutable('first day of next month 00:01:00', $tz);
+    return $dt->getTimestamp();
+}
+
+function key_revenue_ensure_next_run_scheduled(): void {
+    if (!wp_next_scheduled('key_revenue_monthly_auto_save')) {
+        wp_schedule_single_event(key_revenue_next_month_timestamp(), 'key_revenue_monthly_auto_save');
+    }
+}
+
+function key_revenue_activate_cron() {
+    wp_clear_scheduled_hook('key_revenue_monthly_auto_save');
+    key_revenue_ensure_next_run_scheduled();
 }
 
 function key_revenue_deactivate_cron() {
     wp_clear_scheduled_hook('key_revenue_monthly_auto_save');
 }
 
-/**
- * Register monthly cron interval
- */
-add_filter('cron_schedules', function ($schedules) {
-    if (!isset($schedules['monthly'])) {
-        $schedules['monthly'] = [
-            'interval' => 30 * DAY_IN_SECONDS,
-            'display'  => __('Once Monthly'),
-        ];
-    }
-    return $schedules;
+// activation hook run ஆகவில்லை என்றாலும் schedule இருக்குமாறு
+add_action('init', function () {
+    key_revenue_ensure_next_run_scheduled();
 });
+
+function key_revenue_previous_month_range_ymd(): array {
+    $tz  = key_revenue_tz();
+    $now = new DateTimeImmutable('now', $tz);
+
+    $from = $now->modify('first day of last month')->format('Y-m-d');
+    $to   = $now->modify('last day of last month')->format('Y-m-d');
+
+    return [$from, $to];
+}
 
 /**
  * Auto-save previous month's writer payment data
@@ -475,9 +496,8 @@ add_action('key_revenue_monthly_auto_save', 'key_revenue_auto_save_previous_mont
 function key_revenue_auto_save_previous_month() {
     global $wpdb;
 
-    // Previous month date range
-    $from = date('Y-m-01', strtotime('first day of last month'));
-    $to   = date('Y-m-t',  strtotime('last day of last month'));
+    // Previous month date range (WP timezone, e.g., IST if set)
+    [$from, $to] = key_revenue_previous_month_range_ymd();
 
     $key_value            = floatval(get_option('common_single_key_amount', 0.5));
     $keysToUnlockEpisode  = floatval(get_option('common_coin_unlock', 0));
@@ -554,4 +574,7 @@ function key_revenue_auto_save_previous_month() {
             }
         }
     }
+
+    // ✅ Reschedule for next month 1st 00:01 (avoid duplicates)
+    key_revenue_ensure_next_run_scheduled();
 }

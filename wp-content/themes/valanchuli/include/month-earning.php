@@ -128,7 +128,7 @@ function getWriterKeyEarning($author_id, $from, $to)
     // Writerwise revenue
     $reward_keys_total = 0;
     $reward_keys_revenue_total = 0;
-    $reward_table = $wpdb->prefix . 'writer_key_rewards';
+    $reward_table = $wpdb->prefix . '';
     $reward_rows = $wpdb->get_results($wpdb->prepare(
         "SELECT author_id, SUM(`key`) as reward_keys
          FROM $reward_table

@@ -114,6 +114,32 @@ function get_custom_average_rating($post_id, $series_id = '') {
     return $avg_rating ? $avg_rating : 0;
 }
 
+add_action('wp_ajax_increase_story_view_count_for_not_logged_in', 'increase_story_view_count_for_not_logged_in');
+add_action('wp_ajax_nopriv_increase_story_view_count_for_not_logged_in', 'increase_story_view_count_for_not_logged_in');
+
+function increase_story_view_count_for_not_logged_in() {
+    $post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+
+    $user_id = get_current_user_id();
+    if (!$post_id) {
+        return;
+    }
+
+    global $wpdb;
+    $view_table = $wpdb->prefix . 'user_story_views';
+
+    // Insert into new tracking table
+    $wpdb->insert($view_table, [
+        'post_id'   => (int) $post_id,
+        'user_id'   => $user_id,
+        'viewed_at' => current_time('mysql'),
+    ]);
+
+    // Update post meta count
+    $count = (int) get_post_meta($post_id, 'story_view_count', true);
+    update_post_meta($post_id, 'story_view_count', $count + 1);
+}
+
 function increase_story_view_count($post_id = null) {
     if (!$post_id && is_singular('post')) {
         $post_id = get_the_ID();
@@ -447,3 +473,46 @@ function reward_keys_to_writer() {
 
     wp_send_json_success();
 }
+
+// add_action('wp_ajax_valanchuli_set_completed_story', function () {
+//     if (!is_user_logged_in()) {
+//         wp_send_json_error('Login required.');
+//     }
+
+//     $story_id = isset($_POST['story_id']) ? absint($_POST['story_id']) : 0;
+//     $status   = isset($_POST['status']) ? (int) $_POST['status'] : 0;
+
+//     if (!$story_id) wp_send_json_error('Invalid story id.');
+
+//     check_ajax_referer('valanchuli_complete_story_' . $story_id, 'nonce');
+
+//     $user_id = get_current_user_id();
+//     $status  = $status ? 1 : 0;
+
+//     global $wpdb;
+//     $table = valanchuli_completed_stories_table_name();
+
+//     $completed_on = $status ? current_time('mysql') : null;
+
+//     $result = $wpdb->query($wpdb->prepare(
+//         "INSERT INTO {$table} (user_id, story_id, status, completed_on)
+//          VALUES (%d, %d, %d, %s)
+//          ON DUPLICATE KEY UPDATE
+//             status = VALUES(status),
+//             completed_on = VALUES(completed_on)",
+//         $user_id,
+//         $story_id,
+//         $status,
+//         $completed_on
+//     ));
+
+//     if ($result === false) {
+//         wp_send_json_error('DB error.');
+//     }
+
+//     wp_send_json_success([
+//         'story_id' => $story_id,
+//         'status' => $status,
+//         'completed_on' => $completed_on,
+//     ]);
+// });

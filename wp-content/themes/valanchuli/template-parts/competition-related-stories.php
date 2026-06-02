@@ -2,6 +2,7 @@
 
     global $wpdb;
     $premium_table = $wpdb->prefix . 'premium_story_rules';
+    $exclusive_table = $wpdb->prefix . 'exclusive_stories';
 
     $context = $_GET['context'] ?? '';
     $user_id = $_GET['user_id'] ?? '';
@@ -143,6 +144,7 @@
                     
                     $division = get_post_meta($post_id, 'division', true);
                     $is_premium = false;
+                    $is_exclusive = false;
                     if (!empty($description) || !empty($division)) {
                         $total_views = get_average_series_views($post_id, $series_id);
 
@@ -150,6 +152,10 @@
 
                         $is_premium = $wpdb->get_var(
                             $wpdb->prepare("SELECT COUNT(*) FROM $premium_table WHERE post_id = %d", $post_id)
+                        ) > 0;
+
+                        $is_exclusive = $wpdb->get_var(
+                            $wpdb->prepare("SELECT COUNT(*) FROM $exclusive_table WHERE post_id = %d", $post_id)
                         ) > 0;
 
                         if ($series_id) {
@@ -179,15 +185,22 @@
                                 <span class="premium-tag">PREMIUM</span>
                             <?php endif; ?>
 
-                            <a href="<?php the_permalink(); ?>">
+                            <?php if ($is_exclusive): ?>
+                                <span class="exclusive-tag">EXCLUSIVE</span>
+                            <?php endif; ?>
+
+                            <?php
+                            $permalink = add_query_arg('from', 'competition', get_permalink());
+                            ?>
+                            <a href="<?php echo esc_url($permalink); ?>">
                                 <?php if (has_post_thumbnail()) : ?>
                                     <?php the_post_thumbnail('medium', [
                                         'class' => 'd-block rounded page-post-image-size',
                                     ]); ?>
                                 <?php else : ?>
-                                    <img src="<?php echo get_template_directory_uri(); ?>/images/no-image.jpeg"
-                                            class="d-block rounded page-post-image-size"
-                                            alt="Default Image">
+                                    <img src="<?php echo esc_url(get_template_directory_uri() . '/images/no-image.jpeg'); ?>"
+                                         class="d-block rounded page-post-image-size"
+                                         alt="Default Image">
                                 <?php endif; ?>
                             </a>
                             <div class="position-absolute top-0 end-0 bg-primary-color px-2 py-1 me-2 mt-3 rounded">
@@ -228,7 +241,10 @@
                         </div>
                         <div class="card-body p-2">
                             <p class="card-title fw-bold mb-1 fs-16px text-truncate">
-                                <a href="<?php the_permalink(); ?>" class="text-decoration-none text-truncate text-story-title">
+                                <?php
+                                    $permalink = add_query_arg('from', 'competition', get_permalink());
+                                ?>
+                                <a href="<?php echo esc_url($permalink); ?>" class="text-decoration-none text-truncate text-story-title">
                                     <?php echo esc_html(get_the_title()); ?>
                                 </a>
                             </p>
