@@ -369,7 +369,6 @@ function save_story_ajax() {
     $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
     $post_status    = isset($_POST['post_status']) ? sanitize_text_field($_POST['post_status']) : 'publish';
     $schedule_date  = isset($_POST['schedule_date']) ? sanitize_text_field($_POST['schedule_date']) : '';
-    print_r($post_status);exit;
 
     $errors = [];
 

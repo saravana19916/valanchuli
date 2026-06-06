@@ -38,83 +38,71 @@
 
 <?php get_footer(); ?>
 
+<?php $is_logged_in = is_user_logged_in(); ?>
 <script>
-    function paymentProcess(amount, coins) {
-        var options = {
-            "key": RazorpayConfig.key,
-            "amount": amount * 100,
-            "currency": "INR",
-            "name": "Buy Keys",
-            "description": amount + " Keys",
-            "handler": function (response) {
-                saveCoinPurchase(response.razorpay_payment_id || '', 'success', amount, coins);
-            },
-            "modal": {
-                "ondismiss": function () {
-                    saveCoinPurchase('', 'cancelled', amount, coins);
-                }
-            }
-        };
+    // ✅ Define isLoggedIn variable
+    var isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
 
-        var rzp = new Razorpay(options);
+    const CoinPurchaseAjax = {
+        ajaxUrl: <?php echo json_encode(admin_url('admin-ajax.php')); ?>,
+        nonce: <?php echo json_encode(wp_create_nonce('coin_purchase_nonce')); ?>
+    };
 
-        rzp.on('payment.failed', function (response) {
-            var paymentId = '';
-            if (response && response.error && response.error.metadata && response.error.metadata.payment_id) {
-                paymentId = response.error.metadata.payment_id;
-            }
-
-            saveCoinPurchase(paymentId, 'failed', amount, coins);
-        });
-
-        rzp.open();
-    }
-
-    function saveCoinPurchase(payment_id, payment_status, amount, coins) {
-        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+    async function createCoinOrder(amount, coins) {
+        const res = await fetch(CoinPurchaseAjax.ajaxUrl, {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: new URLSearchParams({
-                action: 'save_coin_purchase',
+                action: 'create_coin_order',
+                nonce: CoinPurchaseAjax.nonce,
                 coin: coins,
-                price: amount,
-                payment_id: payment_id,
-                payment_method: 'razorpay',
-                payment_status: payment_status
+                price: amount
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && payment_status === 'success') {
-                alert('Purchase successful! Keys will be added to your wallet.');
-                <?php
-                    $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : '';
-                    if ($redirect === 'wallet') {
-                        $redirect_url = site_url('/wallet');
-                    } elseif (filter_var($redirect, FILTER_VALIDATE_URL)) {
-                        $redirect_url = $redirect;
-                    } else {
-                        $redirect_url = site_url('/wallet');
+        });
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (!data.success) throw new Error(data.data?.message || 'Order create failed');
+        return data.data; // { order_id, amount, currency }
+    }
+
+    function paymentProcess(amount, coins) {
+        (async () => {
+            const order = await createCoinOrder(amount, coins);
+
+            var options = {
+                key: RazorpayConfig.key,
+                amount: order.amount,      // paise
+                currency: order.currency,  // INR
+                name: "Buy Keys",
+                description: coins + " Keys",
+                order_id: order.order_id, 
+                handler: function (response) {
+                    // ✅ Do NOT credit keys here. Webhook will credit on payment.captured.
+                    alert('Payment received! Keys will be added shortly.');
+                    window.location.href = "<?php echo esc_url(site_url('/wallet')); ?>";
+                },
+                modal: {
+                    ondismiss: function () {
+                        // No need to save cancelled here; webhook will get failed only if payment actually fails.
                     }
-                ?>
-                window.location.href = "<?php echo esc_url($redirect_url); ?>";
-            } else if (payment_status === 'failed' || payment_status === 'cancelled') {
-                alert('Payment failed or cancelled.');
-            } else {
-                alert('Purchase failed!');
-            }
-        })
-        .catch(err => {
-            console.error('saveCoinPurchase error:', err);
+                }
+            };
+
+            var rzp = new Razorpay(options);
+
+            rzp.on('payment.failed', function () {
+                alert('Payment failed.');
+                // ✅ No DB credit/save needed here; webhook will mark failed (payment.failed event)
+            });
+
+            rzp.open();
+        })().catch((e) => {
+            console.error(e);
+            alert(e.message || 'Unable to start payment');
         });
     }
 
     function redirectToLogin() {
         window.location.href = "<?php echo site_url('/login'); ?>?redirect_to=" + encodeURIComponent(window.location.href);
     }
-</script>
-
-<?php $is_logged_in = is_user_logged_in(); ?>
-<script>
-    var isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
 </script>

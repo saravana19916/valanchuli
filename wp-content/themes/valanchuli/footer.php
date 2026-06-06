@@ -218,7 +218,7 @@
 <script>
     // Check if the target is allowed
     function isAllowedTarget(t) {
-        return t.closest('.trumbowyg-editor, .story-title, .story-description, .login-input');
+        return t.closest('.trumbowyg-editor, .story-title, .story-description, .login-input, .emojionearea-editor, .edit-comment-box');
     }
 
     // Block right-click except allowed places

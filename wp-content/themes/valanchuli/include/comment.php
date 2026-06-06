@@ -127,7 +127,7 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                 </div>
 
                 <div id="edit-comment-form-<?php echo $comment_id; ?>" style="display: none;">
-                    <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
+                    <textarea id="edit-comment-text-<?php echo $comment_id; ?>" class="form-control edit-comment-box mb-2"><?php echo esc_textarea($comment->comment_content); ?></textarea>
                     <div class="mb-2">
                         <input type="file" name="edit_comment_image[]" id="edit_comment_image_<?php echo $comment_id; ?>" accept="image/*" class="form-control form-control-sm" multiple>
                     </div>
@@ -192,7 +192,7 @@ function bootstrap5_comment_callback($comment, $args, $depth) {
                                     </div>
 
                                     <div id="edit-comment-form-<?php echo $child_comment_id; ?>" style="display: none;">
-                                        <textarea id="edit-comment-text-<?php echo $child_comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
+                                        <textarea id="edit-comment-text-<?php echo $child_comment_id; ?>" class="form-control edit-comment-box mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
                                         <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo $child_comment_id; ?>)">Save</button>
                                         <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo $child_comment_id; ?>)">Cancel</button>
                                     </div>
@@ -340,7 +340,7 @@ function valanchuli_render_child_comment_html($child_comment) {
             </div>
 
             <div id="edit-comment-form-<?php echo (int) $child_comment_id; ?>" style="display: none;">
-                <textarea id="edit-comment-text-<?php echo (int) $child_comment_id; ?>" class="form-control mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
+                <textarea id="edit-comment-text-<?php echo (int) $child_comment_id; ?>" class="form-control edit-comment-box mb-2"><?php echo esc_textarea($child_comment->comment_content); ?></textarea>
                 <button class="btn btn-sm btn-success" onclick="saveEditedComment(<?php echo (int) $child_comment_id; ?>)">Save</button>
                 <button class="btn btn-sm btn-secondary" onclick="toggleEditForm(<?php echo (int) $child_comment_id; ?>)">Cancel</button>
             </div>
