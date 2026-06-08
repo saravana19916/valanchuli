@@ -270,9 +270,34 @@
 <script>
 let selectedPlan = {};
 
+var isLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+
+const CoinPurchaseAjax = {
+    ajaxUrl: <?php echo json_encode(admin_url('admin-ajax.php')); ?>,
+    nonce: <?php echo json_encode(wp_create_nonce('purchase_nonce')); ?>
+};
+
+async function createSubscriptionOrder(plan) {
+    const res = await fetch(CoinPurchaseAjax.ajaxUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({
+            action: 'create_razorpay_order',
+            nonce: CoinPurchaseAjax.nonce,
+            name: plan.name,
+            price: plan.amount,
+            period: plan.period,
+            type: 'subscription',
+        })
+    });
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (!data.success) throw new Error(data.data?.message || 'Order create failed');
+    return data.data; // { order_id, amount, currency }
+}
+
 document.querySelectorAll('.subscribe-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        var isLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
         if (!isLoggedIn) {
             window.location.href = "<?php echo site_url('/login'); ?>?redirect_to=" + encodeURIComponent(window.location.href);
             return;
@@ -284,34 +309,40 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
             amount: this.dataset.amount
         };
 
-        var options = {
-            "key": RazorpayConfig.key,
-            "amount": plan.amount * 100,
-            "currency": "INR",
-            "name": plan.name,
-            "description": plan.period,
-            "handler": function (response) {
-                saveSubscription('razorpay', response.razorpay_payment_id || '', 'success', plan);
-            },
-            "modal": {
-                "ondismiss": function () {
-                    saveSubscription('razorpay', '', 'cancelled', plan);
+        (async () => {
+            const order = await createSubscriptionOrder(plan);
+
+            var options = {
+                key: RazorpayConfig.key,
+                amount: order.amount,      // paise
+                currency: order.currency,  // INR
+                name: "Buy subscription",
+                description: plan.name + " - " + plan.period,
+                order_id: order.order_id, 
+                handler: function (response) {
+                    // ✅ Do NOT credit keys here. Webhook will credit on payment.captured.
+                    alert('Payment received! Subscription will be activated shortly.');
+                    window.location.href = "<?php echo esc_url(site_url('/subscription')); ?>";
+                },
+                modal: {
+                    ondismiss: function () {
+                        // No need to save cancelled here; webhook will get failed only if payment actually fails.
+                    }
                 }
-            }
-        };
+            };
 
-        var rzp1 = new Razorpay(options);
+            var rzp = new Razorpay(options);
 
-        rzp1.on('payment.failed', function (response) {
-            var paymentId = '';
-            if (response && response.error && response.error.metadata && response.error.metadata.payment_id) {
-                paymentId = response.error.metadata.payment_id;
-            }
+            rzp.on('payment.failed', function () {
+                alert('Payment failed.');
+                // ✅ No DB credit/save needed here; webhook will mark failed (payment.failed event)
+            });
 
-            saveSubscription('razorpay', paymentId, 'failed', plan);
+            rzp.open();
+        })().catch((e) => {
+            console.error(e);
+            alert(e.message || 'Unable to start payment');
         });
-
-        rzp1.open();
     });
 });
 

@@ -45,7 +45,7 @@
 
     const CoinPurchaseAjax = {
         ajaxUrl: <?php echo json_encode(admin_url('admin-ajax.php')); ?>,
-        nonce: <?php echo json_encode(wp_create_nonce('coin_purchase_nonce')); ?>
+        nonce: <?php echo json_encode(wp_create_nonce('purchase_nonce')); ?>
     };
 
     async function createCoinOrder(amount, coins) {
@@ -53,10 +53,11 @@
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: new URLSearchParams({
-                action: 'create_coin_order',
+                action: 'create_razorpay_order',
                 nonce: CoinPurchaseAjax.nonce,
                 coin: coins,
-                price: amount
+                price: amount,
+                type: 'key',
             })
         });
         const text = await res.text();
