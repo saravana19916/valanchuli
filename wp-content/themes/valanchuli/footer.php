@@ -619,73 +619,6 @@
         window.location.href = "<?php echo site_url('/ad-lock'); ?>?episode_number=" + encodeURIComponent(episodeNumber) + "&parent_id=" + encodeURIComponent(parentId) + "&episode_id=" + encodeURIComponent(episodeId);
     };
 
-    // document.addEventListener('DOMContentLoaded', function () {
-    //     var ua = navigator.userAgent || '';
-    //     var isInstagram = /Instagram/i.test(ua);
-    //     var isFacebook = /FBAN|FBAV/i.test(ua);
-    //     var isIOS = /iPhone|iPad|iPod/i.test(ua);
-    //     var isAndroid = /Android/i.test(ua);
-    //     var isInAppBrowser = isInstagram || isFacebook;
-
-    //     if (!isInAppBrowser) {
-    //         return;
-    //     }
-
-    //     var currentUrl = window.location.href;
-    //     var url = new URL(currentUrl);
-    //     var chromeIntentUrl =
-    //         'intent://' +
-    //         url.host +
-    //         url.pathname +
-    //         url.search +
-    //         url.hash +
-    //         '#Intent;scheme=' +
-    //         url.protocol.replace(':', '') +
-    //         ';package=com.android.chrome;end';
-
-    //     var notice = document.createElement('div');
-    //     notice.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;z-index:99999;background:#2366a8;color:#fff;padding:14px 16px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);font-size:14px;';
-
-    //     if (isIOS) {
-    //         notice.innerHTML = `
-    //             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-    //                 <div>For better reading, open this story in Safari. Tap the browser menu in Instagram/Facebook and choose <b>Open in Safari</b>.</div>
-    //                 <div style="display:flex;gap:8px;">
-    //                     <button type="button" id="closeInAppNotice" style="background:#fff;color:#2366a8;border:none;padding:8px 12px;border-radius:6px;font-weight:600;">OK</button>
-    //                 </div>
-    //             </div>
-    //         `;
-    //     } else if (isAndroid) {
-    //         notice.innerHTML = `
-    //             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-    //                 <div>For better reading, open this story in Chrome browser.</div>
-    //                 <div style="display:flex;gap:8px;">
-    //                     <a href="${chromeIntentUrl}" style="background:#fff;color:#2366a8;padding:8px 12px;border-radius:6px;text-decoration:none;font-weight:600;">Open in Chrome</a>
-    //                     <button type="button" id="closeInAppNotice" style="background:transparent;border:1px solid #fff;color:#fff;padding:8px 12px;border-radius:6px;">Close</button>
-    //                 </div>
-    //             </div>
-    //         `;
-    //     } else {
-    //         notice.innerHTML = `
-    //             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-    //                 <div>For better reading, open this story in your default browser.</div>
-    //                 <div style="display:flex;gap:8px;">
-    //                     <button type="button" id="closeInAppNotice" style="background:#fff;color:#2366a8;border:none;padding:8px 12px;border-radius:6px;font-weight:600;">OK</button>
-    //                 </div>
-    //             </div>
-    //         `;
-    //     }
-
-    //     document.body.appendChild(notice);
-
-    //     var closeBtn = document.getElementById('closeInAppNotice');
-    //     if (closeBtn) {
-    //         closeBtn.addEventListener('click', function () {
-    //             notice.remove();
-    //         });
-    //     }
-    // });
-
     function toggleEditForm(commentId) {
         const commentText = document.getElementById(`comment-content-${commentId}`);
         const editForm = document.getElementById(`edit-comment-form-${commentId}`);
@@ -763,6 +696,51 @@
                 alert(data.data || 'Something went wrong!');
             }
         });
+    }
+
+    function isSocialInAppBrowser() {
+        const ua = navigator.userAgent || '';
+        return /Instagram|InstagramLite|FBAN|FBAV/i.test(ua);
+    }
+
+    function isAndroidDevice() {
+        return /Android/i.test(navigator.userAgent || '');
+    }
+
+    function showPaymentBrowserNotice() {
+        const currentUrl = window.location.href;
+        const url = new URL(currentUrl);
+
+        const chromeIntentUrl =
+            'intent://' +
+            url.host +
+            url.pathname +
+            url.search +
+            url.hash +
+            '#Intent;scheme=' +
+            url.protocol.replace(':', '') +
+            ';package=com.android.chrome;end';
+
+        // if (isIOSDevice()) {
+        //     alert('For payment, open this page in Safari.\nTap menu in Instagram/Facebook and choose "Open in Safari".');
+        //     return;
+        // }
+
+        if (isAndroidDevice()) {
+            // Try opening Chrome directly
+            window.location.href = chromeIntentUrl;
+            return;
+        }
+
+        alert('For payment, open this page in your default browser.');
+    }
+
+    function canStartRazorpayPayment() {
+        // Allow normal browsers
+        if (!isSocialInAppBrowser()) return true;
+
+        showPaymentBrowserNotice();
+        return false;
     }
 </script>
 

@@ -298,8 +298,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
     </div>
 </div>
 
-<?php get_footer(); ?>
-
 <script>
     jQuery(document).ready(function () {
         function toggleStorySections() {
@@ -397,7 +395,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 					.then(data => {
 						if (data.success) {
 							const details = data.data;
-							console.log("details", details);
 
 							if (details) {
 								// const urlParams = new URLSearchParams(window.location.search);
@@ -461,8 +458,6 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								competitionSelect.dispatchEvent(new Event('change'));
 							}
 						}
-
-						console.log("createAction", createAction);
 
 						if (createAction == 'episode') {
 							document.getElementById('story-type').value = 'தொடர்கதை';
@@ -946,15 +941,17 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								? `<div class="alert alert-success">${response.data}</div>`
 								: `<div class="alert alert-danger">${response.data}</div>`;
 
-							if (postId) {
-								window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
-							} else {
-								if (storySubType == "series") {
-									window.location.href = "<?php echo esc_url( site_url('/story-success/?status=series') ); ?>";
-								} else {
-									window.location.href = "<?php echo esc_url( site_url('/story-success/?status=other') ); ?>";
-								}
-							}
+							window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect;
+
+							// if (postId) {
+							// 	window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
+							// } else {
+							// 	if (storySubType == "series") {
+							// 		window.location.href = "<?php echo esc_url( site_url('/story-success/?status=series') ); ?>";
+							// 	} else {
+							// 		window.location.href = "<?php echo esc_url( site_url('/story-success/?status=other') ); ?>";
+							// 	}
+							// }
 
 							jQuery('#saveDraft, #step2Submit, #prev-step').prop('disabled', false);
 						} else {
@@ -1272,15 +1269,16 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
                 jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', false);
 
                 if (response.success) {
-                    if (postId) {
-                        window.location.href = '<?php echo esc_url(home_url('/my-creations')); ?>';
-                    } else if (postStatus === 'future') {
-                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=scheduled')); ?>';
-                    } else if (storySubType === 'series') {
-                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=series')); ?>';
-                    } else {
-                        window.location.href = '<?php echo esc_url(site_url('/story-success/?status=other')); ?>';
-                    }
+					window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect;
+                    // if (postId) {
+                    //     window.location.href = '<?php echo esc_url(home_url('/my-creations')); ?>';
+                    // } else if (postStatus === 'future') {
+                    //     window.location.href = '<?php echo esc_url(site_url('/story-success/?status=scheduled')); ?>';
+                    // } else if (storySubType === 'series') {
+                    //     window.location.href = '<?php echo esc_url(site_url('/story-success/?status=series')); ?>';
+                    // } else {
+                    //     window.location.href = '<?php echo esc_url(site_url('/story-success/?status=other')); ?>';
+                    // }
                 } else {
                     if (typeof response.data === 'object' && response.data.title) {
                         jQuery('.story-title').after('<p class="text-danger error-message mt-2 small">' + response.data.title + '</p>');
@@ -1292,3 +1290,5 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
         }
     });
 </script>
+
+<?php get_footer(); ?>

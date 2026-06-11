@@ -508,7 +508,13 @@ function save_story_ajax() {
         addEpisodeNumber($storyType, $storySubType, $series, $post_id);
     }
 
-    wp_send_json_success('Story saved successfully');
+    if (($storyType == 'தொடர்கதை' && $storySubType == 'episode')) {
+        $series_term = get_term_by('name', $series, 'series');
+        $series_slug = $series_term ? $series_term->slug : sanitize_title($series);
+        wp_send_json_success(['redirect' => $series_slug, 'message' => 'Story saved successfully']);
+    }
+
+    wp_send_json_success(['redirect' => get_post_field('post_name', $post_id), 'message' => 'Story saved successfully']);
 }
 
 function addEpisodeNumber($storyType, $storySubType, $series, $post_id) {

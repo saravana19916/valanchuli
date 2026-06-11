@@ -67,6 +67,8 @@
     }
 
     function paymentProcess(amount, coins) {
+        if (!canStartRazorpayPayment()) return;
+
         (async () => {
             const order = await createCoinOrder(amount, coins);
 

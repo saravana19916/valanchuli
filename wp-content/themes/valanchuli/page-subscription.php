@@ -303,6 +303,8 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
             return;
         }
 
+        if (!canStartRazorpayPayment()) return;
+
         let plan = {
             name: this.dataset.plan,
             period: this.dataset.period,
@@ -346,42 +348,42 @@ document.querySelectorAll('.subscribe-btn').forEach(btn => {
     });
 });
 
-function saveSubscription(method, payment_id, payment_status, plan) {
-    const redirectTo = getRedirectTo();
+// function saveSubscription(method, payment_id, payment_status, plan) {
+//     const redirectTo = getRedirectTo();
 
-    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({
-            action: 'save_subscription',
-            plan_name: plan.name,
-            plan_period: plan.period,
-            plan_amount: plan.amount,
-            payment_method: method,
-            payment_id: payment_id,
-            payment_status: payment_status
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
+//     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+//         method: 'POST',
+//         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+//         body: new URLSearchParams({
+//             action: 'save_subscription',
+//             plan_name: plan.name,
+//             plan_period: plan.period,
+//             plan_amount: plan.amount,
+//             payment_method: method,
+//             payment_id: payment_id,
+//             payment_status: payment_status
+//         })
+//     })
+//     .then(res => res.json())
+//     .then(data => {
 
-        if (data.success && payment_status === 'success') {
-            alert('Subscription added successfully!');
-            if (redirectTo) {
-                window.location.href = redirectTo;
-            } else {
-                location.reload();
-            }
-        } else if (payment_status === 'failed' || payment_status === 'cancelled') {
-            alert('Payment failed or cancelled.');
-        } else {
-            alert('Subscription failed!');
-        }
-    })
-    .catch(err => {
-        console.error('saveSubscription error:', err);
-    });
-}
+//         if (data.success && payment_status === 'success') {
+//             alert('Subscription added successfully!');
+//             if (redirectTo) {
+//                 window.location.href = redirectTo;
+//             } else {
+//                 location.reload();
+//             }
+//         } else if (payment_status === 'failed' || payment_status === 'cancelled') {
+//             alert('Payment failed or cancelled.');
+//         } else {
+//             alert('Subscription failed!');
+//         }
+//     })
+//     .catch(err => {
+//         console.error('saveSubscription error:', err);
+//     });
+// }
 
 // document.getElementById('paypalBtn').onclick = function() {
 //     document.getElementById('paypalBtn').style.display = 'none';
