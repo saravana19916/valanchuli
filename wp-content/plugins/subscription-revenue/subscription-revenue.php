@@ -463,6 +463,18 @@ function subscription_revenue_next_month_timestamp(): int {
     $tz = subscription_revenue_tz();
     $dt = new DateTimeImmutable('first day of next month 00:01:00', $tz);
     return $dt->getTimestamp();
+
+    // $tz = subscription_revenue_tz();
+
+    // Today 3:00 PM
+    // $dt = new DateTimeImmutable('today 16:17:00', $tz);
+
+    // If 3 PM already passed, add 5 minutes from now
+    // if ($dt->getTimestamp() <= time()) {
+    //     $dt = new DateTimeImmutable('+5 minutes', $tz);
+    // }
+
+    // return $dt->getTimestamp();
 }
 
 function subscription_revenue_ensure_next_run_scheduled(): void {
@@ -501,6 +513,7 @@ function subscription_revenue_previous_month_range_ymd(): array {
 add_action('subscription_revenue_monthly_auto_save', 'subscription_revenue_auto_save_previous_month');
 
 function subscription_revenue_auto_save_previous_month() {
+    error_log('Cron executed at: ' . current_time('mysql'));
     global $wpdb;
 
     // Previous month date range (WP timezone)
@@ -596,5 +609,6 @@ function subscription_revenue_auto_save_previous_month() {
     }
 
     // ✅ Reschedule for next month 1st 00:01 (avoid duplicates)
+    subscription_revenue_deactivate_cron();
     subscription_revenue_ensure_next_run_scheduled();
 }

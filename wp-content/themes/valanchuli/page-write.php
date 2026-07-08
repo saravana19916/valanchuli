@@ -79,37 +79,55 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								'hide_empty' => false,
 								'meta_query' => [
 									[
-										'key' => 'is_deleted',
+										'key'     => 'is_deleted',
 										'compare' => 'NOT EXISTS',
 									],
 								],
 							]);
 
-							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id) {
+							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id, $wpdb) {
+
 								if ($term->name === 'தொடர்கதை அல்ல') {
 									return false;
 								}
 
+								$completed_table = $wpdb->prefix . 'completed_stories';
+
+								$completed_story_ids = $wpdb->get_col(
+									$wpdb->prepare(
+										"SELECT story_id
+										FROM {$completed_table}
+										WHERE user_id = %d
+										AND status = 1",
+										$current_user_id
+									)
+								);
+
+								$completed_story_ids = array_map('intval', $completed_story_ids);
+
 								$args = [
-									'post_type'      => 'post',
-									'posts_per_page' => -1,
-									'post_status'    => 'publish',
-									'author'         => $current_user_id,
-									'tax_query'      => [
+									'post_type'           => 'post',
+									'posts_per_page'      => -1,
+									'post_status'         => 'publish',
+									'author'              => $current_user_id,
+									'ignore_sticky_posts' => true,
+									'suppress_filters'    => true,
+									'tax_query' => [
 										[
 											'taxonomy' => 'series',
 											'field'    => 'term_id',
 											'terms'    => $term->term_id,
 										],
 									],
+									'meta_query' => [],
+									'fields' => 'ids',
 								];
 
-								if ( isset($_GET['from']) && $_GET['from'] === 'competition' ) {
+								if (isset($_GET['from']) && $_GET['from'] === 'competition') {
 									$args['meta_query'][] = [
 										'key'     => 'competition',
 										'compare' => 'EXISTS',
 									];
-
 								} else {
 									$args['meta_query'][] = [
 										'key'     => 'competition',
@@ -119,7 +137,15 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 								$query = new WP_Query($args);
 
-								return $query->have_posts();
+								$post_ids = $query->posts;
+
+								// Hide the entire series if any completed story exists in it
+								if (!empty(array_intersect($post_ids, $completed_story_ids))) {
+									return false;
+								}
+
+								// Show the series only if it has posts
+								return !empty($post_ids);
 							});
 
 						?>
@@ -515,6 +541,15 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 									document.getElementById('story-division').value = data.data.division;
 									document.getElementById('story-description').value = data.data.description;
 								}, 600);
+							}
+
+							if (data.data.post_status === 'future' && data.data.scheduled_date) {
+								document.getElementById('scheduleDateTime').value = data.data.scheduled_date;
+								isScheduledEdit = true;
+								toggleScheduleButton();
+							} else if (data.data.post_status === 'publish') {
+								isPublishedEdit = true;
+								toggleScheduleButton();
 							}
 						}
 					}
@@ -941,7 +976,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								? `<div class="alert alert-success">${response.data}</div>`
 								: `<div class="alert alert-danger">${response.data}</div>`;
 
-							window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect;
+							window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect + "?from=mycreation";
 
 							// if (postId) {
 							// 	window.location.href = "<?php echo esc_url( home_url( '/my-creations' ) ); ?>";
@@ -1015,6 +1050,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
         function autoSaveDraft(isAutoSave) {
             if (isDraftSaving) return; // IMPORTANT: prevent overlapping requests
+            if (isPublishedEdit) return; // do not autosave published posts
             isDraftSaving = true;
 
             const storyCompetition = document.getElementById('story-competition')?.value || '';
@@ -1060,6 +1096,15 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
                 }
             }
 
+            const scheduledDateVal = document.getElementById('scheduleDateTime')?.value || '';
+
+            if (isScheduledEdit && (!scheduledDateVal || !postId)) {
+                isDraftSaving = false;
+                return;
+            }
+
+            const saveStatus = isScheduledEdit ? 'future' : 'draft';
+
             const formData = new FormData();
             formData.append('action', 'save_draft');
             formData.append('competition', storyCompetition);
@@ -1071,7 +1116,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
             formData.append('series', series);
             formData.append('division', division);
             formData.append('description', description);
-            formData.append('status', 'draft');
+            formData.append('status', saveStatus);
+
+            if (saveStatus === 'future') {
+                formData.append('schedule_date', scheduledDateVal);
+            }
 
             if (postId) {
                 formData.append('post_id', postId);
@@ -1119,14 +1168,36 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 
 		// ----------------------------------------Schedule start--------------------------------------------
         // Show Schedule button only for episode subtype
+        // Hide publish/save-draft buttons when editing an already scheduled (future) post
+        // Hide save-draft & schedule when editing an already published post
+        let isScheduledEdit = false;
+        let isPublishedEdit = false;
+
         function toggleScheduleButton() {
             const storyType = document.getElementById('story-type')?.value;
             const storySubType = document.querySelector('input[name="storySubType"]:checked')?.value;
 
-            if (storyType === 'தொடர்கதை' && storySubType === 'episode') {
+            const isEpisode = (storyType === 'தொடர்கதை' && storySubType === 'episode');
+
+            if (isPublishedEdit) {
+                jQuery('#scheduleBtn').addClass('d-none');
+                jQuery('#saveDraft').addClass('d-none');
+                jQuery('#step2Submit').removeClass('d-none');
+                return;
+            }
+
+            if (isEpisode) {
                 jQuery('#scheduleBtn').removeClass('d-none');
             } else {
                 jQuery('#scheduleBtn').addClass('d-none');
+            }
+
+            if (isScheduledEdit && isEpisode) {
+                jQuery('#step2Submit').addClass('d-none');
+                jQuery('#saveDraft').addClass('d-none');
+            } else {
+                jQuery('#step2Submit').removeClass('d-none');
+                jQuery('#saveDraft').removeClass('d-none');
             }
         }
 
@@ -1143,7 +1214,11 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
             const pad = n => String(n).padStart(2, '0');
             const minVal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
             document.getElementById('scheduleDateTime').min = minVal;
-            document.getElementById('scheduleDateTime').value = '';
+
+            const existingVal = document.getElementById('scheduleDateTime').value;
+            if (!existingVal) {
+                document.getElementById('scheduleDateTime').value = '';
+            }
             jQuery('#scheduleError').addClass('d-none').text('');
 
             var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
@@ -1269,7 +1344,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
                 jQuery('#saveDraft, #step2Submit, #scheduleBtn, #prev-step').prop('disabled', false);
 
                 if (response.success) {
-					window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect;
+					window.location.href = "<?php echo esc_url( site_url('/') ); ?>" + response.data.redirect + "?from=mycreation";
                     // if (postId) {
                     //     window.location.href = '<?php echo esc_url(home_url('/my-creations')); ?>';
                     // } else if (postStatus === 'future') {

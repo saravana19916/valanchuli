@@ -46,6 +46,15 @@ if (!empty($banners)) :
         $message1 = get_option('site_message_one');
         $message2 = get_option('site_message_two');
         $message3 = get_option('site_message_three');
+
+        // $timestamp = wp_next_scheduled('subscription_revenue_monthly_auto_save');
+//         $timestamp = wp_next_scheduled('key_revenue_monthly_auto_save');
+
+// if ($timestamp) {
+//     echo 'Next run time: ' . wp_date('Y-m-d H:i:s', $timestamp);
+// } else {
+//     echo 'The event is not currently scheduled.';
+// }
     ?>
     
     <?php if ($message1): ?>

@@ -474,45 +474,45 @@ function reward_keys_to_writer() {
     wp_send_json_success();
 }
 
-// add_action('wp_ajax_valanchuli_set_completed_story', function () {
-//     if (!is_user_logged_in()) {
-//         wp_send_json_error('Login required.');
-//     }
+add_action('wp_ajax_valanchuli_set_completed_story', function () {
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Login required.');
+    }
 
-//     $story_id = isset($_POST['story_id']) ? absint($_POST['story_id']) : 0;
-//     $status   = isset($_POST['status']) ? (int) $_POST['status'] : 0;
+    $story_id = isset($_POST['story_id']) ? absint($_POST['story_id']) : 0;
+    $status   = isset($_POST['status']) ? (int) $_POST['status'] : 0;
 
-//     if (!$story_id) wp_send_json_error('Invalid story id.');
+    if (!$story_id) wp_send_json_error('Invalid story id.');
 
-//     check_ajax_referer('valanchuli_complete_story_' . $story_id, 'nonce');
+    check_ajax_referer('valanchuli_complete_story_' . $story_id, 'nonce');
 
-//     $user_id = get_current_user_id();
-//     $status  = $status ? 1 : 0;
+    $user_id = get_current_user_id();
+    $status  = $status ? 1 : 0;
 
-//     global $wpdb;
-//     $table = valanchuli_completed_stories_table_name();
+    global $wpdb;
+    $table = $wpdb->prefix . 'completed_stories';
 
-//     $completed_on = $status ? current_time('mysql') : null;
+    $completed_on = $status ? current_time('mysql') : null;
 
-//     $result = $wpdb->query($wpdb->prepare(
-//         "INSERT INTO {$table} (user_id, story_id, status, completed_on)
-//          VALUES (%d, %d, %d, %s)
-//          ON DUPLICATE KEY UPDATE
-//             status = VALUES(status),
-//             completed_on = VALUES(completed_on)",
-//         $user_id,
-//         $story_id,
-//         $status,
-//         $completed_on
-//     ));
+    $result = $wpdb->query($wpdb->prepare(
+        "INSERT INTO {$table} (user_id, story_id, status, completed_on)
+         VALUES (%d, %d, %d, %s)
+         ON DUPLICATE KEY UPDATE
+            status = VALUES(status),
+            completed_on = VALUES(completed_on)",
+        $user_id,
+        $story_id,
+        $status,
+        $completed_on
+    ));
 
-//     if ($result === false) {
-//         wp_send_json_error('DB error.');
-//     }
+    if ($result === false) {
+        wp_send_json_error('DB error.');
+    }
 
-//     wp_send_json_success([
-//         'story_id' => $story_id,
-//         'status' => $status,
-//         'completed_on' => $completed_on,
-//     ]);
-// });
+    wp_send_json_success([
+        'story_id' => $story_id,
+        'status' => $status,
+        'completed_on' => $completed_on,
+    ]);
+});

@@ -3,6 +3,8 @@
     $premium_table = $wpdb->prefix . 'premium_story_rules';
     $exclusive_table = $wpdb->prefix . 'exclusive_stories';
 
+    $context = $args['context'] ?? '';
+
     $args = [
         'post_type'      => ['post'],
         'posts_per_page' => -1,

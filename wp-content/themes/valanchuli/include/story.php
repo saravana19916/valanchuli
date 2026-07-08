@@ -569,7 +569,8 @@ function handle_save_draft() {
     $content = wp_kses_post($_POST['content']);
     $division = sanitize_text_field($_POST['division']);
     $description = sanitize_text_field($_POST['description']);
-    $post_status  = in_array($_POST['status'], ['draft', 'publish']) ? $_POST['status'] : 'draft';
+    $post_status  = in_array($_POST['status'], ['draft', 'publish', 'future']) ? $_POST['status'] : 'draft';
+    $schedule_date = isset($_POST['schedule_date']) ? sanitize_text_field($_POST['schedule_date']) : '';
 
     if (!$title || ($storySubType != 'series' && !$content)) {
         wp_send_json_error('Title and Content are required');
@@ -577,7 +578,7 @@ function handle_save_draft() {
 
     $postExists = new WP_Query([
         'post_type'   => 'post',
-        'post_status' => ['publish', 'draft'],
+        'post_status' => ['publish', 'draft', 'future'],
         'title'       => $title,
         'fields'      => 'ids',
         'posts_per_page' => 1,
@@ -600,19 +601,24 @@ function handle_save_draft() {
         'post_author'  => get_current_user_id(),
     ];
 
+    if ($post_status === 'future' && $schedule_date) {
+        $post_data['post_status']   = 'future';
+        $post_data['post_date']     = $schedule_date;
+        $post_data['post_date_gmt'] = get_gmt_from_date($schedule_date);
+    } else {
+        $post_data['post_status'] = $post_status;
+    }
+
     // Check if editing an existing post
     if (!empty($_POST['post_id']) && $existing_post = get_post(intval($_POST['post_id']))) {
         $post_data['ID'] = $existing_post->ID;
 
-        if ($existing_post->post_status === 'publish') {
+        if ($existing_post->post_status === 'publish' && $post_status !== 'future') {
             $post_data['post_status'] = 'publish';
-        } else {
-            $post_data['post_status'] = $post_status;
         }
 
         $post_id = wp_update_post($post_data, true);
     } else {
-        $post_data['post_status'] = $post_status;
         $post_id = wp_insert_post($post_data);
     }
 
@@ -669,7 +675,7 @@ function handle_save_draft() {
     }
 
     wp_send_json_success([
-        'message' => $post_status === 'draft' ? 'Draft saved successfully' : 'Story published successfully',
+        'message' => $post_status === 'draft' ? 'Draft saved successfully' : ($post_status === 'future' ? 'Scheduled post updated successfully' : 'Story published successfully'),
         'post_id' => $post_id,
         'status'  => $post_status
     ]);
@@ -740,6 +746,16 @@ function get_story_by_id()
 
     $series_name = !empty($series_terms) ? $series_terms[0]->name : '';
   
+    $scheduled_date = '';
+    if ($post->post_status === 'future') {
+        $scheduled_date = get_post_datetime($post->ID, 'date', 'gmt');
+        if ($scheduled_date) {
+            $scheduled_date = $scheduled_date->format('Y-m-d\TH:i');
+        } else {
+            $scheduled_date = mysql2date('Y-m-d\TH:i', $post->post_date);
+        }
+    }
+
     wp_send_json_success([
         'post_id'  => $post->ID,
         'title'    => $post->post_title,
@@ -750,6 +766,8 @@ function get_story_by_id()
         'division' => get_post_meta($post->ID, 'division', true),
         'description'  => get_post_meta($post->ID, 'description', true),
         'image_url' => get_the_post_thumbnail_url($post->ID),
+        'post_status'  => $post->post_status,
+        'scheduled_date' => $scheduled_date,
     ]);
 }
 

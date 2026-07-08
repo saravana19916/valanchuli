@@ -68,17 +68,17 @@
                 </a>
 
                 <?php if (is_user_logged_in()) : ?>
-                    <!-- | <label class="text-muted text-decoration-none" style="cursor:pointer;">
+                    | <label class="text-muted text-decoration-none float-end" style="cursor:pointer;">
                         <input
                             type="checkbox"
                             id="completeStoryToggle"
                             <?php checked(1, (int) $is_completed_story); ?>
                             data-story-id="<?php echo esc_attr(get_the_ID()); ?>"
-                            data-nonce="<?php echo esc_attr($complete_story_nonce); ?>"
+                            data-nonce="<?php echo esc_attr(wp_create_nonce('valanchuli_complete_story_' . get_the_ID())); ?>"
                             style="margin-right:6px;"
                         />
                         Complete Story
-                    </label> -->
+                    </label>
                 <?php endif; ?>
             </p>
 
@@ -94,21 +94,42 @@
                                 if (!empty($terms) && !is_wp_error($terms)) {
                                     $series_term = $terms[0];
 
-                                    $related_stories = new WP_Query([
-                                        'post_type'      => 'post',
-                                        'posts_per_page' => -1,
-                                        'post_status'    => 'publish',
-                                        'orderby'        => 'date',
-                                        'order'          => 'ASC',
-                                        'post__not_in'   => [get_the_ID()],
-                                        'tax_query'      => [
-                                            [
-                                                'taxonomy' => 'series',
-                                                'field'    => 'term_id',
-                                                'terms'    => [$series_term->term_id],
+                                    $author_id  = (int) get_post_field('post_author', $post_id);
+                                    $current_id = (int) get_current_user_id();
+
+                                    if ($current_id === $author_id) {
+                                        $related_stories = new WP_Query([
+                                            'post_type'      => 'post',
+                                            'posts_per_page' => -1,
+                                            'post_status'    => ['publish', 'future'],
+                                            'orderby'        => 'date',
+                                            'order'          => 'ASC',
+                                            'post__not_in'   => [get_the_ID()],
+                                            'tax_query'      => [
+                                                [
+                                                    'taxonomy' => 'series',
+                                                    'field'    => 'term_id',
+                                                    'terms'    => [$series_term->term_id],
+                                                ],
                                             ],
-                                        ],
-                                    ]);
+                                        ]);
+                                    } else {
+                                        $related_stories = new WP_Query([
+                                            'post_type'      => 'post',
+                                            'posts_per_page' => -1,
+                                            'post_status'    => 'publish',
+                                            'orderby'        => 'date',
+                                            'order'          => 'ASC',
+                                            'post__not_in'   => [get_the_ID()],
+                                            'tax_query'      => [
+                                                [
+                                                    'taxonomy' => 'series',
+                                                    'field'    => 'term_id',
+                                                    'terms'    => [$series_term->term_id],
+                                                ],
+                                            ],
+                                        ]);
+                                    }
                                     ?>
 
                                     <div class="row col-12 p-2 border border-2 border-primary rounded mx-auto">
@@ -288,7 +309,15 @@
                                                                         </div>
                                                                     <?php else: ?>
                                                                         <div class="unlocked" data-episode-number="<?php echo $episodeNumber; ?>">
-                                                                            <a href="<?php the_permalink(); ?>"><?php echo esc_html(get_the_title()); ?></a>
+                                                                            <a href="<?php the_permalink(); ?>">
+                                                                                <?php echo esc_html(get_the_title()); ?>
+                                                                            </a>
+
+                                                                            <?php if (get_post_status() === 'future') : ?>
+                                                                                <span class="badge bg-warning text-dark text-wrap">
+                                                                                    Scheduled for <?php echo get_the_time(get_option('date_format') . ' ' . get_option('time_format'), get_the_ID()); ?>
+                                                                                </span>
+                                                                            <?php endif; ?>
                                                                         </div>
                                                                     <?php endif; ?>
                                                                 </h6>
@@ -853,52 +882,53 @@
         }
     });
 
-    // document.addEventListener('DOMContentLoaded', function () {
-    //   var el = document.getElementById('completeStoryToggle');
-    //   if (!el) return;
+    // Completed stories functionality
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('completeStoryToggle');
+      if (!el) return;
 
-    //   el.addEventListener('change', function () {
-    //     var storyId = el.getAttribute('data-story-id');
-    //     var nonce = el.getAttribute('data-nonce');
-    //     var newStatus = el.checked ? 1 : 0;
+      el.addEventListener('change', function () {
+        var storyId = el.getAttribute('data-story-id');
+        var nonce = el.getAttribute('data-nonce');
+        var newStatus = el.checked ? 1 : 0;
 
-    //     var msg = el.checked
-    //       ? 'Mark this story as completed?'
-    //       : 'Unmark this story as completed?';
+        var msg = el.checked
+          ? 'Mark this story as completed?'
+          : 'Unmark this story as completed?';
 
-    //     if (!confirm(msg)) {
-    //       el.checked = !el.checked;
-    //       return;
-    //     }
+        if (!confirm(msg)) {
+          el.checked = !el.checked;
+          return;
+        }
 
-    //     el.disabled = true;
+        el.disabled = true;
 
-    //     var params = new URLSearchParams();
-    //     params.set('action', 'valanchuli_set_completed_story');
-    //     params.set('story_id', storyId);
-    //     params.set('status', newStatus);
-    //     params.set('nonce', nonce);
+        var params = new URLSearchParams();
+        params.set('action', 'valanchuli_set_completed_story');
+        params.set('story_id', storyId);
+        params.set('status', newStatus);
+        params.set('nonce', nonce);
 
-    //     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
-    //       method: 'POST',
-    //       credentials: 'same-origin',
-    //       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    //       body: params.toString()
-    //     })
-    //     .then(r => r.json())
-    //     .then(function (resp) {
-    //       if (!resp || !resp.success) {
-    //         alert((resp && resp.data) ? resp.data : 'Failed to update.');
-    //         el.checked = !el.checked;
-    //       }
-    //     })
-    //     .catch(function () {
-    //       alert('Network error.');
-    //       el.checked = !el.checked;
-    //     })
-    //     .finally(function () {
-    //       el.disabled = false;
-    //     });
-    //   });
-    // });
+        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: params.toString()
+        })
+        .then(r => r.json())
+        .then(function (resp) {
+          if (!resp || !resp.success) {
+            alert((resp && resp.data) ? resp.data : 'Failed to update.');
+            el.checked = !el.checked;
+          }
+        })
+        .catch(function () {
+          alert('Network error.');
+          el.checked = !el.checked;
+        })
+        .finally(function () {
+          el.disabled = false;
+        });
+      });
+    });
 </script>

@@ -494,6 +494,7 @@ function key_revenue_previous_month_range_ymd(): array {
 add_action('key_revenue_monthly_auto_save', 'key_revenue_auto_save_previous_month');
 
 function key_revenue_auto_save_previous_month() {
+    error_log('Key Cron executed at: ' . current_time('mysql'));
     global $wpdb;
 
     // Previous month date range (WP timezone, e.g., IST if set)
@@ -576,5 +577,6 @@ function key_revenue_auto_save_previous_month() {
     }
 
     // ✅ Reschedule for next month 1st 00:01 (avoid duplicates)
+    key_revenue_deactivate_cron();
     key_revenue_ensure_next_run_scheduled();
 }
