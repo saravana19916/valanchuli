@@ -24,6 +24,10 @@
                 $series_checkname = ($seriesCheck && !is_wp_error($seriesCheck)) ? $seriesCheck[0]->name : '';
                 $series_id = ($seriesCheck && !is_wp_error($seriesCheck)) ? $seriesCheck[0]->term_id : 0;
                 $check_have_parent = $series_checkname == 'தொடர்கதை அல்ல' ? false : true;
+
+                $is_completed_story = function_exists('valanchuli_is_story_completed')
+                    ? valanchuli_is_story_completed(get_current_user_id(), get_the_ID())
+                    : 0;
             ?>
 
             <h4 class="text-primary-color fw-bold text-center"><?php echo the_title(); ?></h4>
@@ -73,6 +77,7 @@
                             type="checkbox"
                             id="completeStoryToggle"
                             <?php checked(1, (int) $is_completed_story); ?>
+                            <?php disabled(1, (int) $is_completed_story); ?>
                             data-story-id="<?php echo esc_attr(get_the_ID()); ?>"
                             data-nonce="<?php echo esc_attr(wp_create_nonce('valanchuli_complete_story_' . get_the_ID())); ?>"
                             style="margin-right:6px;"
@@ -415,7 +420,7 @@
                                                 $current_user_id = get_current_user_id();
                                                 $post_author_id = (int) get_post_field('post_author', $post_id);
 
-                                                if ( $current_user_id === $post_author_id ) :
+                                                if ( $current_user_id === $post_author_id && !$is_completed_story) :
                                                     ?>
                                                     <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
                                                         <p class="mb-2">
@@ -443,7 +448,7 @@
                                                 $current_user_id = get_current_user_id();
                                                 $post_author_id = (int) get_post_field('post_author', $post_id);
 
-                                                if ( $current_user_id === $post_author_id ) :
+                                                if ( $current_user_id === $post_author_id && !$is_completed_story ) :
                                         ?>
                                             <div class="col-12 text-center mt-4">
                                                 <div class="alert alert-warning text-center w-75 mx-auto mt-3 text-primary-color" role="alert">
@@ -888,16 +893,16 @@
       if (!el) return;
 
       el.addEventListener('change', function () {
+        if (!el.checked) {
+          el.checked = true;
+          return;
+        }
+
         var storyId = el.getAttribute('data-story-id');
         var nonce = el.getAttribute('data-nonce');
-        var newStatus = el.checked ? 1 : 0;
 
-        var msg = el.checked
-          ? 'Mark this story as completed?'
-          : 'Unmark this story as completed?';
-
-        if (!confirm(msg)) {
-          el.checked = !el.checked;
+        if (!confirm('Mark this story as completed?')) {
+          el.checked = false;
           return;
         }
 
@@ -906,7 +911,7 @@
         var params = new URLSearchParams();
         params.set('action', 'valanchuli_set_completed_story');
         params.set('story_id', storyId);
-        params.set('status', newStatus);
+        params.set('status', 1);
         params.set('nonce', nonce);
 
         fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
@@ -919,15 +924,17 @@
         .then(function (resp) {
           if (!resp || !resp.success) {
             alert((resp && resp.data) ? resp.data : 'Failed to update.');
-            el.checked = !el.checked;
+            el.checked = false;
+            el.disabled = false;
+          } else {
+            window.location.reload();
           }
         })
         .catch(function () {
           alert('Network error.');
-          el.checked = !el.checked;
-        })
-        .finally(function () {
+          el.checked = false;
           el.disabled = false;
+          window.location.reload();
         });
       });
     });

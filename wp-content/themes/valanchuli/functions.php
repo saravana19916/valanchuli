@@ -27,6 +27,7 @@ require_once get_template_directory() . '/include/active-subscription-list.php';
 require_once get_template_directory() . '/include/month-earning.php';
 require_once get_template_directory() . '/include/user-bank-details-report.php';
 require_once get_template_directory() . '/include/active-key-list.php';
+require_once get_template_directory() . '/include/completed-stories-list.php';
 require_once get_template_directory() . '/include/premium-story-revenue.php';
 
 // Enqueue Bootstrap and Font Awesome

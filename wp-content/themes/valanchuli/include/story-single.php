@@ -474,6 +474,21 @@ function reward_keys_to_writer() {
     wp_send_json_success();
 }
 
+function valanchuli_is_story_completed($user_id, $story_id) {
+    if (!$user_id || !$story_id) {
+        return 0;
+    }
+
+    global $wpdb;
+    $table = $wpdb->prefix . 'completed_stories';
+
+    return (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT status FROM {$table} WHERE user_id = %d AND story_id = %d LIMIT 1",
+        $user_id,
+        $story_id
+    ));
+}
+
 add_action('wp_ajax_valanchuli_set_completed_story', function () {
     if (!is_user_logged_in()) {
         wp_send_json_error('Login required.');
