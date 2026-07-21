@@ -60,6 +60,35 @@
                 </div>
             </div>
 
+            <?php
+            $social_links = valanchuli_get_social_links();
+            $active_social = [];
+            foreach ($social_links as $key => $data) {
+                $url = get_option($key, '');
+                if (!empty($url)) {
+                    $active_social[$key] = array_merge($data, ['url' => $url]);
+                }
+            }
+            if (!empty($active_social)):
+            ?>
+            <div class="row justify-content-center mt-3">
+                <div class="col-12 text-center">
+                    <div class="footer-social-links d-inline-flex flex-wrap justify-content-center gap-3">
+                        <?php foreach ($active_social as $key => $data): ?>
+                            <a href="<?php echo esc_url($data['url']); ?>"
+                               class="footer-social-icon"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               aria-label="<?php echo esc_attr($data['label']); ?>"
+                               title="<?php echo esc_attr($data['label']); ?>">
+                                <i class="fa-brands <?php echo esc_attr($data['icon']); ?>"></i>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php $coin_prices = get_option('coin_pack_prices_setting', []); ?>
 
             <!-- Premium Unlock Modal -->

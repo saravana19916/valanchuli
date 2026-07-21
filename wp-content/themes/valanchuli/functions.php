@@ -1,4 +1,8 @@
 <?php
+function get_user_profile_url($user_id) {
+    return admin_url('user-edit.php?user_id=' . (int) $user_id);
+}
+
 // require_once get_template_directory() . '/inc/wp-bootstrap-navwalker.php';
 // require_once get_template_directory() . '/include/kirki-register.php';
 require_once get_template_directory() . '/class-wp-bootstrap-navwalker.php';
@@ -19,6 +23,7 @@ require_once get_template_directory() . '/include/coin-pack-settings.php';
 require_once get_template_directory() . '/include/unlock.php';
 // require_once get_template_directory() . '/include/ad-lock-settings.php';
 require_once get_template_directory() . '/include/revenue-settings.php';
+require_once get_template_directory() . '/include/social-media-settings.php';
 require_once get_template_directory() . '/include/subscription.php';
 require_once get_template_directory() . '/include/payment.php';
 require_once get_template_directory() . '/include/add-subscription-transaction.php';

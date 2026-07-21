@@ -47,7 +47,7 @@
             ?>
 
             <p class="text-muted fs-16px text-center">
-                <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>" 
+                <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>" 
                 class="text-primary-color text-decoration-underline">
                     <?php echo esc_html($author_name); ?>
                 </a>

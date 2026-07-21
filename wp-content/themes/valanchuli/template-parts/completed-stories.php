@@ -1,84 +1,94 @@
 <?php
-// filepath: /home/saravanan/projects/trial-ground/wordpress-sample-n/wp-content/themes/valanchuli/template-parts/exclusive-stories.php
+// filepath: /home/saravanan/projects/trial-ground/wordpress-sample-n/wp-content/themes/valanchuli/template-parts/completed-stories.php
 global $wpdb;
 
 $context      = $args['context'] ?? '';
 $current_user = $args['user_id'] ?? '';
 
-$table = $wpdb->prefix . 'exclusive_stories';
+// For completed stories, we only show the current logged-in user's completed list
+$user_id = $current_user ? (int) $current_user : get_current_user_id();
 
-// Get all unique post_ids from exclusive table
-$post_ids = $wpdb->get_col("SELECT DISTINCT post_id FROM $table");
+$table = $wpdb->prefix . 'completed_stories';
 
-// If context is "my-creations", filter by current user
-if ($current_user) {
-    $author_post_ids = get_posts([
-        'post_type'      => 'post',
-        'posts_per_page' => -1,
-        'post_status'    => 'publish',
-        'author'         => $current_user,
-        'fields'         => 'ids',
-        'include'        => $post_ids,
-    ]);
-    $post_ids = $author_post_ids;
-}
+$completed_stories = [];
 
-$exclusive_stories = [];
+if ($user_id) {
+    // Get story_ids that this user has marked as completed (status = 1)
+    $story_ids = $wpdb->get_col(
+        $wpdb->prepare(
+            "SELECT DISTINCT story_id FROM {$table} WHERE user_id = %d AND status = 1",
+            $user_id
+        )
+    );
 
-if (!empty($post_ids)) {
-    $q = new WP_Query([
-        'post_type'      => 'post',
-        'post__in'       => $post_ids,
-        'posts_per_page' => -1,
-        'post_status'    => 'publish',
-    ]);
+    // If context is "my-creations", restrict to the user's own authored stories
+    if ($current_user) {
+        $authored_ids = get_posts([
+            'post_type'      => 'post',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'author'         => $current_user,
+            'fields'         => 'ids',
+        ]);
+        $story_ids = array_values(array_intersect($story_ids, $authored_ids));
+    }
 
-    if ($q->have_posts()) {
-        while ($q->have_posts()) {
-            $q->the_post();
+    if (!empty($story_ids)) {
+        $q = new WP_Query([
+            'post_type'      => 'post',
+            'post__in'       => $story_ids,
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        ]);
 
-            $post_id     = get_the_ID();
-            $description = get_post_meta($post_id, 'description', true);
-            $division    = get_post_meta($post_id, 'division', true);
+        if ($q->have_posts()) {
+            while ($q->have_posts()) {
+                $q->the_post();
 
-            // Keep same logic as premium: only list series-like stories
-            if (!empty($description) || !empty($division)) {
-                $series = get_the_terms($post_id, 'series');
-                $series_id = ($series && !is_wp_error($series)) ? (int) $series[0]->term_id : 0;
+                $post_id     = get_the_ID();
+                $description = get_post_meta($post_id, 'description', true);
+                $division    = get_post_meta($post_id, 'division', true);
 
-                $views = get_average_series_views($post_id, $series_id);
+                // Keep same logic as premium/exclusive: only list series-like stories
+                if (!empty($description) || !empty($division)) {
+                    $series = get_the_terms($post_id, 'series');
+                    $series_id = ($series && !is_wp_error($series)) ? (int) $series[0]->term_id : 0;
 
-                $exclusive_stories[] = [
-                    'post'  => get_post(),
-                    'views' => $views,
-                ];
+                    $views = get_average_series_views($post_id, $series_id);
+
+                    $completed_stories[] = [
+                        'post'  => get_post(),
+                        'views' => $views,
+                    ];
+                }
             }
+            wp_reset_postdata();
         }
-        wp_reset_postdata();
     }
 }
 
-usort($exclusive_stories, function ($a, $b) {
+usort($completed_stories, function ($a, $b) {
     return $b['views'] <=> $a['views'];
 });
 
-$exclusiveUrl = add_query_arg([
+$completedUrl = add_query_arg([
     'context' => $context,
     'user_id' => $current_user,
-], get_permalink(get_page_by_path('exclusive-stories')));
+], get_permalink(get_page_by_path('completed-stories')));
 ?>
 
+<?php if (is_user_logged_in()) : ?>
 <div class="d-flex justify-content-between align-items-center mt-4">
-    <h4 class="py-2 fw-bold m-0">🔥 Exclusive Stories</h4>
-    <?php if (count($exclusive_stories) > 0 && $exclusiveUrl) { ?>
-        <a href="<?php echo esc_url($exclusiveUrl); ?>" class="text-primary-color fs-16px">
+    <h4 class="py-2 fw-bold m-0">🔥 Completed Stories</h4>
+    <?php if (count($completed_stories) > 0 && $completedUrl) { ?>
+        <a href="<?php echo esc_url($completedUrl); ?>" class="text-primary-color fs-16px">
             மேலும் <i class="fa-solid fa-angle-right fa-xl"></i>
         </a>
     <?php } ?>
 </div>
 
 <div class="trending-desktop-container d-none d-lg-flex overflow-auto mt-3" style="gap: 2rem;">
-    <?php foreach ($exclusive_stories as $item): ?>
+    <?php foreach ($completed_stories as $item): ?>
         <?php
             $post = $item['post'];
             setup_postdata($post);
@@ -156,7 +166,7 @@ $exclusiveUrl = add_query_arg([
                         $author_name = get_the_author_meta('display_name', $author_id);
                     ?>
                     <p class="fs-12px text-primary-color text-decoration-underline mb-1">
-                        <a href="<?php echo site_url('/user-profile/?uid=' . $author_id); ?>">
+                        <a href="<?php echo esc_url(site_url('/user-profile/?uid=' . $author_id)); ?>">
                             <?php echo esc_html($author_name); ?>
                         </a>
                     </p>
@@ -176,7 +186,7 @@ $exclusiveUrl = add_query_arg([
 
 <div class="swiper trending-swiper d-lg-none px-2 mt-4">
     <div class="swiper-wrapper">
-        <?php foreach ($exclusive_stories as $item): ?>
+        <?php foreach ($completed_stories as $item): ?>
             <?php
                 $post = $item['post'];
                 setup_postdata($post);
@@ -261,9 +271,9 @@ $exclusiveUrl = add_query_arg([
     </div>
 </div>
 
-<?php if (count($exclusive_stories) === 0) { ?>
+<?php if (count($completed_stories) === 0) { ?>
     <div class="text-center mt-4 fs-14px text-primary-color" role="alert">
-        No stories found.
+        No completed stories yet.
     </div>
 <?php } ?>
 
@@ -277,3 +287,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<?php endif; ?>

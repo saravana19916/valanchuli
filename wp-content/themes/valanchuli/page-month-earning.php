@@ -346,20 +346,36 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
 
         <div class="earning-history-title">Earning History</div>
         <div id="earning-history-list">
-            <?php if (empty($monthly_history)): ?>
-                <div class="earning-history-card" style="text-align:center; color:#888;">
-                    No data found
-                </div>
-            <?php else: ?>
-                <?php
-                $months = array_keys($monthly_history);
-                rsort($months); // Show latest first
-                $show_count = 5;
-                $i = 0;
-                foreach ($months as $month):
-                    $data = $monthly_history[$month];
+            <?php
+            $now = new DateTimeImmutable('now', $tz);
+            $last_six_months = [];
+            for ($m = 5; $m >= 1; $m--) {
+                $dt = $now->modify("-$m month");
+                $month_key = $dt->format('Y-m');
+                $month_start = $dt->modify('first day of this month')->format('Y-m-d');
+                $month_end = $dt->modify('last day of this month')->format('Y-m-d');
 
-                    // ✅ total for this month
+                if (isset($monthly_history[$month_key])) {
+                    $data = $monthly_history[$month_key];
+                } else {
+                    $data = [
+                        'from_date' => $month_start,
+                        'to_date' => $month_end,
+                        'key' => 0,
+                        'subscription' => 0,
+                        'status' => [],
+                        'transaction_id' => [],
+                        'unpaid_reason' => [],
+                    ];
+                }
+                $last_six_months[$month_key] = $data;
+            }
+            $last_six_months = array_reverse($last_six_months, true);
+            ?>
+            <?php
+            $show_count = 5;
+            $i = 0;
+            foreach ($last_six_months as $month => $data):
                     $total = (float) ($data['key'] ?? 0) + (float) ($data['subscription'] ?? 0);
 
                     // Format display dates in IST
@@ -419,7 +435,6 @@ $bank_details = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE user_i
                         <?php endif; ?>
                     </div>
                 <?php $i++; endforeach; ?>
-            <?php endif; ?>
         </div>
         <?php if (!empty($history) && count($history) > $show_count): ?>
             <a href="#" class="more-link" id="showAllHistory">More</a>
