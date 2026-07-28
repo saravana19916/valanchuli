@@ -76,12 +76,12 @@
                     <div class="footer-social-links d-inline-flex flex-wrap justify-content-center gap-3">
                         <?php foreach ($active_social as $key => $data): ?>
                             <a href="<?php echo esc_url($data['url']); ?>"
-                               class="footer-social-icon"
+                               class="footer-social-icon social-icon-<?php echo esc_attr($key); ?>"
                                target="_blank"
                                rel="noopener noreferrer"
                                aria-label="<?php echo esc_attr($data['label']); ?>"
                                title="<?php echo esc_attr($data['label']); ?>">
-                                <i class="fa-brands <?php echo esc_attr($data['icon']); ?>"></i>
+                                <i class="fa-xl fa-brands <?php echo esc_attr($data['icon']); ?>"></i>
                             </a>
                         <?php endforeach; ?>
                     </div>

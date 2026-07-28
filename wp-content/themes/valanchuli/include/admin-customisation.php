@@ -360,38 +360,6 @@ add_filter('manage_edit-post_sortable_columns', function ($columns) {
 });
 // Series column in post end
 
-// add_filter('manage_posts_columns', function ($columns) {
-//     unset($columns['author']);
-
-//     $columns = array_slice($columns, 0, 3, true) +
-//         ['frontend_author' => __('Author')] +
-//         array_slice($columns, 3, null, true);
-
-//     return $columns;
-// });
-
-// add_action('manage_posts_custom_column', function ($column_name, $post_id) {
-//     if ($column_name !== 'frontend_author') {
-//         return;
-//     }
-
-//     $author_id = (int) get_post_field('post_author', $post_id);
-//     $author = get_userdata($author_id);
-
-//     if (!$author) {
-//         echo '—';
-//         return;
-//     }
-
-//     $author_url = add_query_arg('author', $author_id, admin_url('edit.php'));
-//     echo '<a href="' . esc_url($author_url) . '">' . esc_html($author->display_name) . '</a>';
-// }, 10, 2);
-
-// add_filter('manage_edit-post_sortable_columns', function ($columns) {
-//     $columns['frontend_author'] = 'author';
-//     return $columns;
-// });
-
 // Competition series tab start
 add_filter('views_edit-post', function ($views) {
 

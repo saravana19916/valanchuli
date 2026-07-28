@@ -16,7 +16,7 @@
 
             <?php
                 $description = get_post_meta(get_the_ID(), 'description', true);
-                $cardClass = 'card ' . ($description ? 'border-0' : 'border-0 rounded');
+                $cardClass = 'w-100 card ' . ($description ? 'border-0' : 'border-0 rounded');
                 $post_id     = get_the_ID();
                 $division_id = get_post_meta($post_id, 'division', true);
 
@@ -71,7 +71,11 @@
                         <i class="fa-solid fa-share-nodes me-1"></i> Share
                 </a>
 
-                <?php if (is_user_logged_in()) : ?>
+                <?php
+                    $current_user_id = get_current_user_id();
+                    $post_author_id = (int) get_post_field('post_author', get_the_ID());
+                    if ($current_user_id && $current_user_id === $post_author_id) :
+                ?>
                     | <label class="text-muted text-decoration-none float-end" style="cursor:pointer;">
                         <input
                             type="checkbox"

@@ -396,19 +396,53 @@ a:hover, .footer-menu li:hover, .terms-links a:hover {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 38px;
-        height: 38px;
+        width: 55px;
+        height: 55px;
         border-radius: 50%;
         color: #fff;
         background-color: rgba(255, 255, 255, 0.12);
-        font-size: 1rem;
+        font-size: 1.15rem;
         transition: background-color 0.2s ease, transform 0.2s ease;
     }
 
     .footer-social-icon:hover {
         color: #fff;
-        background-color: #FFEB00;
         transform: translateY(-2px);
+    }
+
+    .social-icon-social_facebook {
+        background-color: #1877F2;
+    }
+    .social-icon-social_facebook:hover {
+        background-color: #145dbf;
+    }
+
+    .social-icon-social_instagram {
+        background-color: #E4405F;
+    }
+    .social-icon-social_instagram:hover {
+        background-color: #c1354a;
+    }
+
+    .social-icon-social_youtube {
+        background-color: #FF0000;
+    }
+    .social-icon-social_youtube:hover {
+        background-color: #cc0000;
+    }
+
+    .social-icon-social_telegram {
+        background-color: #0088cc;
+    }
+    .social-icon-social_telegram:hover {
+        background-color: #006699;
+    }
+
+    .social-icon-social_whatsapp {
+        background-color: #25D366;
+    }
+    .social-icon-social_whatsapp:hover {
+        background-color: #1da851;
     }
 
     @keyframes shake {
