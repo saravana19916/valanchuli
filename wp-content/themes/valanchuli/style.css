@@ -418,10 +418,10 @@ a:hover, .footer-menu li:hover, .terms-links a:hover {
     }
 
     .social-icon-social_instagram {
-        background-color: #E4405F;
+        background: linear-gradient(45deg, #feda75 0%, #d62976 50%, #4f5bd5 100%);
     }
     .social-icon-social_instagram:hover {
-        background-color: #c1354a;
+        background: linear-gradient(45deg, #f9cb5c 0%, #c21a5e 50%, #3e4ac4 100%);
     }
 
     .social-icon-social_youtube {

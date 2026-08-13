@@ -85,7 +85,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								],
 							]);
 
-							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id, $wpdb) {
+							$filtered_series = array_filter($series_terms, function ($term) use ($current_user_id, $wpdb, $postId) {
 
 								if ($term->name === 'தொடர்கதை அல்ல') {
 									return false;
@@ -140,7 +140,7 @@ if ( isset( $_GET['id'] ) && is_numeric( $_GET['id'] ) ) {
 								$post_ids = $query->posts;
 
 								// Hide the entire series if any completed story exists in it
-								if (!empty(array_intersect($post_ids, $completed_story_ids))) {
+								if (empty($postId) && !empty(array_intersect($post_ids, $completed_story_ids))) {
 									return false;
 								}
 

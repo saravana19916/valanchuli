@@ -48,7 +48,7 @@ function valanchuli_get_social_links() {
     return [
         'social_facebook'  => ['label' => 'Facebook',  'icon' => 'fa-facebook-f'],
         // 'social_x'         => ['label' => 'X (Twitter)', 'icon' => 'fa-x-twitter'],
-        'social_instagram' => ['label' => 'Instagram', 'icon' => 'fa-instagram'],
+        'social_instagram' => ['label' => 'Instagram', 'icon' => 'fa-square-instagram'],
         'social_youtube'   => ['label' => 'YouTube',   'icon' => 'fa-youtube'],
         // 'social_linkedin'  => ['label' => 'LinkedIn',  'icon' => 'fa-linkedin-in'],
         'social_telegram'  => ['label' => 'Telegram',  'icon' => 'fa-telegram'],

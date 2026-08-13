@@ -70,25 +70,6 @@
                     data-bs-target="#shareModal">
                         <i class="fa-solid fa-share-nodes me-1"></i> Share
                 </a>
-
-                <?php
-                    $current_user_id = get_current_user_id();
-                    $post_author_id = (int) get_post_field('post_author', get_the_ID());
-                    if ($current_user_id && $current_user_id === $post_author_id) :
-                ?>
-                    | <label class="text-muted text-decoration-none float-end" style="cursor:pointer;">
-                        <input
-                            type="checkbox"
-                            id="completeStoryToggle"
-                            <?php checked(1, (int) $is_completed_story); ?>
-                            <?php disabled(1, (int) $is_completed_story); ?>
-                            data-story-id="<?php echo esc_attr(get_the_ID()); ?>"
-                            data-nonce="<?php echo esc_attr(wp_create_nonce('valanchuli_complete_story_' . get_the_ID())); ?>"
-                            style="margin-right:6px;"
-                        />
-                        Complete Story
-                    </label>
-                <?php endif; ?>
             </p>
 
             <div class="<?= esc_attr($cardClass); ?>">
@@ -178,6 +159,25 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <?php
+                                        $current_user_id = get_current_user_id();
+                                        $post_author_id = (int) get_post_field('post_author', get_the_ID());
+                                        if ($current_user_id && $current_user_id === $post_author_id) :
+                                    ?>
+                                        <label class="text-muted text-decoration-none float-end my-4" style="cursor:pointer;">
+                                            <input
+                                                type="checkbox"
+                                                id="completeStoryToggle"
+                                                <?php checked(1, (int) $is_completed_story); ?>
+                                                <?php disabled(1, (int) $is_completed_story); ?>
+                                                data-story-id="<?php echo esc_attr(get_the_ID()); ?>"
+                                                data-nonce="<?php echo esc_attr(wp_create_nonce('valanchuli_complete_story_' . get_the_ID())); ?>"
+                                                style="margin-right:6px; width: 15px; height: 15px;"
+                                            />
+                                            Complete Story (Complete story select செய்த பிறகு, இந்த கதையில் அடுத்த எபிசோட் சேர்க்க முடியாது. தவறுதலாக  Complete story கொடுத்திருந்தால் அதை சரி செய்ய <strong>contact@valanchuli.com</strong> மின்னஞ்சலுக்கு தொடர்பு கொள்ளவும்.)
+                                        </label>
+                                    <?php endif; ?>
 
                                     <?php
                                         global $wpdb;
@@ -905,7 +905,7 @@
         var storyId = el.getAttribute('data-story-id');
         var nonce = el.getAttribute('data-nonce');
 
-        if (!confirm('Mark this story as completed?')) {
+        if (!confirm('உங்கள் தொடர்கதை complete ஆகி விட்டதை ரீடர்ஸ் அறிய வேண்டுமா? Complete story select செய்த பிறகு, இந்த கதையில் அடுத்த எபிசோட் சேர்க்க முடியாது என்பதை நினைவில் கொள்ளுங்கள். complete story select செய்ய விரும்புகிறீர்களா?')) {
           el.checked = false;
           return;
         }
