@@ -1,6 +1,5 @@
 <?php
 
-// Social Media Links settings - lets admin control footer social icons from wp-admin.
 add_action('admin_menu', function () {
     add_menu_page(
         'Social Media Links',
@@ -14,43 +13,31 @@ add_action('admin_menu', function () {
 });
 
 add_action('admin_init', function () {
-    register_setting('social_media_settings_group', 'social_facebook', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_x', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_instagram', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_youtube', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_linkedin', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_telegram', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
-    register_setting('social_media_settings_group', 'social_whatsapp', [
-        'type'              => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-    ]);
+    $social_keys = [
+        'social_facebook',
+        'social_instagram',
+        'social_youtube',
+        'social_telegram',
+        'social_whatsapp',
+    ];
+
+    foreach ($social_keys as $key) {
+        register_setting('social_media_settings_group', $key, [
+            'type'              => 'string',
+            'sanitize_callback' => 'esc_url_raw',
+        ]);
+        register_setting('social_media_settings_group', $key . '_icon', [
+            'type'              => 'integer',
+            'sanitize_callback' => 'absint',
+        ]);
+    }
 });
 
 function valanchuli_get_social_links() {
     return [
         'social_facebook'  => ['label' => 'Facebook',  'icon' => 'fa-facebook-f'],
-        // 'social_x'         => ['label' => 'X (Twitter)', 'icon' => 'fa-x-twitter'],
         'social_instagram' => ['label' => 'Instagram', 'icon' => 'fa-square-instagram'],
         'social_youtube'   => ['label' => 'YouTube',   'icon' => 'fa-youtube'],
-        // 'social_linkedin'  => ['label' => 'LinkedIn',  'icon' => 'fa-linkedin-in'],
         'social_telegram'  => ['label' => 'Telegram',  'icon' => 'fa-telegram'],
         'social_whatsapp'  => ['label' => 'WhatsApp',  'icon' => 'fa-whatsapp'],
     ];
@@ -59,10 +46,8 @@ function valanchuli_get_social_links() {
 function render_social_media_settings_page() {
     $fields = [
         'social_facebook'  => ['label' => 'Facebook URL',  'icon' => 'fa-facebook-f'],
-        // 'social_x'         => ['label' => 'X (Twitter) URL', 'icon' => 'fa-x-twitter'],
         'social_instagram' => ['label' => 'Instagram URL', 'icon' => 'fa-instagram'],
         'social_youtube'   => ['label' => 'YouTube URL',   'icon' => 'fa-youtube'],
-        // 'social_linkedin'  => ['label' => 'LinkedIn URL',  'icon' => 'fa-linkedin-in'],
         'social_telegram'  => ['label' => 'Telegram URL',  'icon' => 'fa-telegram'],
         'social_whatsapp'  => ['label' => 'WhatsApp URL',  'icon' => 'fa-whatsapp'],
     ];
@@ -87,6 +72,20 @@ function render_social_media_settings_page() {
                                    value="<?php echo esc_attr(get_option($key, '')); ?>"
                                    class="regular-text"
                                    placeholder="https://" />
+                            <div class="social-icon-upload" data-key="<?php echo esc_attr($key); ?>" style="margin-top:10px;">
+                                <?php
+                                $icon_id = get_option($key . '_icon', 0);
+                                if ($icon_id) {
+                                    $icon_url = wp_get_attachment_image_url($icon_id, 'thumbnail');
+                                    if ($icon_url) {
+                                        echo '<img src="' . esc_url($icon_url) . '" style="max-width:60px;max-height:60px;display:block;margin-bottom:8px;" class="social-icon-preview" />';
+                                    }
+                                }
+                                ?>
+                                <input type="hidden" name="<?php echo esc_attr($key); ?>_icon" value="<?php echo esc_attr($icon_id); ?>" class="social-icon-input" />
+                                <button type="button" class="button social-icon-upload-btn">Upload Icon</button>
+                                <button type="button" class="button social-icon-remove-btn" style="display:none;">Remove Icon</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -95,5 +94,47 @@ function render_social_media_settings_page() {
             <?php submit_button('Save Social Links'); ?>
         </form>
     </div>
+
+    <script>
+    jQuery(document).ready(function($){
+        var mediaUploader;
+
+        $('.social-icon-upload-btn').on('click', function(e){
+            e.preventDefault();
+
+            var wrapper = $(this).closest('.social-icon-upload');
+            var input = wrapper.find('.social-icon-input');
+            var preview = wrapper.find('.social-icon-preview');
+            var removeBtn = wrapper.find('.social-icon-remove-btn');
+
+            mediaUploader = wp.media({
+                title: 'Select Social Icon',
+                button: { text: 'Use this icon' },
+                multiple: false
+            });
+
+            mediaUploader.on('select', function(){
+                var attachment = mediaUploader.state().get('selection').first().toJSON();
+                input.val(attachment.id);
+                if (preview.length) {
+                    preview.attr('src', attachment.url).show();
+                } else {
+                    $('<img>').attr('src', attachment.url).css({maxWidth:'60px',maxHeight:'60px',display:'block',marginBottom:'8px'}).addClass('social-icon-preview').insertBefore(input);
+                }
+                removeBtn.show();
+            });
+
+            mediaUploader.open();
+        });
+
+        $('.social-icon-remove-btn').on('click', function(e){
+            e.preventDefault();
+            var wrapper = $(this).closest('.social-icon-upload');
+            wrapper.find('.social-icon-input').val('');
+            wrapper.find('.social-icon-preview').remove();
+            $(this).hide();
+        });
+    });
+    </script>
     <?php
 }

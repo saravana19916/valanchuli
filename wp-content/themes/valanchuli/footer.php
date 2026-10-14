@@ -66,22 +66,28 @@
             foreach ($social_links as $key => $data) {
                 $url = get_option($key, '');
                 if (!empty($url)) {
-                    $active_social[$key] = array_merge($data, ['url' => $url]);
+                    $icon_id = get_option($key . '_icon', 0);
+                    $icon_url = $icon_id ? wp_get_attachment_image_url($icon_id, 'full') : '';
+                    $active_social[$key] = array_merge($data, ['url' => $url, 'icon_url' => $icon_url]);
                 }
             }
             if (!empty($active_social)):
             ?>
             <div class="row justify-content-center mt-3">
-                <div class="col-12 text-center">
+                <div class="col-10 text-center">
                     <div class="footer-social-links d-inline-flex flex-wrap justify-content-center gap-3">
                         <?php foreach ($active_social as $key => $data): ?>
                             <a href="<?php echo esc_url($data['url']); ?>"
-                               class="footer-social-icon social-icon-<?php echo esc_attr($key); ?>"
+                               class="social-icon-<?php echo esc_attr($key); ?>"
                                target="_blank"
                                rel="noopener noreferrer"
                                aria-label="<?php echo esc_attr($data['label']); ?>"
                                title="<?php echo esc_attr($data['label']); ?>">
-                                <i class="fa-xl fa-brands <?php echo esc_attr($data['icon']); ?>"></i>
+                                <?php if (!empty($data['icon_url'])): ?>
+                                    <img src="<?php echo esc_url($data['icon_url']); ?>" alt="<?php echo esc_attr($data['label']); ?>" class="footer-social-img" />
+                                <?php else: ?>
+                                    <i class="fa-xl fa-brands <?php echo esc_attr($data['icon']); ?>"></i>
+                                <?php endif; ?>
                             </a>
                         <?php endforeach; ?>
                     </div>
