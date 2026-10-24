@@ -290,6 +290,17 @@ function handle_ajax_comment() {
     if (is_wp_error($comment_data)) {
         wp_send_json_error($comment_data->get_error_message());
     } else {
+        global $wpdb;
+        $notification_table = $wpdb->prefix . 'user_notifications';
+        $postId = isset($_POST['comment_post_ID']) ? intval($_POST['comment_post_ID']) : 0;
+        $user_id = get_post_field('post_author', $postId);
+        $wpdb->insert($notification_table, [
+            'user_id' => $user_id,
+            'message' => "<strong>" . esc_html(get_comment_author($comment_data)) . "</strong> commented on your story <a href='" . esc_url(get_permalink($postId)) . "'><strong>" . esc_html(get_the_title($postId)) . "</strong></a>",
+            'is_read' => 0,
+            'created_at' => current_time('mysql')
+        ]);
+
         if (!empty($uploaded_images)) {
             add_comment_meta($comment_data->comment_ID, 'comment_images', $uploaded_images);
         }
@@ -365,22 +376,51 @@ function valanchuli_render_child_comment_html($child_comment) {
 function handle_ajax_reply_comment() {
     if (!is_user_logged_in()) {
         wp_send_json_error('You must be logged in to reply.');
+        return;
     }
 
     $raw_comment = isset($_POST['comment']) ? (string) wp_unslash($_POST['comment']) : '';
 
     if (valanchuli_comment_contains_url($raw_comment)) {
         wp_send_json_error('Links/URLs are not allowed in comments.');
+        return;
     }
 
     $submission = wp_handle_comment_submission(wp_unslash($_POST));
     if (is_wp_error($submission)) {
         wp_send_json_error($submission->get_error_message());
+        return;
     }
 
     $comment = $submission; // WP_Comment
     if (!$comment || empty($comment->comment_ID)) {
         wp_send_json_error('Failed to add reply');
+        return;
+    }
+
+    // Send notification to post author when someone replies to a comment
+    global $wpdb;
+    $notification_table = $wpdb->prefix . 'user_notifications';
+    
+    // Get parent comment to find the post
+    $parent_comment = get_comment($comment->comment_parent);
+    if ($parent_comment) {
+        $postId = $parent_comment->comment_post_ID;
+        $post_author_id = $parent_comment->user_id;
+        $current_user_id = get_current_user_id();
+        
+        // Only notify if replier is not the comment author
+        if ($post_author_id && $current_user_id && $post_author_id != $current_user_id) {
+            $replier_name = get_comment_author($comment);
+            $post_title = get_the_title($postId);
+            
+            $wpdb->insert($notification_table, [
+                'user_id' => $post_author_id,
+                'message' => "<strong>" . esc_html($replier_name) . "</strong> replied to your comment in the story <a href='" . esc_url(get_permalink($postId)) . "'><strong>" . esc_html($post_title) . "</strong></a>",
+                'is_read' => 0,
+                'created_at' => current_time('mysql')
+            ]);
+        }
     }
 
     // IMPORTANT: render as CHILD markup, not via bootstrap5_comment_callback (parent-only)
@@ -388,6 +428,7 @@ function handle_ajax_reply_comment() {
 
     if (trim($html) === '') {
         wp_send_json_error('Reply saved, but rendering returned empty HTML.');
+        return;
     }
 
     wp_send_json_success([

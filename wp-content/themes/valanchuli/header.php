@@ -94,7 +94,7 @@
                                     foreach ($notifications as $n) {
                                         $is_unread = !$n->is_read ? 'notif-unread' : '';
                                         echo '<div class="notif-item '.$is_unread.'">';
-                                        echo '<div class="notif-message">'.nl2br(esc_html($n->message)).'</div>';
+                                        echo '<div class="notif-message">'.nl2br($n->message).'</div>';
                                         echo '<div class="notif-date">'.date('d-M-Y H:i', strtotime($n->created_at)).'</div>';
                                         echo '</div>';
                                     }
@@ -203,7 +203,7 @@
                                 foreach ($notifications as $n) {
                                     $is_unread = !$n->is_read ? 'notif-unread' : '';
                                     echo '<div class="notif-item '.$is_unread.'">';
-                                    echo '<div class="notif-message">'.nl2br(esc_html($n->message)).'</div>';
+                                     echo '<div class="notif-message">'.nl2br($n->message).'</div>';
                                     echo '<div class="notif-date">'.date('d-M-Y H:i', strtotime($n->created_at)).'</div>';
                                     echo '</div>';
                                 }
