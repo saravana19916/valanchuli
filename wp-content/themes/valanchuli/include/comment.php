@@ -294,9 +294,39 @@ function handle_ajax_comment() {
         $notification_table = $wpdb->prefix . 'user_notifications';
         $postId = isset($_POST['comment_post_ID']) ? intval($_POST['comment_post_ID']) : 0;
         $user_id = get_post_field('post_author', $postId);
+
+        $comment_author = esc_html(get_comment_author($comment_data));
+        $story_title    = esc_html(get_the_title($postId));
+        $story_url      = esc_url(get_permalink($postId));
+
+        $category_tamil = '';
+        $parent_title   = '';
+
+        $categories = get_the_category($postId);
+        if (!empty($categories) && in_array($categories[0]->name, ['சிறுகதை', 'கவிதை', 'கட்டுரை'], true)) {
+            $category_tamil = $categories[0]->name;
+        } else {
+            $series_terms = get_the_terms($postId, 'series');
+            if ($series_terms && !is_wp_error($series_terms)) {
+                $category_tamil = 'தொடர்கதை';
+                $parent_post    = get_post(getParentPostId($postId));
+                $parent_title   = $parent_post ? esc_html($parent_post->post_title) : '';
+            }
+        }
+
+        $category_label = $category_tamil ? $category_tamil . 'யின்' : '';
+
+        $title_part = "<strong><a href='{$story_url}'>{$story_title}</a></strong>";
+
+        if ($parent_title) {
+            $message = "<strong>{$comment_author}</strong> உங்கள் '<strong>{$parent_title}</strong>' {$category_label} {$title_part} -க்கு விமர்சனம் செய்துள்ளார்.";
+        } else {
+            $message = "<strong>{$comment_author}</strong> உங்கள் {$category_label} {$title_part} -க்கு விமர்சனம் செய்துள்ளார்.";
+        }
+
         $wpdb->insert($notification_table, [
             'user_id' => $user_id,
-            'message' => "<strong>" . esc_html(get_comment_author($comment_data)) . "</strong> commented on your story <a href='" . esc_url(get_permalink($postId)) . "'><strong>" . esc_html(get_the_title($postId)) . "</strong></a>",
+            'message' => $message,
             'is_read' => 0,
             'created_at' => current_time('mysql')
         ]);
@@ -416,7 +446,7 @@ function handle_ajax_reply_comment() {
             
             $wpdb->insert($notification_table, [
                 'user_id' => $post_author_id,
-                'message' => "<strong>" . esc_html($replier_name) . "</strong> replied to your comment in the story <a href='" . esc_url(get_permalink($postId)) . "'><strong>" . esc_html($post_title) . "</strong></a>",
+                'message' => "<a href='" . esc_url(get_permalink($postId)) . "'><strong>" . esc_html($post_title) . "</strong></a> படைப்பிற்கான உங்கள் விமர்சனத்திற்கு " . "<strong>" . esc_html($replier_name) . "</strong> பதிலளித்துள்ளார்.",
                 'is_read' => 0,
                 'created_at' => current_time('mysql')
             ]);
